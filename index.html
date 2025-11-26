@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groovy Chord Progression Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">🎵 Groovy Chord Generator</h1>
+            <p class="tagline">Create amazing chord progressions for any genre</p>
+        </header>
+
+        <!-- Controls Section -->
+        <section class="controls-section">
+            <div class="control-group">
+                <label for="genre-select">Genre</label>
+                <select id="genre-select">
+                    <option value="happy-pop">Happy Upbeat Pop</option>
+                    <option value="chill-lofi">Chill Lo-Fi</option>
+                    <option value="energetic-edm">Energetic EDM</option>
+                    <option value="soulful-rnb">Soulful R&B</option>
+                    <option value="jazz-fusion">Jazz Fusion</option>
+                    <option value="dark-trap">Dark Deep Trap</option>
+                    <option value="cinematic">Cinematic Epic</option>
+                    <option value="indie-rock">Indie Rock</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="complexity-select">Complexity</label>
+                <select id="complexity-select">
+                    <option value="simple">Simple (3-4 chords)</option>
+                    <option value="medium" selected>Medium (4-5 chords)</option>
+                    <option value="complex">Complex (6-8 chords)</option>
+                    <option value="advanced">Advanced (8+ chords)</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="rhythm-select">Rhythm Strength</label>
+                <select id="rhythm-select">
+                    <option value="soft">Soft & Gentle</option>
+                    <option value="moderate" selected>Moderate</option>
+                    <option value="strong">Strong & Punchy</option>
+                    <option value="intense">Intense & Driving</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="key-select">Key</label>
+                <select id="key-select">
+                    <option value="C">C Major</option>
+                    <option value="G">G Major</option>
+                    <option value="D">D Major</option>
+                    <option value="A">A Major</option>
+                    <option value="E">E Major</option>
+                    <option value="F">F Major</option>
+                    <option value="Bb">Bb Major</option>
+                    <option value="Am">A Minor</option>
+                    <option value="Em">E Minor</option>
+                    <option value="Dm">D Minor</option>
+                    <option value="Bm">B Minor</option>
+                    <option value="Fm">F Minor</option>
+                </select>
+            </div>
+
+            <button id="generate-btn" class="btn-primary">
+                <span class="btn-icon">🎲</span>
+                Generate Progression
+            </button>
+
+            <button id="regenerate-btn" class="btn-secondary">
+                <span class="btn-icon">🔄</span>
+                Regenerate
+            </button>
+        </section>
+
+        <!-- Chord Display Section -->
+        <section class="chord-display-section">
+            <h2>Current Progression</h2>
+            <div id="chord-display" class="chord-display">
+                <div class="chord-placeholder">Click "Generate Progression" to start</div>
+            </div>
+        </section>
+
+        <!-- Melody Section -->
+        <section class="melody-section">
+            <h2>🎹 Melody Pattern</h2>
+            <div id="melody-display" class="melody-display">
+                <div class="melody-placeholder">Melody will appear after generation</div>
+            </div>
+        </section>
+
+        <!-- Visual Editor (Piano Roll) -->
+        <section class="editor-section">
+            <h2>🎼 Visual Editor</h2>
+            <div class="editor-controls">
+                <button id="play-btn" class="btn-small">▶️ Play</button>
+                <button id="stop-btn" class="btn-small">⏹️ Stop</button>
+                <button id="clear-btn" class="btn-small">🗑️ Clear</button>
+                <span class="tempo-control">
+                    <label for="tempo-input">BPM:</label>
+                    <input type="number" id="tempo-input" value="120" min="60" max="200">
+                </span>
+            </div>
+            <div class="piano-roll-container">
+                <div class="piano-keys" id="piano-keys">
+                    <!-- Piano keys will be generated by JS -->
+                </div>
+                <div class="piano-roll" id="piano-roll">
+                    <canvas id="piano-roll-canvas"></canvas>
+                </div>
+            </div>
+            <div class="editor-instructions">
+                <p>💡 Click on the grid to add/remove notes. Drag to adjust timing.</p>
+            </div>
+        </section>
+
+        <!-- Footer / Credits -->
+        <footer class="footer">
+            <p class="credits">Created by <strong>Edgar Valle</strong></p>
+            <p class="version">Version 1.0 | © 2024</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
