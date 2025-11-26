@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Groovy Chord Progression Generator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎵 Groovy Chord Progression Generator</h1>
+            <p class="credit">Created by Edgar Valle</p>
+        </header>
+
+        <main>
+            <section class="control-panel">
+                <h2>Control Panel</h2>
+                <div class="controls-grid">
+                    <div class="control-group">
+                        <label for="genre">Genre</label>
+                        <select id="genre">
+                            <option value="happy-pop">Happy Upbeat Pop</option>
+                            <option value="dark-trap">Dark Deep Trap</option>
+                            <option value="lofi">Lo-Fi</option>
+                            <option value="neo-soul">Neo-Soul</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="key">Key</label>
+                        <select id="key">
+                            <option value="C-major">C Major</option>
+                            <option value="G-major">G Major</option>
+                            <option value="D-major">D Major</option>
+                            <option value="F-major">F Major</option>
+                            <option value="A-minor">A Minor</option>
+                            <option value="C-minor">C Minor</option>
+                            <option value="E-minor">E Minor</option>
+                            <option value="D-minor">D Minor</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="complexity">Complexity</label>
+                        <select id="complexity">
+                            <option value="simple">Simple</option>
+                            <option value="advanced">Advanced</option>
+                            <option value="jazzy">Jazzy/Extended</option>
+                        </select>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="rhythm">Rhythm/Timing</label>
+                        <select id="rhythm">
+                            <option value="straight">Straight 4/4</option>
+                            <option value="triplet">Triplet/Trap</option>
+                            <option value="swing">Swing</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="generate-btn" class="btn btn-primary">
+                        <span class="btn-icon">🎹</span> Generate Progression
+                    </button>
+                    <button id="regenerate-btn" class="btn btn-secondary">
+                        <span class="btn-icon">🔄</span> Regenerate
+                    </button>
+                </div>
+            </section>
+
+            <section class="visual-editor">
+                <h2>Chord Progression</h2>
+                <div class="rhythm-indicator" id="rhythm-indicator">
+                    <span>Rhythm: Straight 4/4</span>
+                </div>
+                <div class="chord-grid" id="chord-grid">
+                    <div class="chord-slot empty" data-slot="0">
+                        <span class="chord-name">-</span>
+                        <span class="chord-numeral">-</span>
+                    </div>
+                    <div class="chord-slot empty" data-slot="1">
+                        <span class="chord-name">-</span>
+                        <span class="chord-numeral">-</span>
+                    </div>
+                    <div class="chord-slot empty" data-slot="2">
+                        <span class="chord-name">-</span>
+                        <span class="chord-numeral">-</span>
+                    </div>
+                    <div class="chord-slot empty" data-slot="3">
+                        <span class="chord-name">-</span>
+                        <span class="chord-numeral">-</span>
+                    </div>
+                </div>
+                <p class="edit-hint">💡 Click on any chord to edit it</p>
+            </section>
+
+            <section class="melody-section">
+                <h2>Melody Generator</h2>
+                <button id="melody-btn" class="btn btn-accent">
+                    <span class="btn-icon">🎼</span> Generate Core Melody
+                </button>
+                <div class="melody-display" id="melody-display">
+                    <p class="melody-placeholder">Generate a chord progression first, then add a melody!</p>
+                </div>
+            </section>
+        </main>
+
+        <footer>
+            <p>🎸 Make some groovy music! 🎸</p>
+        </footer>
+    </div>
+
+    <!-- Chord Edit Modal -->
+    <div class="modal" id="chord-modal">
+        <div class="modal-content">
+            <h3>Edit Chord</h3>
+            <p>Select a new chord for this position:</p>
+            <div class="chord-options" id="chord-options">
+                <!-- Chord options will be populated by JavaScript -->
+            </div>
+            <button class="btn btn-secondary modal-close" id="modal-close">Cancel</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
