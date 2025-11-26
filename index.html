@@ -2,131 +2,318 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Groovy Chord Progression Generator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Create amazing chord progressions for any genre - A mobile-optimized music creation tool">
+    <meta name="theme-color" content="#7c3aed">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ChordGen">
+    <meta name="mobile-web-app-capable" content="yes">
+    
+    <title>Groovy Chord Generator</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-96x96.png">
+    <link rel="apple-touch-icon" href="icons/icon-192x192.png">
+    
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <!-- Onboarding Overlay -->
+    <div id="onboarding-overlay" class="onboarding-overlay hidden">
+        <div class="onboarding-content">
+            <div class="onboarding-slide active" data-slide="0">
+                <div class="onboarding-icon">🎵</div>
+                <h2>Welcome to Groovy Chord Generator!</h2>
+                <p>Create amazing chord progressions for any genre in seconds.</p>
+            </div>
+            <div class="onboarding-slide" data-slide="1">
+                <div class="onboarding-icon">🎛️</div>
+                <h2>Choose Your Style</h2>
+                <p>Select a genre, complexity, and key to customize your progression.</p>
+            </div>
+            <div class="onboarding-slide" data-slide="2">
+                <div class="onboarding-icon">🎹</div>
+                <h2>Edit & Play</h2>
+                <p>Use the visual editor to fine-tune your music and hear it come to life!</p>
+            </div>
+            <div class="onboarding-nav">
+                <div class="onboarding-dots">
+                    <span class="dot active" data-dot="0"></span>
+                    <span class="dot" data-dot="1"></span>
+                    <span class="dot" data-dot="2"></span>
+                </div>
+                <button id="onboarding-next" class="btn-primary">Next</button>
+                <button id="onboarding-skip" class="btn-secondary">Skip</button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container">
-        <!-- Header -->
+        <!-- Sticky Header -->
         <header class="header">
-            <h1 class="logo">🎵 Groovy Chord Generator</h1>
-            <p class="tagline">Create amazing chord progressions for any genre</p>
+            <div class="header-content">
+                <h1 class="logo">🎵 ChordGen</h1>
+                <button id="settings-toggle" class="header-btn" aria-label="Settings">
+                    <span>⚙️</span>
+                </button>
+            </div>
         </header>
 
-        <!-- Controls Section -->
-        <section class="controls-section">
-            <div class="control-group">
-                <label for="genre-select">Genre</label>
-                <select id="genre-select">
-                    <option value="happy-pop">Happy Upbeat Pop</option>
-                    <option value="chill-lofi">Chill Lo-Fi</option>
-                    <option value="energetic-edm">Energetic EDM</option>
-                    <option value="soulful-rnb">Soulful R&B</option>
-                    <option value="jazz-fusion">Jazz Fusion</option>
-                    <option value="dark-trap">Dark Deep Trap</option>
-                    <option value="cinematic">Cinematic Epic</option>
-                    <option value="indie-rock">Indie Rock</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label for="complexity-select">Complexity</label>
-                <select id="complexity-select">
-                    <option value="simple">Simple (3-4 chords)</option>
-                    <option value="medium" selected>Medium (4-5 chords)</option>
-                    <option value="complex">Complex (6-8 chords)</option>
-                    <option value="advanced">Advanced (8+ chords)</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label for="rhythm-select">Rhythm Strength</label>
-                <select id="rhythm-select">
-                    <option value="soft">Soft & Gentle</option>
-                    <option value="moderate" selected>Moderate</option>
-                    <option value="strong">Strong & Punchy</option>
-                    <option value="intense">Intense & Driving</option>
-                </select>
-            </div>
-
-            <div class="control-group">
-                <label for="key-select">Key</label>
-                <select id="key-select">
-                    <option value="C">C Major</option>
-                    <option value="G">G Major</option>
-                    <option value="D">D Major</option>
-                    <option value="A">A Major</option>
-                    <option value="E">E Major</option>
-                    <option value="F">F Major</option>
-                    <option value="Bb">Bb Major</option>
-                    <option value="Am">A Minor</option>
-                    <option value="Em">E Minor</option>
-                    <option value="Dm">D Minor</option>
-                    <option value="Bm">B Minor</option>
-                    <option value="Fm">F Minor</option>
-                </select>
-            </div>
-
-            <button id="generate-btn" class="btn-primary">
-                <span class="btn-icon">🎲</span>
-                Generate Progression
-            </button>
-
-            <button id="regenerate-btn" class="btn-secondary">
-                <span class="btn-icon">🔄</span>
-                Regenerate
-            </button>
-        </section>
-
-        <!-- Chord Display Section -->
-        <section class="chord-display-section">
-            <h2>Current Progression</h2>
-            <div id="chord-display" class="chord-display">
-                <div class="chord-placeholder">Click "Generate Progression" to start</div>
-            </div>
-        </section>
-
-        <!-- Melody Section -->
-        <section class="melody-section">
-            <h2>🎹 Melody Pattern</h2>
-            <div id="melody-display" class="melody-display">
-                <div class="melody-placeholder">Melody will appear after generation</div>
-            </div>
-        </section>
-
-        <!-- Visual Editor (Piano Roll) -->
-        <section class="editor-section">
-            <h2>🎼 Visual Editor</h2>
-            <div class="editor-controls">
-                <button id="play-btn" class="btn-small">▶️ Play</button>
-                <button id="stop-btn" class="btn-small">⏹️ Stop</button>
-                <button id="clear-btn" class="btn-small">🗑️ Clear</button>
-                <span class="tempo-control">
-                    <label for="tempo-input">BPM:</label>
-                    <input type="number" id="tempo-input" value="120" min="60" max="200">
-                </span>
-            </div>
-            <div class="piano-roll-container">
-                <div class="piano-keys" id="piano-keys">
-                    <!-- Piano keys will be generated by JS -->
+        <!-- Main Content Area with Tab Views -->
+        <main class="main-content">
+            <!-- Generator Tab -->
+            <section id="tab-generator" class="tab-content active">
+                <!-- Quick Controls - Always visible on mobile -->
+                <div class="quick-controls">
+                    <div class="control-row">
+                        <div class="control-group compact">
+                            <label for="genre-select">Genre</label>
+                            <select id="genre-select">
+                                <option value="happy-pop">Happy Pop</option>
+                                <option value="chill-lofi">Chill Lo-Fi</option>
+                                <option value="energetic-edm">EDM</option>
+                                <option value="soulful-rnb">R&B</option>
+                                <option value="jazz-fusion">Jazz</option>
+                                <option value="dark-trap">Trap</option>
+                                <option value="cinematic">Cinematic</option>
+                                <option value="indie-rock">Indie Rock</option>
+                            </select>
+                        </div>
+                        <div class="control-group compact">
+                            <label for="key-select">Key</label>
+                            <select id="key-select">
+                                <option value="C">C Major</option>
+                                <option value="G">G Major</option>
+                                <option value="D">D Major</option>
+                                <option value="A">A Major</option>
+                                <option value="E">E Major</option>
+                                <option value="F">F Major</option>
+                                <option value="Bb">Bb Major</option>
+                                <option value="Am">A Minor</option>
+                                <option value="Em">E Minor</option>
+                                <option value="Dm">D Minor</option>
+                                <option value="Bm">B Minor</option>
+                                <option value="Fm">F Minor</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
-                <div class="piano-roll" id="piano-roll">
-                    <canvas id="piano-roll-canvas"></canvas>
-                </div>
-            </div>
-            <div class="editor-instructions">
-                <p>💡 Click on the grid to add/remove notes. Drag to adjust timing.</p>
-            </div>
-        </section>
 
-        <!-- Footer / Credits -->
-        <footer class="footer">
-            <p class="credits">Created by <strong>Edgar Valle</strong></p>
-            <p class="version">Version 1.0 | © 2024</p>
-        </footer>
+                <!-- Advanced Controls - Collapsible -->
+                <div class="collapsible-section">
+                    <button class="collapsible-header" aria-expanded="false">
+                        <span>🎛️ Advanced Settings</span>
+                        <span class="collapse-icon">▼</span>
+                    </button>
+                    <div class="collapsible-content">
+                        <div class="control-row">
+                            <div class="control-group compact">
+                                <label for="complexity-select">Complexity</label>
+                                <select id="complexity-select">
+                                    <option value="simple">Simple</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="complex">Complex</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div class="control-group compact">
+                                <label for="rhythm-select">Rhythm</label>
+                                <select id="rhythm-select">
+                                    <option value="soft">Soft</option>
+                                    <option value="moderate" selected>Moderate</option>
+                                    <option value="strong">Strong</option>
+                                    <option value="intense">Intense</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chord Display Section - Collapsible -->
+                <div class="collapsible-section expanded">
+                    <button class="collapsible-header" aria-expanded="true">
+                        <span>🎸 Chord Progression</span>
+                        <span class="collapse-icon">▼</span>
+                    </button>
+                    <div class="collapsible-content">
+                        <div id="chord-display" class="chord-display">
+                            <div class="chord-placeholder">Tap "Generate" to create a progression</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Melody Section - Collapsible -->
+                <div class="collapsible-section">
+                    <button class="collapsible-header" aria-expanded="false">
+                        <span>🎹 Melody Pattern</span>
+                        <span class="collapse-icon">▼</span>
+                    </button>
+                    <div class="collapsible-content">
+                        <div id="melody-display" class="melody-display">
+                            <div class="melody-placeholder">Melody appears after generation</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Editor Tab -->
+            <section id="tab-editor" class="tab-content">
+                <div class="editor-section">
+                    <div class="editor-toolbar">
+                        <div class="toolbar-group">
+                            <button id="play-btn" class="toolbar-btn" aria-label="Play">
+                                <span>▶️</span>
+                                <span class="btn-label">Play</span>
+                            </button>
+                            <button id="stop-btn" class="toolbar-btn" aria-label="Stop">
+                                <span>⏹️</span>
+                                <span class="btn-label">Stop</span>
+                            </button>
+                            <button id="clear-btn" class="toolbar-btn" aria-label="Clear">
+                                <span>🗑️</span>
+                                <span class="btn-label">Clear</span>
+                            </button>
+                        </div>
+                        <div class="toolbar-group">
+                            <div class="tempo-control">
+                                <label for="tempo-input">BPM</label>
+                                <input type="number" id="tempo-input" value="120" min="60" max="200">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Piano Roll Controls -->
+                    <div class="piano-roll-controls">
+                        <button id="zoom-in-btn" class="control-btn" aria-label="Zoom in">➕</button>
+                        <button id="zoom-out-btn" class="control-btn" aria-label="Zoom out">➖</button>
+                        <button id="reset-view-btn" class="control-btn" aria-label="Reset view">🔄</button>
+                    </div>
+
+                    <div class="piano-roll-wrapper">
+                        <div class="piano-roll-container" id="piano-roll-container">
+                            <div class="piano-keys" id="piano-keys">
+                                <!-- Piano keys will be generated by JS -->
+                            </div>
+                            <div class="piano-roll" id="piano-roll">
+                                <canvas id="piano-roll-canvas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="editor-tip">
+                        <span>💡</span>
+                        <p>Tap to add notes, tap again to remove. Pinch to zoom.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Tab -->
+            <section id="tab-settings" class="tab-content">
+                <div class="settings-section">
+                    <h2>Settings</h2>
+                    
+                    <div class="settings-group">
+                        <h3>Audio</h3>
+                        <div class="setting-item">
+                            <label for="volume-slider">Master Volume</label>
+                            <input type="range" id="volume-slider" min="0" max="100" value="80">
+                        </div>
+                        <div class="setting-item">
+                            <label for="sound-type">Sound Type</label>
+                            <select id="sound-type">
+                                <option value="sine">Sine (Smooth)</option>
+                                <option value="triangle">Triangle (Mellow)</option>
+                                <option value="square">Square (Retro)</option>
+                                <option value="sawtooth">Sawtooth (Bright)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>Display</h3>
+                        <div class="setting-item toggle-item">
+                            <label for="show-numerals">Show Roman Numerals</label>
+                            <input type="checkbox" id="show-numerals" checked>
+                        </div>
+                        <div class="setting-item toggle-item">
+                            <label for="show-tips">Show Tips</label>
+                            <input type="checkbox" id="show-tips" checked>
+                        </div>
+                    </div>
+
+                    <div class="settings-group">
+                        <h3>About</h3>
+                        <div class="about-info">
+                            <p><strong>Groovy Chord Generator</strong></p>
+                            <p>Version 2.0</p>
+                            <p>Created by <span class="accent">Edgar Valle</span></p>
+                            <p class="copyright">© 2024</p>
+                        </div>
+                        <button id="show-onboarding" class="btn-secondary full-width">
+                            Show Tutorial
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Floating Action Button -->
+        <div class="fab-container">
+            <button id="fab-main" class="fab" aria-label="Quick actions">
+                <span class="fab-icon">🎲</span>
+            </button>
+            <div class="fab-menu hidden">
+                <button id="fab-generate" class="fab-action" aria-label="Generate">
+                    <span>🎲</span>
+                    <span class="fab-label">Generate</span>
+                </button>
+                <button id="fab-regenerate" class="fab-action" aria-label="Regenerate">
+                    <span>🔄</span>
+                    <span class="fab-label">Regenerate</span>
+                </button>
+                <button id="fab-play" class="fab-action" aria-label="Play">
+                    <span>▶️</span>
+                    <span class="fab-label">Play</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <nav class="bottom-nav">
+            <button class="nav-item active" data-tab="generator" aria-label="Generator">
+                <span class="nav-icon">🎵</span>
+                <span class="nav-label">Generator</span>
+            </button>
+            <button class="nav-item" data-tab="editor" aria-label="Editor">
+                <span class="nav-icon">🎼</span>
+                <span class="nav-label">Editor</span>
+            </button>
+            <button class="nav-item" data-tab="settings" aria-label="Settings">
+                <span class="nav-icon">⚙️</span>
+                <span class="nav-label">Settings</span>
+            </button>
+        </nav>
     </div>
 
     <script src="app.js"></script>
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>
