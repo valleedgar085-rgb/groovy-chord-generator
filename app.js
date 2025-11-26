@@ -2,6 +2,7 @@
  * Groovy Chord Progression Generator
  * app.js - Main Application Logic
  * Created by Edgar Valle
+ * Version 2.0 - Mobile Optimized
  */
 
 // ===================================
@@ -209,7 +210,14 @@ const AppState = {
     isPlaying: false,
     pianoRollNotes: [],
     audioContext: null,
-    oscillators: []
+    oscillators: [],
+    masterVolume: 0.8,
+    soundType: 'sine',
+    showNumerals: true,
+    showTips: true,
+    currentTab: 'generator',
+    onboardingComplete: false,
+    pianoRollZoom: 1
 };
 
 // ===================================
@@ -240,6 +248,24 @@ function randomChoice(arr) {
 
 function randomInt(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// LocalStorage helpers
+function saveToStorage(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        console.warn('LocalStorage not available:', e);
+    }
+}
+
+function loadFromStorage(key, defaultValue) {
+    try {
+        const stored = localStorage.getItem(key);
+        return stored ? JSON.parse(stored) : defaultValue;
+    } catch (e) {
+        return defaultValue;
+    }
 }
 
 // ===================================
@@ -383,19 +409,21 @@ function renderChordDisplay() {
     const container = document.getElementById('chord-display');
     
     if (AppState.currentProgression.length === 0) {
-        container.innerHTML = '<div class="chord-placeholder">Click "Generate Progression" to start</div>';
+        container.innerHTML = '<div class="chord-placeholder">Tap "Generate" to create a progression</div>';
         return;
     }
     
     container.innerHTML = AppState.currentProgression.map((chord, index) => {
         const chordSymbol = CHORD_TYPES[chord.type]?.symbol || '';
         const displayName = chord.root + chordSymbol;
+        const numeralHTML = AppState.showNumerals ? 
+            `<div class="chord-numeral">${chord.degree}</div>` : '';
         
         return `
             <div class="chord-card" data-index="${index}" onclick="toggleChordActive(${index})">
                 <div class="chord-name">${displayName}</div>
                 <div class="chord-type">${CHORD_TYPES[chord.type]?.name || chord.type}</div>
-                <div class="chord-numeral">${chord.degree}</div>
+                ${numeralHTML}
             </div>
         `;
     }).join('');
@@ -405,7 +433,7 @@ function renderMelodyDisplay() {
     const container = document.getElementById('melody-display');
     
     if (AppState.currentMelody.length === 0) {
-        container.innerHTML = '<div class="melody-placeholder">Melody will appear after generation</div>';
+        container.innerHTML = '<div class="melody-placeholder">Melody appears after generation</div>';
         return;
     }
     
@@ -429,29 +457,239 @@ function toggleChordActive(index) {
 }
 
 // ===================================
+// Tab Navigation
+// ===================================
+
+function switchTab(tabName) {
+    AppState.currentTab = tabName;
+    
+    // Update tab content visibility
+    document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    document.getElementById(`tab-${tabName}`).classList.add('active');
+    
+    // Update nav items
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.toggle('active', item.dataset.tab === tabName);
+    });
+    
+    // Reinitialize piano roll if switching to editor
+    if (tabName === 'editor') {
+        setTimeout(() => PianoRoll.init(), 100);
+    }
+}
+
+// ===================================
+// Collapsible Sections
+// ===================================
+
+function initCollapsibles() {
+    document.querySelectorAll('.collapsible-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const section = header.parentElement;
+            const isExpanded = section.classList.contains('expanded');
+            
+            section.classList.toggle('expanded');
+            header.setAttribute('aria-expanded', !isExpanded);
+        });
+    });
+    
+    // Initialize expanded sections
+    document.querySelectorAll('.collapsible-section.expanded').forEach(section => {
+        section.querySelector('.collapsible-header').setAttribute('aria-expanded', 'true');
+    });
+}
+
+// ===================================
+// Floating Action Button
+// ===================================
+
+function initFAB() {
+    const fabMain = document.getElementById('fab-main');
+    const fabContainer = document.querySelector('.fab-container');
+    const fabMenu = document.querySelector('.fab-menu');
+    
+    fabMain.addEventListener('click', () => {
+        fabContainer.classList.toggle('open');
+        fabMenu.classList.toggle('hidden');
+    });
+    
+    // Close menu when clicking outside
+    document.addEventListener('click', (e) => {
+        if (!fabContainer.contains(e.target)) {
+            fabContainer.classList.remove('open');
+            fabMenu.classList.add('hidden');
+        }
+    });
+    
+    // FAB actions
+    document.getElementById('fab-generate').addEventListener('click', () => {
+        handleGenerate();
+        closeFABMenu();
+    });
+    
+    document.getElementById('fab-regenerate').addEventListener('click', () => {
+        handleRegenerate();
+        closeFABMenu();
+    });
+    
+    document.getElementById('fab-play').addEventListener('click', () => {
+        playProgression();
+        closeFABMenu();
+    });
+}
+
+function closeFABMenu() {
+    document.querySelector('.fab-container').classList.remove('open');
+    document.querySelector('.fab-menu').classList.add('hidden');
+}
+
+// ===================================
+// Onboarding
+// ===================================
+
+function initOnboarding() {
+    const overlay = document.getElementById('onboarding-overlay');
+    const nextBtn = document.getElementById('onboarding-next');
+    const skipBtn = document.getElementById('onboarding-skip');
+    const dots = document.querySelectorAll('.dot');
+    const slides = document.querySelectorAll('.onboarding-slide');
+    
+    // Check if onboarding was completed
+    if (loadFromStorage('onboardingComplete', false)) {
+        overlay.classList.add('hidden');
+        return;
+    }
+    
+    overlay.classList.remove('hidden');
+    let currentSlide = 0;
+    
+    function showSlide(index) {
+        slides.forEach((slide, i) => {
+            slide.classList.toggle('active', i === index);
+        });
+        dots.forEach((dot, i) => {
+            dot.classList.toggle('active', i === index);
+        });
+        
+        nextBtn.textContent = index === slides.length - 1 ? 'Get Started' : 'Next';
+    }
+    
+    nextBtn.addEventListener('click', () => {
+        if (currentSlide < slides.length - 1) {
+            currentSlide++;
+            showSlide(currentSlide);
+        } else {
+            completeOnboarding();
+        }
+    });
+    
+    skipBtn.addEventListener('click', completeOnboarding);
+    
+    dots.forEach((dot, index) => {
+        dot.addEventListener('click', () => {
+            currentSlide = index;
+            showSlide(currentSlide);
+        });
+    });
+    
+    function completeOnboarding() {
+        overlay.classList.add('hidden');
+        saveToStorage('onboardingComplete', true);
+    }
+    
+    // Show onboarding button in settings
+    document.getElementById('show-onboarding').addEventListener('click', () => {
+        currentSlide = 0;
+        showSlide(0);
+        overlay.classList.remove('hidden');
+    });
+}
+
+// ===================================
+// Settings
+// ===================================
+
+function initSettings() {
+    // Volume
+    const volumeSlider = document.getElementById('volume-slider');
+    volumeSlider.value = AppState.masterVolume * 100;
+    volumeSlider.addEventListener('input', (e) => {
+        AppState.masterVolume = e.target.value / 100;
+        saveToStorage('masterVolume', AppState.masterVolume);
+    });
+    
+    // Sound type
+    const soundType = document.getElementById('sound-type');
+    soundType.value = AppState.soundType;
+    soundType.addEventListener('change', (e) => {
+        AppState.soundType = e.target.value;
+        saveToStorage('soundType', AppState.soundType);
+    });
+    
+    // Show numerals
+    const showNumerals = document.getElementById('show-numerals');
+    showNumerals.checked = AppState.showNumerals;
+    showNumerals.addEventListener('change', (e) => {
+        AppState.showNumerals = e.target.checked;
+        saveToStorage('showNumerals', AppState.showNumerals);
+        renderChordDisplay();
+    });
+    
+    // Show tips
+    const showTips = document.getElementById('show-tips');
+    showTips.checked = AppState.showTips;
+    showTips.addEventListener('change', (e) => {
+        AppState.showTips = e.target.checked;
+        saveToStorage('showTips', AppState.showTips);
+        document.querySelectorAll('.editor-tip').forEach(tip => {
+            tip.style.display = AppState.showTips ? 'flex' : 'none';
+        });
+    });
+    
+    // Load saved settings
+    AppState.masterVolume = loadFromStorage('masterVolume', 0.8);
+    AppState.soundType = loadFromStorage('soundType', 'sine');
+    AppState.showNumerals = loadFromStorage('showNumerals', true);
+    AppState.showTips = loadFromStorage('showTips', true);
+}
+
+// ===================================
 // Piano Roll / Visual Editor
 // ===================================
 
 const PianoRoll = {
     canvas: null,
     ctx: null,
-    noteHeight: 20,
+    noteHeight: 28,
     beatWidth: 60,
     totalBeats: 16,
     notes: [],
+    zoom: 1,
+    isDragging: false,
+    lastTouchDistance: 0,
+    touchStartTime: null,
+    touchStartPos: null,
     
     init() {
         this.canvas = document.getElementById('piano-roll-canvas');
+        if (!this.canvas) return;
+        
         this.ctx = this.canvas.getContext('2d');
         this.setupCanvas();
         this.renderPianoKeys();
         this.draw();
         this.setupEventListeners();
+        this.setupZoomControls();
     },
     
     setupCanvas() {
         const container = document.querySelector('.piano-roll');
-        this.canvas.width = this.beatWidth * this.totalBeats;
+        if (!container) return;
+        
+        const effectiveBeatWidth = this.beatWidth * this.zoom;
+        this.canvas.width = effectiveBeatWidth * this.totalBeats;
         this.canvas.height = this.noteHeight * 24; // 2 octaves
         this.canvas.style.width = this.canvas.width + 'px';
         this.canvas.style.height = this.canvas.height + 'px';
@@ -459,6 +697,8 @@ const PianoRoll = {
     
     renderPianoKeys() {
         const container = document.getElementById('piano-keys');
+        if (!container) return;
+        
         // Notes in descending order for piano roll display (high notes at top)
         const notes = ['C', 'B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#'];
         let html = '';
@@ -472,11 +712,28 @@ const PianoRoll = {
         }
         
         container.innerHTML = html;
+        
+        // Add click handlers for piano keys
+        container.querySelectorAll('.piano-key').forEach(key => {
+            key.addEventListener('click', () => {
+                const noteName = key.dataset.note;
+                this.playPreviewNote(noteName);
+            });
+        });
+    },
+    
+    playPreviewNote(noteName) {
+        const note = noteName.slice(0, -1);
+        const octave = parseInt(noteName.slice(-1));
+        playNote(note, octave, 0.3);
     },
     
     draw() {
+        if (!this.ctx) return;
+        
         const ctx = this.ctx;
         const { width, height } = this.canvas;
+        const effectiveBeatWidth = this.beatWidth * this.zoom;
         
         // Clear canvas
         ctx.fillStyle = '#1a1a2e';
@@ -504,7 +761,7 @@ const PianoRoll = {
         
         // Vertical lines (beats)
         for (let i = 0; i <= this.totalBeats; i++) {
-            const x = i * this.beatWidth;
+            const x = i * effectiveBeatWidth;
             ctx.strokeStyle = i % 4 === 0 ? '#5a5a7c' : '#3a3a5c';
             ctx.lineWidth = i % 4 === 0 ? 2 : 1;
             ctx.beginPath();
@@ -521,21 +778,65 @@ const PianoRoll = {
     
     drawNote(note) {
         const ctx = this.ctx;
-        const gradient = ctx.createLinearGradient(note.x, note.y, note.x + note.width, note.y);
+        const effectiveBeatWidth = this.beatWidth * this.zoom;
+        const scaledX = (note.x / this.beatWidth) * effectiveBeatWidth;
+        const scaledWidth = (note.width / this.beatWidth) * effectiveBeatWidth;
+        
+        const gradient = ctx.createLinearGradient(scaledX, note.y, scaledX + scaledWidth, note.y);
         gradient.addColorStop(0, '#7c3aed');
         gradient.addColorStop(1, '#ec4899');
         
         ctx.fillStyle = gradient;
-        ctx.fillRect(note.x, note.y, note.width, this.noteHeight - 2);
+        ctx.fillRect(scaledX, note.y, scaledWidth, this.noteHeight - 2);
         
         // Note border
         ctx.strokeStyle = '#a855f7';
         ctx.lineWidth = 1;
-        ctx.strokeRect(note.x, note.y, note.width, this.noteHeight - 2);
+        ctx.strokeRect(scaledX, note.y, scaledWidth, this.noteHeight - 2);
     },
     
     setupEventListeners() {
+        if (!this.canvas) return;
+        
+        // Mouse/touch click
         this.canvas.addEventListener('click', (e) => this.handleClick(e));
+        
+        // Touch events for mobile
+        this.canvas.addEventListener('touchstart', (e) => this.handleTouchStart(e), { passive: false });
+        this.canvas.addEventListener('touchmove', (e) => this.handleTouchMove(e), { passive: false });
+        this.canvas.addEventListener('touchend', (e) => this.handleTouchEnd(e));
+    },
+    
+    setupZoomControls() {
+        const zoomIn = document.getElementById('zoom-in-btn');
+        const zoomOut = document.getElementById('zoom-out-btn');
+        const resetView = document.getElementById('reset-view-btn');
+        
+        if (zoomIn) {
+            zoomIn.addEventListener('click', () => {
+                this.zoom = Math.min(this.zoom * 1.25, 3);
+                this.setupCanvas();
+                this.draw();
+            });
+        }
+        
+        if (zoomOut) {
+            zoomOut.addEventListener('click', () => {
+                this.zoom = Math.max(this.zoom / 1.25, 0.5);
+                this.setupCanvas();
+                this.draw();
+            });
+        }
+        
+        if (resetView) {
+            resetView.addEventListener('click', () => {
+                this.zoom = 1;
+                this.setupCanvas();
+                this.draw();
+                const wrapper = document.querySelector('.piano-roll-wrapper');
+                if (wrapper) wrapper.scrollLeft = 0;
+            });
+        }
     },
     
     handleClick(e) {
@@ -543,18 +844,81 @@ const PianoRoll = {
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
         
-        // Find clicked note or create new one
-        const clickedNoteIndex = this.notes.findIndex(note => 
-            x >= note.x && x <= note.x + note.width &&
-            y >= note.y && y <= note.y + this.noteHeight
+        this.toggleNote(x, y);
+    },
+    
+    handleTouchStart(e) {
+        if (e.touches.length === 2) {
+            // Pinch zoom start
+            this.lastTouchDistance = this.getTouchDistance(e.touches);
+            e.preventDefault();
+        } else if (e.touches.length === 1) {
+            // Single touch - wait to see if it's a tap or scroll
+            this.touchStartTime = Date.now();
+            this.touchStartPos = {
+                x: e.touches[0].clientX,
+                y: e.touches[0].clientY
+            };
+        }
+    },
+    
+    handleTouchMove(e) {
+        if (e.touches.length === 2) {
+            // Pinch zoom
+            const newDistance = this.getTouchDistance(e.touches);
+            const delta = newDistance / this.lastTouchDistance;
+            this.zoom = Math.max(0.5, Math.min(3, this.zoom * delta));
+            this.lastTouchDistance = newDistance;
+            this.setupCanvas();
+            this.draw();
+            e.preventDefault();
+        }
+    },
+    
+    handleTouchEnd(e) {
+        if (e.changedTouches.length === 1 && this.touchStartTime) {
+            const touchDuration = Date.now() - this.touchStartTime;
+            const touch = e.changedTouches[0];
+            const moveDistance = Math.sqrt(
+                Math.pow(touch.clientX - this.touchStartPos.x, 2) +
+                Math.pow(touch.clientY - this.touchStartPos.y, 2)
+            );
+            
+            // If it was a quick tap with minimal movement, treat as click
+            if (touchDuration < 300 && moveDistance < 10) {
+                const rect = this.canvas.getBoundingClientRect();
+                const x = touch.clientX - rect.left;
+                const y = touch.clientY - rect.top;
+                this.toggleNote(x, y);
+            }
+        }
+        this.touchStartTime = null;
+    },
+    
+    getTouchDistance(touches) {
+        return Math.sqrt(
+            Math.pow(touches[0].clientX - touches[1].clientX, 2) +
+            Math.pow(touches[0].clientY - touches[1].clientY, 2)
         );
+    },
+    
+    toggleNote(x, y) {
+        const effectiveBeatWidth = this.beatWidth * this.zoom;
+        
+        // Find clicked note or create new one
+        const clickedNoteIndex = this.notes.findIndex(note => {
+            const scaledX = (note.x / this.beatWidth) * effectiveBeatWidth;
+            const scaledWidth = (note.width / this.beatWidth) * effectiveBeatWidth;
+            return x >= scaledX && x <= scaledX + scaledWidth &&
+                   y >= note.y && y <= note.y + this.noteHeight;
+        });
         
         if (clickedNoteIndex !== -1) {
             // Remove note
             this.notes.splice(clickedNoteIndex, 1);
         } else {
             // Add note
-            const beatIndex = Math.floor(x / this.beatWidth);
+            const beatIndex = Math.floor(x / effectiveBeatWidth);
             const noteIndex = Math.floor(y / this.noteHeight);
             
             this.notes.push({
@@ -564,6 +928,12 @@ const PianoRoll = {
                 noteIndex,
                 beat: beatIndex
             });
+            
+            // Play preview
+            const noteNames = ['C', 'B', 'A#', 'A', 'G#', 'G', 'F#', 'F', 'E', 'D#', 'D', 'C#'];
+            const octave = noteIndex < 12 ? 5 : 4;
+            const noteName = noteNames[noteIndex % 12];
+            playNote(noteName, octave, 0.2);
         }
         
         this.draw();
@@ -576,7 +946,7 @@ const PianoRoll = {
             const chordNotes = CHORD_TYPES[chord.type].intervals;
             const rootIndex = getNoteIndex(chord.root);
             
-            chordNotes.forEach((interval, noteNum) => {
+            chordNotes.forEach((interval) => {
                 const noteIndex = 12 - ((rootIndex + interval) % 12);
                 this.notes.push({
                     x: chordIndex * this.beatWidth * 4,
@@ -623,10 +993,11 @@ function playNote(note, octave = 4, duration = 0.5, time = 0) {
     const oscillator = ctx.createOscillator();
     const gainNode = ctx.createGain();
     
-    oscillator.type = 'sine';
+    oscillator.type = AppState.soundType;
     oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + time);
     
-    gainNode.gain.setValueAtTime(0.3, ctx.currentTime + time);
+    const volume = 0.3 * AppState.masterVolume;
+    gainNode.gain.setValueAtTime(volume, ctx.currentTime + time);
     gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + time + duration);
     
     oscillator.connect(gainNode);
@@ -650,9 +1021,13 @@ function playChord(chord, duration = 1) {
 
 function playProgression() {
     if (AppState.isPlaying) return;
+    if (AppState.currentProgression.length === 0) {
+        handleGenerate();
+    }
+    
     AppState.isPlaying = true;
     
-    const ctx = initAudio();
+    initAudio();
     const tempo = parseInt(document.getElementById('tempo-input').value) || 120;
     const beatDuration = 60 / tempo;
     const chordDuration = beatDuration * 4; // 4 beats per chord
@@ -719,11 +1094,18 @@ function handleGenerate() {
     renderMelodyDisplay();
     PianoRoll.loadFromProgression();
     
+    // Expand chord section if collapsed
+    const chordSection = document.querySelector('.collapsible-section:has(#chord-display)');
+    if (chordSection && !chordSection.classList.contains('expanded')) {
+        chordSection.classList.add('expanded');
+    }
+    
     // Add animation effect
-    document.querySelector('.chord-display-section').classList.add('pulse');
-    setTimeout(() => {
-        document.querySelector('.chord-display-section').classList.remove('pulse');
-    }, 500);
+    const chordDisplay = document.getElementById('chord-display');
+    if (chordDisplay) {
+        chordDisplay.classList.add('pulse');
+        setTimeout(() => chordDisplay.classList.remove('pulse'), 500);
+    }
 }
 
 function handleRegenerate() {
@@ -735,10 +1117,11 @@ function handleRegenerate() {
     PianoRoll.loadFromProgression();
     
     // Shake animation
-    document.querySelector('.chord-display').classList.add('shake');
-    setTimeout(() => {
-        document.querySelector('.chord-display').classList.remove('shake');
-    }, 500);
+    const chordDisplay = document.getElementById('chord-display');
+    if (chordDisplay) {
+        chordDisplay.classList.add('shake');
+        setTimeout(() => chordDisplay.classList.remove('shake'), 500);
+    }
 }
 
 // ===================================
@@ -746,12 +1129,28 @@ function handleRegenerate() {
 // ===================================
 
 document.addEventListener('DOMContentLoaded', () => {
+    // Initialize components
+    initSettings();
+    initCollapsibles();
+    initFAB();
+    initOnboarding();
+    
     // Initialize piano roll
     PianoRoll.init();
     
-    // Set up event listeners
-    document.getElementById('generate-btn').addEventListener('click', handleGenerate);
-    document.getElementById('regenerate-btn').addEventListener('click', handleRegenerate);
+    // Set up tab navigation
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            switchTab(item.dataset.tab);
+        });
+    });
+    
+    // Settings toggle in header
+    document.getElementById('settings-toggle').addEventListener('click', () => {
+        switchTab('settings');
+    });
+    
+    // Set up event listeners for editor controls
     document.getElementById('play-btn').addEventListener('click', playProgression);
     document.getElementById('stop-btn').addEventListener('click', stopPlayback);
     document.getElementById('clear-btn').addEventListener('click', () => PianoRoll.clear());
@@ -766,7 +1165,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderChordDisplay();
     renderMelodyDisplay();
     
-    console.log('🎵 Groovy Chord Generator initialized!');
+    // Handle resize for responsive piano roll
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+            if (AppState.currentTab === 'editor') {
+                PianoRoll.init();
+            }
+        }, 250);
+    });
+    
+    console.log('🎵 Groovy Chord Generator v2.0 initialized!');
     console.log('Created by Edgar Valle');
 });
 
