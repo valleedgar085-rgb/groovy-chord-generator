@@ -1095,7 +1095,8 @@ function handleGenerate() {
     PianoRoll.loadFromProgression();
     
     // Expand chord section if collapsed
-    const chordSection = document.querySelector('.collapsible-section:has(#chord-display)');
+    const chordDisplay = document.getElementById('chord-display');
+    const chordSection = chordDisplay ? chordDisplay.closest('.collapsible-section') : null;
     if (chordSection && !chordSection.classList.contains('expanded')) {
         chordSection.classList.add('expanded');
     }

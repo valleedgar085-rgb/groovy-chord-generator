@@ -1022,7 +1022,8 @@ input[type="range"]::-webkit-slider-thumb {
 /* Hide scrollbar for touch devices */
 @media (hover: none) {
     ::-webkit-scrollbar {
-        display: none;
+        width: 0;
+        height: 0;
     }
     
     .piano-roll-wrapper {
