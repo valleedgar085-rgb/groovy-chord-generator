@@ -334,6 +334,20 @@ const OPEN_VOICINGS = {
 };
 
 // ===================================
+// Probability & Variation Constants - v2.4
+// ===================================
+
+const MODAL_INTERCHANGE_PROBABILITY = 0.3;  // 30% chance to apply modal interchange
+const SPICE_PROBABILITY_THRESHOLDS = {
+    ADD_EXTENSION: 0.25,      // 0-25%: Add 7th extension
+    TRITONE_SUB: 0.50,        // 25-50%: Tritone substitution
+    MODAL_INTERCHANGE: 0.75,  // 50-75%: Modal interchange
+    SUS_CHORD: 1.0            // 75-100%: Sus chord
+};
+const TIMING_VARIATION_FACTOR = 0.1;   // Swing timing variation multiplier
+const VELOCITY_VARIATION_FACTOR = 0.3; // Velocity humanization multiplier
+
+// ===================================
 // Application State
 // ===================================
 
@@ -677,8 +691,8 @@ function applyModalInterchange(progression, root, isMinorKey) {
     for (let i = 0; i < progression.length; i++) {
         const chord = progression[i];
         
-        // Randomly decide to apply modal interchange (30% chance)
-        if (Math.random() > 0.7) {
+        // Randomly decide to apply modal interchange
+        if (Math.random() < MODAL_INTERCHANGE_PROBABILITY) {
             const borrowOptions = Object.entries(borrowedChords);
             if (borrowOptions.length > 0) {
                 const [symbol, borrowedInfo] = randomChoice(borrowOptions);
@@ -740,14 +754,14 @@ function spiceItUp() {
         // Apply different substitution types based on random selection
         const spiceType = Math.random();
         
-        if (spiceType < 0.25) {
+        if (spiceType < SPICE_PROBABILITY_THRESHOLDS.ADD_EXTENSION) {
             // Add 7th extension
             if (chord.type === 'major') {
                 spicedChord.type = Math.random() > 0.5 ? 'major7' : 'add9';
             } else if (chord.type === 'minor') {
                 spicedChord.type = Math.random() > 0.5 ? 'minor7' : 'minor9';
             }
-        } else if (spiceType < 0.5) {
+        } else if (spiceType < SPICE_PROBABILITY_THRESHOLDS.TRITONE_SUB) {
             // Tritone substitution for dominant chords
             if (chord.type === 'dominant7' || chord.degree === 'V') {
                 const tritoneRoot = transposeNote(chord.root, 6); // Tritone = 6 semitones
@@ -757,7 +771,7 @@ function spiceItUp() {
                 spicedChord.numeral = 'bII7';
                 spicedChord.isTritoneSubstitution = true;
             }
-        } else if (spiceType < 0.75) {
+        } else if (spiceType < SPICE_PROBABILITY_THRESHOLDS.MODAL_INTERCHANGE) {
             // Modal interchange - borrow from parallel key
             if (!isMinor && chord.degree === 'IV') {
                 spicedChord.type = 'minor7';
@@ -1023,7 +1037,7 @@ function applySwing(time, swingAmount) {
     if (swingAmount === 0) return time;
     
     // Apply subtle timing variation for humanization
-    const variation = (Math.random() - 0.5) * swingAmount * 0.1;
+    const variation = (Math.random() - 0.5) * swingAmount * TIMING_VARIATION_FACTOR;
     return time + variation;
 }
 
@@ -1033,7 +1047,7 @@ function applySwing(time, swingAmount) {
 function getHumanizedVelocity(baseVelocity, swingAmount) {
     if (swingAmount === 0) return baseVelocity;
     
-    const variation = 1 + (Math.random() - 0.5) * swingAmount * 0.3;
+    const variation = 1 + (Math.random() - 0.5) * swingAmount * VELOCITY_VARIATION_FACTOR;
     return Math.max(0.1, Math.min(1, baseVelocity * variation));
 }
 

@@ -1438,10 +1438,17 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .preset-card:hover,
-.preset-card:active {
+.preset-card:active,
+.preset-card:focus {
     border-color: var(--accent-primary);
     transform: translateY(-2px);
     box-shadow: var(--shadow-glow);
+    outline: none;
+}
+
+.preset-card:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
 }
 
 .preset-card.selected {
@@ -1495,9 +1502,16 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .btn-spice:hover,
-.btn-spice:active {
+.btn-spice:active,
+.btn-spice:focus {
     transform: translateY(-2px) scale(1.05);
     box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+    outline: none;
+}
+
+.btn-spice:focus-visible {
+    outline: 2px solid var(--text-primary);
+    outline-offset: 2px;
 }
 
 .btn-spice span {
@@ -1530,9 +1544,16 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .history-item:hover,
-.history-item:active {
+.history-item:active,
+.history-item:focus {
     background: var(--bg-elevated);
     border-color: var(--accent-primary);
+    outline: none;
+}
+
+.history-item:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 2px;
 }
 
 .history-item-header {
