@@ -423,6 +423,22 @@ function generateMelody() {
 // Voice Leading Logic
 // ===================================
 
+// Voice leading configuration constants
+const VOICE_LEADING_CONFIG = {
+    BASE_OCTAVE: 4,              // Default octave for voicing
+    MIN_OCTAVE: 3,               // Minimum allowed octave
+    MAX_OCTAVE: 5,               // Maximum allowed octave
+    BASS_VOICE_OFFSET: 6,        // Semitones below average pitch for bass notes
+    NOTES_PER_OCTAVE_GROUP: 4    // How many notes before spreading to next octave
+};
+
+// Advanced theory substitution probability thresholds
+const SUBSTITUTION_PROBABILITIES = {
+    SECONDARY_DOMINANT: 0.6,     // Probability threshold for secondary dominant insertion
+    BORROWED_CHORD: 0.7,         // Probability threshold for modal interchange
+    TRITONE_SUBSTITUTION: 0.75   // Probability threshold for tritone substitution
+};
+
 /**
  * Applies voice leading to a chord progression to minimize pitch jumps.
  * Calculates specific voiced notes (octave + note) for each chord.
@@ -432,21 +448,22 @@ function generateMelody() {
 function applyVoiceLeading(progression) {
     if (!progression || progression.length === 0) return progression;
     
-    const BASE_OCTAVE = 4;
+    const { BASE_OCTAVE, MIN_OCTAVE, MAX_OCTAVE, BASS_VOICE_OFFSET, NOTES_PER_OCTAVE_GROUP } = VOICE_LEADING_CONFIG;
     
-    // Helper: Convert note name to MIDI-like number for comparison
-    function noteToMidi(noteName, octave) {
+    // Helper: Convert note name to pitch number for distance comparison
+    // Uses simple formula: octave * 12 + note index for relative pitch comparison
+    function noteToPitch(noteName, octave) {
         const noteIndex = getNoteIndex(noteName);
         return octave * 12 + noteIndex;
     }
     
     // Helper: Find the closest octave for a note to minimize distance from a reference pitch
-    function findClosestOctave(noteName, referencePitch, minOctave = 3, maxOctave = 5) {
+    function findClosestOctave(noteName, referencePitch, minOct = MIN_OCTAVE, maxOct = MAX_OCTAVE) {
         const noteIndex = getNoteIndex(noteName);
         let bestOctave = BASE_OCTAVE;
         let minDistance = Infinity;
         
-        for (let oct = minOctave; oct <= maxOctave; oct++) {
+        for (let oct = minOct; oct <= maxOct; oct++) {
             const pitch = oct * 12 + noteIndex;
             const distance = Math.abs(pitch - referencePitch);
             if (distance < minDistance) {
@@ -464,11 +481,12 @@ function applyVoiceLeading(progression) {
     }
     
     // Voice the first chord in root position
+    // Spread notes across octaves for chords with many notes (e.g., 9th chords)
     const firstChord = progression[0];
     const firstNotes = getChordNotes(firstChord);
     firstChord.voicedNotes = firstNotes.map((note, idx) => ({
         note: note,
-        octave: BASE_OCTAVE + Math.floor(idx / 4) // Spread notes across octaves if many
+        octave: BASE_OCTAVE + Math.floor(idx / NOTES_PER_OCTAVE_GROUP)
     }));
     
     // Voice subsequent chords using voice leading
@@ -478,28 +496,26 @@ function applyVoiceLeading(progression) {
         const currentNotes = getChordNotes(currentChord);
         
         // Calculate the average pitch of the previous chord
-        const prevPitches = prevChord.voicedNotes.map(vn => noteToMidi(vn.note, vn.octave));
+        const prevPitches = prevChord.voicedNotes.map(vn => noteToPitch(vn.note, vn.octave));
         const avgPrevPitch = prevPitches.reduce((a, b) => a + b, 0) / prevPitches.length;
         
         // Voice each note of the current chord to be close to the average of previous
         const voicedNotes = [];
-        const usedPitches = new Set();
         
         currentNotes.forEach((noteName, noteIdx) => {
-            // For bass note (first note), keep it relatively stable
+            // For bass note (first note), place it below the average to maintain bass register
             if (noteIdx === 0) {
-                const bassOctave = findClosestOctave(noteName, avgPrevPitch - 6, 3, 4);
+                const bassOctave = findClosestOctave(noteName, avgPrevPitch - BASS_VOICE_OFFSET, MIN_OCTAVE, BASE_OCTAVE);
                 voicedNotes.push({ note: noteName, octave: bassOctave });
-                usedPitches.add(noteToMidi(noteName, bassOctave));
             } else {
-                // For other notes, find closest voicing that hasn't been used
+                // For other notes, find closest voicing
                 let targetPitch = avgPrevPitch;
                 // Try to match with a specific voice from previous chord if available
                 if (prevChord.voicedNotes[noteIdx]) {
-                    targetPitch = noteToMidi(prevChord.voicedNotes[noteIdx].note, prevChord.voicedNotes[noteIdx].octave);
+                    targetPitch = noteToPitch(prevChord.voicedNotes[noteIdx].note, prevChord.voicedNotes[noteIdx].octave);
                 }
                 
-                const octave = findClosestOctave(noteName, targetPitch, 3, 5);
+                const octave = findClosestOctave(noteName, targetPitch, MIN_OCTAVE, MAX_OCTAVE);
                 voicedNotes.push({ note: noteName, octave: octave });
             }
         });
@@ -530,6 +546,8 @@ function applyAdvancedTheory(progression, rootKey, isMinorKey) {
         return progression;
     }
     
+    const { SECONDARY_DOMINANT, BORROWED_CHORD, TRITONE_SUBSTITUTION } = SUBSTITUTION_PROBABILITIES;
+    
     const modifiedProgression = [...progression];
     const insertions = []; // Track insertions to apply after iteration
     
@@ -539,7 +557,7 @@ function applyAdvancedTheory(progression, rootKey, isMinorKey) {
         const degree = chord.degree;
         
         // Secondary Dominants: Before V chord, potentially insert V/V (II7)
-        if (degree === 'V' && i > 0 && Math.random() > 0.6) {
+        if (degree === 'V' && i > 0 && Math.random() > SECONDARY_DOMINANT) {
             // V/V is a dominant 7th chord built on the 2nd degree
             const scaleNotes = getScaleNotes(rootKey, isMinorKey ? 'minor' : 'major');
             const secondaryDomRoot = scaleNotes[1]; // II degree
@@ -555,7 +573,7 @@ function applyAdvancedTheory(progression, rootKey, isMinorKey) {
         }
         
         // Borrowed Chords (Modal Interchange): Major IV → minor iv
-        if ((degree === 'IV' || degree === 'iv') && !isMinorKey && Math.random() > 0.7) {
+        if ((degree === 'IV' || degree === 'iv') && !isMinorKey && Math.random() > BORROWED_CHORD) {
             modifiedProgression[i] = {
                 ...chord,
                 type: 'minor',
@@ -566,7 +584,7 @@ function applyAdvancedTheory(progression, rootKey, isMinorKey) {
         }
         
         // Tritone Substitution: V7 → bII7
-        if (degree === 'V' && chord.type === 'dominant7' && Math.random() > 0.75) {
+        if (degree === 'V' && chord.type === 'dominant7' && Math.random() > TRITONE_SUBSTITUTION) {
             // Tritone sub: root moves up 6 semitones (or down 6)
             const tritoneRoot = transposeNote(chord.root, 6);
             modifiedProgression[i] = {
@@ -907,6 +925,16 @@ function initSettings() {
 // Piano Roll / Visual Editor
 // ===================================
 
+// Piano roll display configuration
+const PIANO_ROLL_CONFIG = {
+    TOP_OCTAVE: 5,               // Highest octave displayed (at top of piano roll)
+    BOTTOM_OCTAVE: 4,            // Lowest octave displayed
+    TOTAL_ROWS: 24,              // Total rows (2 octaves * 12 notes)
+    MIN_ROW: 0,                  // Minimum valid row index
+    MAX_ROW: 23,                 // Maximum valid row index (TOTAL_ROWS - 1)
+    NOTES_PER_OCTAVE: 12         // Notes per octave
+};
+
 const PianoRoll = {
     canvas: null,
     ctx: null,
@@ -1189,6 +1217,7 @@ const PianoRoll = {
     
     loadFromProgression() {
         this.notes = [];
+        const { TOP_OCTAVE, NOTES_PER_OCTAVE, MIN_ROW, MAX_ROW } = PIANO_ROLL_CONFIG;
         
         AppState.currentProgression.forEach((chord, chordIndex) => {
             // Use voicedNotes if available, otherwise fall back to default intervals
@@ -1196,12 +1225,12 @@ const PianoRoll = {
                 chord.voicedNotes.forEach((voicedNote) => {
                     const noteIndex = getNoteIndex(voicedNote.note);
                     // Piano roll has notes descending from top: C5, B4, A#4...
-                    // We need to map octave and note to the correct row
-                    const octaveOffset = (5 - voicedNote.octave) * 12;
-                    const rowIndex = octaveOffset + (12 - noteIndex) % 12;
+                    // Map octave and note to the correct row in the display
+                    const octaveOffset = (TOP_OCTAVE - voicedNote.octave) * NOTES_PER_OCTAVE;
+                    const rowIndex = octaveOffset + (NOTES_PER_OCTAVE - noteIndex) % NOTES_PER_OCTAVE;
                     
-                    // Clamp to valid range (0-23 for 2 octaves)
-                    const clampedRow = Math.max(0, Math.min(23, rowIndex));
+                    // Clamp to valid piano roll range
+                    const clampedRow = Math.max(MIN_ROW, Math.min(MAX_ROW, rowIndex));
                     
                     this.notes.push({
                         x: chordIndex * this.beatWidth * 4,
@@ -1216,7 +1245,7 @@ const PianoRoll = {
                 const rootIndex = getNoteIndex(chord.root);
                 
                 chordNotes.forEach((interval) => {
-                    const noteIndex = 12 - ((rootIndex + interval) % 12);
+                    const noteIndex = NOTES_PER_OCTAVE - ((rootIndex + interval) % NOTES_PER_OCTAVE);
                     this.notes.push({
                         x: chordIndex * this.beatWidth * 4,
                         y: noteIndex * this.noteHeight,
