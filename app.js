@@ -217,7 +217,13 @@ const AppState = {
     showTips: true,
     currentTab: 'generator',
     onboardingComplete: false,
-    pianoRollZoom: 1
+    pianoRollZoom: 1,
+    envelope: {
+        attack: 0.05,
+        decay: 0.1,
+        sustain: 0.6,
+        release: 0.5
+    }
 };
 
 // ===================================
@@ -653,11 +659,45 @@ function initSettings() {
         });
     });
     
-    // Load saved settings
+    // Load saved settings first before initializing UI
     AppState.masterVolume = loadFromStorage('masterVolume', 0.8);
     AppState.soundType = loadFromStorage('soundType', 'sine');
     AppState.showNumerals = loadFromStorage('showNumerals', true);
     AppState.showTips = loadFromStorage('showTips', true);
+    const savedEnvelope = loadFromStorage('envelope', null);
+    if (savedEnvelope) {
+        AppState.envelope = savedEnvelope;
+    }
+
+    // Envelope ADSR controls
+    const envAttack = document.getElementById('env-attack');
+    const envDecay = document.getElementById('env-decay');
+    const envSustain = document.getElementById('env-sustain');
+    const envRelease = document.getElementById('env-release');
+    
+    envAttack.value = AppState.envelope.attack;
+    envAttack.addEventListener('input', (e) => {
+        AppState.envelope.attack = parseFloat(e.target.value);
+        saveToStorage('envelope', AppState.envelope);
+    });
+    
+    envDecay.value = AppState.envelope.decay;
+    envDecay.addEventListener('input', (e) => {
+        AppState.envelope.decay = parseFloat(e.target.value);
+        saveToStorage('envelope', AppState.envelope);
+    });
+    
+    envSustain.value = AppState.envelope.sustain;
+    envSustain.addEventListener('input', (e) => {
+        AppState.envelope.sustain = parseFloat(e.target.value);
+        saveToStorage('envelope', AppState.envelope);
+    });
+    
+    envRelease.value = AppState.envelope.release;
+    envRelease.addEventListener('input', (e) => {
+        AppState.envelope.release = parseFloat(e.target.value);
+        saveToStorage('envelope', AppState.envelope);
+    });
 }
 
 // ===================================
@@ -1002,14 +1042,39 @@ function playNote(note, octave = 4, duration = 0.5, time = 0) {
     oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + time);
     
     const volume = 0.3 * AppState.masterVolume;
-    gainNode.gain.setValueAtTime(volume, ctx.currentTime + time);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + time + duration);
+    const env = AppState.envelope;
+    const startTime = ctx.currentTime + time;
+    
+    // Minimum gain value for exponential ramps (cannot be 0)
+    const MIN_GAIN = 0.0001;
+    
+    // ADSR Envelope Implementation
+    // Attack: Linear ramp from 0 to max volume
+    gainNode.gain.setValueAtTime(0, startTime);
+    gainNode.gain.linearRampToValueAtTime(volume, startTime + env.attack);
+    
+    // Decay: Exponential ramp from max volume to sustain level
+    const sustainLevel = volume * env.sustain;
+    const effectiveSustain = Math.max(sustainLevel, MIN_GAIN);
+    gainNode.gain.exponentialRampToValueAtTime(
+        effectiveSustain, 
+        startTime + env.attack + env.decay
+    );
+    
+    // Sustain: Hold level until the note duration ends
+    // (The sustain level is held automatically until the next scheduled change)
+    
+    // Release: Exponential ramp from sustain level to silence after the duration
+    const releaseStartTime = startTime + duration;
+    gainNode.gain.setValueAtTime(effectiveSustain, releaseStartTime);
+    gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN, releaseStartTime + env.release);
     
     oscillator.connect(gainNode);
     gainNode.connect(ctx.destination);
     
-    oscillator.start(ctx.currentTime + time);
-    oscillator.stop(ctx.currentTime + time + duration);
+    oscillator.start(startTime);
+    // Oscillator stops after the release phase completes
+    oscillator.stop(releaseStartTime + env.release);
     
     return oscillator;
 }
