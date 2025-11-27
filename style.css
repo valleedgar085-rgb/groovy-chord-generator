@@ -999,6 +999,183 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* ==========================================
+   GENERATION ANIMATION OVERLAY
+   ========================================== */
+.generation-animation {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.generation-animation.hidden {
+    display: none;
+}
+
+.generation-animation.active {
+    opacity: 1;
+}
+
+/* Central light burst effect */
+.light-burst {
+    position: absolute;
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(124, 58, 237, 0.8) 0%, rgba(236, 72, 153, 0.4) 40%, transparent 70%);
+    animation: lightBurst 1.2s ease-out forwards;
+    filter: blur(20px);
+}
+
+@keyframes lightBurst {
+    0% {
+        transform: scale(0);
+        opacity: 0;
+    }
+    30% {
+        transform: scale(1.5);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(3);
+        opacity: 0;
+    }
+}
+
+/* Particles container */
+.particles-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.particle {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    animation: particleExplode 1s ease-out forwards;
+}
+
+.particle-1, .particle-4, .particle-7, .particle-10 {
+    background: var(--accent-primary);
+}
+.particle-2, .particle-5, .particle-8, .particle-11 {
+    background: var(--accent-pink);
+}
+.particle-3, .particle-6, .particle-9, .particle-12 {
+    background: var(--accent-secondary);
+}
+
+.particle-1 { --angle: 0deg; --distance: 120px; animation-delay: 0ms; }
+.particle-2 { --angle: 30deg; --distance: 140px; animation-delay: 30ms; }
+.particle-3 { --angle: 60deg; --distance: 110px; animation-delay: 60ms; }
+.particle-4 { --angle: 90deg; --distance: 130px; animation-delay: 90ms; }
+.particle-5 { --angle: 120deg; --distance: 150px; animation-delay: 40ms; }
+.particle-6 { --angle: 150deg; --distance: 125px; animation-delay: 70ms; }
+.particle-7 { --angle: 180deg; --distance: 135px; animation-delay: 20ms; }
+.particle-8 { --angle: 210deg; --distance: 145px; animation-delay: 50ms; }
+.particle-9 { --angle: 240deg; --distance: 115px; animation-delay: 80ms; }
+.particle-10 { --angle: 270deg; --distance: 140px; animation-delay: 10ms; }
+.particle-11 { --angle: 300deg; --distance: 130px; animation-delay: 55ms; }
+.particle-12 { --angle: 330deg; --distance: 120px; animation-delay: 85ms; }
+
+@keyframes particleExplode {
+    0% {
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateY(0);
+        opacity: 1;
+        width: 10px;
+        height: 10px;
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(var(--angle)) translateY(calc(-1 * var(--distance)));
+        opacity: 0;
+        width: 4px;
+        height: 4px;
+    }
+}
+
+/* Sparkles */
+.sparkles-container {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.sparkle {
+    position: absolute;
+    font-size: 24px;
+    animation: sparkleFloat 1.2s ease-out forwards;
+    opacity: 0;
+}
+
+.sparkle-1 { top: 30%; left: 20%; animation-delay: 0.1s; }
+.sparkle-2 { top: 20%; left: 50%; animation-delay: 0.2s; }
+.sparkle-3 { top: 35%; left: 75%; animation-delay: 0.15s; }
+.sparkle-4 { top: 60%; left: 15%; animation-delay: 0.25s; }
+.sparkle-5 { top: 70%; left: 80%; animation-delay: 0.1s; }
+.sparkle-6 { top: 45%; left: 85%; animation-delay: 0.3s; }
+.sparkle-7 { top: 55%; left: 30%; animation-delay: 0.2s; }
+.sparkle-8 { top: 25%; left: 65%; animation-delay: 0.35s; }
+
+@keyframes sparkleFloat {
+    0% {
+        transform: scale(0) rotate(0deg);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+        transform: scale(1.2) rotate(180deg);
+    }
+    100% {
+        transform: scale(0.5) rotate(360deg) translateY(-30px);
+        opacity: 0;
+    }
+}
+
+/* Floating music notes */
+.music-notes {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+}
+
+.note {
+    position: absolute;
+    font-size: 32px;
+    animation: noteFloat 1s ease-out forwards;
+    opacity: 0;
+}
+
+.note-1 { top: 50%; left: 35%; animation-delay: 0.1s; }
+.note-2 { top: 45%; left: 55%; animation-delay: 0.2s; }
+.note-3 { top: 55%; left: 45%; animation-delay: 0.15s; }
+.note-4 { top: 48%; left: 60%; animation-delay: 0.25s; }
+
+@keyframes noteFloat {
+    0% {
+        transform: translateY(0) scale(0);
+        opacity: 0;
+    }
+    30% {
+        opacity: 1;
+        transform: translateY(-20px) scale(1);
+    }
+    100% {
+        transform: translateY(-80px) scale(0.5);
+        opacity: 0;
+    }
+}
+
+/* ==========================================
    SCROLLBAR STYLING
    ========================================== */
 ::-webkit-scrollbar {

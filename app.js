@@ -538,6 +538,11 @@ function initFAB() {
         playProgression();
         closeFABMenu();
     });
+    
+    document.getElementById('fab-export-midi').addEventListener('click', () => {
+        exportToMIDI();
+        closeFABMenu();
+    });
 }
 
 function closeFABMenu() {
@@ -1070,6 +1075,254 @@ function clearChordHighlights() {
 }
 
 // ===================================
+// Generation Animations & Sounds
+// ===================================
+
+function showGenerationAnimation() {
+    // Create or reuse animation overlay
+    let overlay = document.getElementById('generation-animation');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.id = 'generation-animation';
+        overlay.className = 'generation-animation';
+        overlay.innerHTML = `
+            <div class="light-burst"></div>
+            <div class="particles-container">
+                ${Array(12).fill('').map((_, i) => `<div class="particle particle-${i + 1}"></div>`).join('')}
+            </div>
+            <div class="sparkles-container">
+                ${Array(8).fill('').map((_, i) => `<div class="sparkle sparkle-${i + 1}">✨</div>`).join('')}
+            </div>
+            <div class="music-notes">
+                <span class="note note-1">🎵</span>
+                <span class="note note-2">🎶</span>
+                <span class="note note-3">🎵</span>
+                <span class="note note-4">🎶</span>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
+    
+    // Trigger animation
+    overlay.classList.remove('hidden');
+    overlay.classList.add('active');
+    
+    // Hide after animation completes
+    setTimeout(() => {
+        overlay.classList.remove('active');
+        overlay.classList.add('hidden');
+    }, 1200);
+}
+
+function playGenerationSounds() {
+    const ctx = initAudio();
+    
+    // Fun "whoosh" sound - quick ascending sweep
+    const whooshOsc = ctx.createOscillator();
+    const whooshGain = ctx.createGain();
+    whooshOsc.type = 'sine';
+    whooshOsc.frequency.setValueAtTime(200, ctx.currentTime);
+    whooshOsc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.15);
+    whooshGain.gain.setValueAtTime(0.2 * AppState.masterVolume, ctx.currentTime);
+    whooshGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.2);
+    whooshOsc.connect(whooshGain);
+    whooshGain.connect(ctx.destination);
+    whooshOsc.start(ctx.currentTime);
+    whooshOsc.stop(ctx.currentTime + 0.2);
+    
+    // Sparkle/chime sound - high pitched blips
+    const chimeDelays = [0.05, 0.12, 0.2, 0.28];
+    const chimeFreqs = [1200, 1500, 1800, 2000];
+    
+    chimeDelays.forEach((delay, i) => {
+        const chimeOsc = ctx.createOscillator();
+        const chimeGain = ctx.createGain();
+        chimeOsc.type = 'sine';
+        chimeOsc.frequency.setValueAtTime(chimeFreqs[i], ctx.currentTime + delay);
+        chimeGain.gain.setValueAtTime(0.1 * AppState.masterVolume, ctx.currentTime + delay);
+        chimeGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + delay + 0.15);
+        chimeOsc.connect(chimeGain);
+        chimeGain.connect(ctx.destination);
+        chimeOsc.start(ctx.currentTime + delay);
+        chimeOsc.stop(ctx.currentTime + delay + 0.15);
+    });
+    
+    // Completion "ding" sound
+    setTimeout(() => {
+        const dingOsc = ctx.createOscillator();
+        const dingGain = ctx.createGain();
+        dingOsc.type = 'triangle';
+        dingOsc.frequency.setValueAtTime(880, ctx.currentTime);
+        dingGain.gain.setValueAtTime(0.15 * AppState.masterVolume, ctx.currentTime);
+        dingGain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        dingOsc.connect(dingGain);
+        dingGain.connect(ctx.destination);
+        dingOsc.start(ctx.currentTime);
+        dingOsc.stop(ctx.currentTime + 0.4);
+    }, 350);
+}
+
+// ===================================
+// MIDI Export Functionality
+// ===================================
+
+function exportToMIDI() {
+    if (AppState.currentProgression.length === 0) {
+        alert('Please generate a chord progression first!');
+        return;
+    }
+    
+    // MIDI file constants
+    const HEADER_CHUNK = 'MThd';
+    const TRACK_CHUNK = 'MTrk';
+    const TICKS_PER_BEAT = 480;
+    const BEATS_PER_CHORD = 4;
+    
+    // Get tempo from UI
+    const tempo = parseInt(document.getElementById('tempo-input').value) || 120;
+    const microsecondsPerBeat = Math.round(60000000 / tempo);
+    
+    // Helper to convert number to variable-length quantity
+    function toVLQ(value) {
+        const bytes = [];
+        bytes.push(value & 0x7F);
+        value >>= 7;
+        while (value > 0) {
+            bytes.push((value & 0x7F) | 0x80);
+            value >>= 7;
+        }
+        return bytes.reverse();
+    }
+    
+    // Helper to convert string to byte array
+    function stringToBytes(str) {
+        return Array.from(str).map(c => c.charCodeAt(0));
+    }
+    
+    // Helper to convert number to big-endian bytes
+    function toBytes(num, byteCount) {
+        const bytes = [];
+        for (let i = byteCount - 1; i >= 0; i--) {
+            bytes.push((num >> (i * 8)) & 0xFF);
+        }
+        return bytes;
+    }
+    
+    // Convert note name to MIDI note number
+    function noteToMIDI(noteName, octave = 4) {
+        const noteMap = {
+            'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
+            'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8,
+            'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11
+        };
+        return 12 + (octave * 12) + (noteMap[noteName] || 0);
+    }
+    
+    // Build track data
+    const trackData = [];
+    
+    // Tempo meta event (delta=0, FF 51 03 + 3 bytes tempo)
+    trackData.push(...toVLQ(0)); // Delta time
+    trackData.push(0xFF, 0x51, 0x03);
+    trackData.push(...toBytes(microsecondsPerBeat, 3));
+    
+    // Time signature meta event (4/4 time)
+    trackData.push(...toVLQ(0)); // Delta time
+    trackData.push(0xFF, 0x58, 0x04, 0x04, 0x02, 0x18, 0x08);
+    
+    // Track name meta event
+    const trackName = 'Chord Progression';
+    trackData.push(...toVLQ(0)); // Delta time
+    trackData.push(0xFF, 0x03, trackName.length);
+    trackData.push(...stringToBytes(trackName));
+    
+    // Add chord events
+    const ticksPerChord = TICKS_PER_BEAT * BEATS_PER_CHORD;
+    const velocity = 80;
+    const channel = 0;
+    
+    AppState.currentProgression.forEach((chord, chordIndex) => {
+        const chordType = CHORD_TYPES[chord.type];
+        const intervals = chordType ? chordType.intervals : [0, 4, 7];
+        const notes = intervals.map(interval => {
+            const noteName = transposeNote(chord.root, interval);
+            return noteToMIDI(noteName, 4);
+        });
+        
+        // Note On events (delta=0 for simultaneous notes)
+        notes.forEach((note, noteIndex) => {
+            const delta = noteIndex === 0 ? (chordIndex === 0 ? 0 : ticksPerChord) : 0;
+            trackData.push(...toVLQ(delta));
+            trackData.push(0x90 | channel, note, velocity);
+        });
+        
+        // Note Off events after chord duration
+        notes.forEach((note, noteIndex) => {
+            const delta = noteIndex === 0 ? ticksPerChord : 0;
+            trackData.push(...toVLQ(delta));
+            trackData.push(0x80 | channel, note, 0);
+        });
+    });
+    
+    // End of track meta event
+    trackData.push(...toVLQ(0)); // Delta time
+    trackData.push(0xFF, 0x2F, 0x00);
+    
+    // Build MIDI file
+    const midiData = [];
+    
+    // Header chunk
+    midiData.push(...stringToBytes(HEADER_CHUNK));
+    midiData.push(...toBytes(6, 4)); // Header length (always 6)
+    midiData.push(...toBytes(0, 2)); // Format type 0 (single track)
+    midiData.push(...toBytes(1, 2)); // Number of tracks
+    midiData.push(...toBytes(TICKS_PER_BEAT, 2)); // Ticks per beat
+    
+    // Track chunk
+    midiData.push(...stringToBytes(TRACK_CHUNK));
+    midiData.push(...toBytes(trackData.length, 4)); // Track length
+    midiData.push(...trackData);
+    
+    // Create and download file
+    const blob = new Blob([new Uint8Array(midiData)], { type: 'audio/midi' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Create filename with key and genre
+    const keyName = AppState.currentKey.replace('#', 'sharp').replace('b', 'flat');
+    const genreName = AppState.genre.replace('-', '_');
+    link.download = `chord_progression_${keyName}_${genreName}.mid`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // Play success sound
+    playExportSound();
+}
+
+function playExportSound() {
+    const ctx = initAudio();
+    
+    // Success sound - two ascending notes
+    const notes = [523.25, 659.25]; // C5, E5
+    notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, ctx.currentTime + i * 0.1);
+        gain.gain.setValueAtTime(0.15 * AppState.masterVolume, ctx.currentTime + i * 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.1 + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.1);
+        osc.stop(ctx.currentTime + i * 0.1 + 0.3);
+    });
+}
+
+// ===================================
 // Event Handlers
 // ===================================
 
@@ -1084,6 +1337,10 @@ function handleGenerate() {
     const profile = GENRE_PROFILES[AppState.genre];
     document.getElementById('tempo-input').value = profile.tempo;
     AppState.tempo = profile.tempo;
+    
+    // Show animation overlay and play fun noises
+    showGenerationAnimation();
+    playGenerationSounds();
     
     // Generate progression and melody
     generateProgression();
@@ -1102,7 +1359,6 @@ function handleGenerate() {
     }
     
     // Add animation effect
-    const chordDisplay = document.getElementById('chord-display');
     if (chordDisplay) {
         chordDisplay.classList.add('pulse');
         setTimeout(() => chordDisplay.classList.remove('pulse'), 500);
@@ -1186,6 +1442,7 @@ if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         generateProgression,
         generateMelody,
+        exportToMIDI,
         GENRE_PROFILES,
         CHORD_TYPES,
         SCALES
