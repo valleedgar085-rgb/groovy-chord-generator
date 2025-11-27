@@ -218,6 +218,8 @@ const AppState = {
     currentTab: 'generator',
     onboardingComplete: false,
     pianoRollZoom: 1,
+    useVoiceLeading: false,
+    useAdvancedTheory: false,
     envelope: {
         attack: 0.05,
         decay: 0.1,
@@ -321,6 +323,196 @@ function getChordFromDegree(root, degree, isMinorKey, scale) {
     };
 }
 
+// ===================================
+// Voice Leading Functions
+// ===================================
+
+/**
+ * Convert a note name and octave to a MIDI-like pitch number
+ * C4 = 60, C#4 = 61, etc.
+ */
+function noteToPitch(note, octave) {
+    const noteIndex = getNoteIndex(note);
+    return (octave + 1) * 12 + noteIndex;
+}
+
+/**
+ * Convert a pitch number back to note name and octave
+ */
+function pitchToNote(pitch) {
+    const octave = Math.floor(pitch / 12) - 1;
+    const noteIndex = pitch % 12;
+    return { note: NOTES[noteIndex], octave };
+}
+
+/**
+ * Get the base notes of a chord (without octave information)
+ */
+function getChordNotes(chord) {
+    const intervals = CHORD_TYPES[chord.type]?.intervals || [0, 4, 7];
+    return intervals.map(interval => transposeNote(chord.root, interval));
+}
+
+/**
+ * Find the best inversion of a chord to minimize voice leading distance
+ * from the previous chord's voiced notes
+ */
+function findBestVoicing(chordNotes, previousVoicedNotes, baseOctave = 4) {
+    if (!previousVoicedNotes || previousVoicedNotes.length === 0) {
+        // First chord: use root position centered around baseOctave
+        return chordNotes.map((note, index) => ({
+            note,
+            octave: baseOctave + Math.floor(index / 4),
+            pitch: noteToPitch(note, baseOctave + Math.floor(index / 4))
+        }));
+    }
+    
+    // Calculate center pitch of previous chord
+    const prevCenterPitch = previousVoicedNotes.reduce((sum, n) => sum + n.pitch, 0) / previousVoicedNotes.length;
+    
+    // Generate all possible voicings within a reasonable range (octave 3-5)
+    const possibleVoicings = [];
+    const minOctave = 3;
+    const maxOctave = 5;
+    
+    // Try different starting octaves and inversions
+    for (let startOctave = minOctave; startOctave <= maxOctave; startOctave++) {
+        // Generate all inversions
+        for (let inversion = 0; inversion < chordNotes.length; inversion++) {
+            const voicing = [];
+            for (let i = 0; i < chordNotes.length; i++) {
+                const noteIndex = (i + inversion) % chordNotes.length;
+                const octaveOffset = i < inversion ? 1 : 0;
+                const octave = startOctave + octaveOffset;
+                if (octave >= minOctave && octave <= maxOctave) {
+                    const pitch = noteToPitch(chordNotes[noteIndex], octave);
+                    voicing.push({
+                        note: chordNotes[noteIndex],
+                        octave,
+                        pitch
+                    });
+                }
+            }
+            if (voicing.length === chordNotes.length) {
+                possibleVoicings.push(voicing);
+            }
+        }
+    }
+    
+    // Find the voicing with minimum total distance from previous chord
+    let bestVoicing = possibleVoicings[0];
+    let minDistance = Infinity;
+    
+    possibleVoicings.forEach(voicing => {
+        // Calculate total movement distance
+        const voicingCenter = voicing.reduce((sum, n) => sum + n.pitch, 0) / voicing.length;
+        const distance = Math.abs(voicingCenter - prevCenterPitch);
+        
+        // Also consider individual note distances
+        let totalNoteDistance = 0;
+        voicing.forEach(vNote => {
+            const closestPrev = previousVoicedNotes.reduce((closest, pNote) => {
+                const dist = Math.abs(vNote.pitch - pNote.pitch);
+                return dist < closest ? dist : closest;
+            }, Infinity);
+            totalNoteDistance += closestPrev;
+        });
+        
+        const combinedDistance = distance + totalNoteDistance * 0.5;
+        
+        if (combinedDistance < minDistance) {
+            minDistance = combinedDistance;
+            bestVoicing = voicing;
+        }
+    });
+    
+    return bestVoicing;
+}
+
+/**
+ * Apply voice leading to an entire chord progression
+ * Modifies the progression in-place by adding voicedNotes to each chord
+ */
+function applyVoiceLeading(progression) {
+    if (!progression || progression.length === 0) return progression;
+    
+    let previousVoicedNotes = null;
+    
+    progression.forEach(chord => {
+        const chordNotes = getChordNotes(chord);
+        const voicing = findBestVoicing(chordNotes, previousVoicedNotes, 4);
+        chord.voicedNotes = voicing;
+        previousVoicedNotes = voicing;
+    });
+    
+    return progression;
+}
+
+// ===================================
+// Advanced Chord Substitution Functions
+// ===================================
+
+/**
+ * Apply secondary dominants, borrowed chords, and tritone substitutions
+ * Only applies when complexity is 'complex' or 'advanced'
+ */
+function applyAdvancedSubstitutions(progression, root, isMinorKey) {
+    const result = [];
+    
+    for (let i = 0; i < progression.length; i++) {
+        const chord = progression[i];
+        const nextChord = progression[i + 1];
+        
+        // Secondary Dominant: Insert V/V before V chord
+        if (nextChord && (nextChord.degree === 'V' || nextChord.degree === 'v') && Math.random() > 0.6) {
+            // V/V is a dominant 7th built on the 2nd scale degree (II7)
+            const secondaryDomRoot = transposeNote(root, 2); // Major 2nd up from root
+            const secondaryDom = {
+                root: secondaryDomRoot,
+                type: 'dominant7',
+                degree: 'V/V',
+                numeral: 'V/V',
+                isSecondaryDominant: true
+            };
+            result.push(chord);
+            result.push(secondaryDom);
+            continue;
+        }
+        
+        // Borrowed Chord: Swap major IV for minor iv (modal interchange)
+        if (!isMinorKey && (chord.degree === 'IV' || chord.degree === 'iv') && Math.random() > 0.7) {
+            const borrowedChord = {
+                ...chord,
+                type: 'minor',
+                degree: 'iv',
+                numeral: 'iv',
+                isBorrowed: true
+            };
+            result.push(borrowedChord);
+            continue;
+        }
+        
+        // Tritone Substitution: Swap V7 for bII7
+        if ((chord.degree === 'V' || chord.degree === 'v') && chord.type === 'dominant7' && Math.random() > 0.75) {
+            // bII is a tritone away from V (6 semitones from root = flat 2)
+            const tritoneRoot = transposeNote(root, 1); // Minor 2nd up from root
+            const tritoneChord = {
+                root: tritoneRoot,
+                type: 'dominant7',
+                degree: 'bII7',
+                numeral: 'bII7',
+                isTritoneSubstitution: true
+            };
+            result.push(tritoneChord);
+            continue;
+        }
+        
+        result.push(chord);
+    }
+    
+    return result;
+}
+
 function generateProgression() {
     const { root, isMinor } = parseKey(AppState.currentKey);
     AppState.isMinorKey = isMinor;
@@ -344,7 +536,7 @@ function generateProgression() {
     
     // Convert degrees to actual chords
     const scale = isMinor ? 'minor' : profile.scale;
-    const chords = progression.map(degree => {
+    let chords = progression.map(degree => {
         const chord = getChordFromDegree(root, degree, isMinor, scale);
         
         // Apply chord extensions for complex settings
@@ -359,6 +551,16 @@ function generateProgression() {
         
         return chord;
     });
+    
+    // Apply advanced chord substitutions if enabled and complexity is high enough
+    if (AppState.useAdvancedTheory && (AppState.complexity === 'complex' || AppState.complexity === 'advanced')) {
+        chords = applyAdvancedSubstitutions(chords, root, isMinor);
+    }
+    
+    // Apply voice leading if enabled
+    if (AppState.useVoiceLeading) {
+        applyVoiceLeading(chords);
+    }
     
     AppState.currentProgression = chords;
     return chords;
@@ -623,6 +825,18 @@ function initOnboarding() {
 // ===================================
 
 function initSettings() {
+    // Load saved settings first before initializing UI
+    AppState.masterVolume = loadFromStorage('masterVolume', 0.8);
+    AppState.soundType = loadFromStorage('soundType', 'sine');
+    AppState.showNumerals = loadFromStorage('showNumerals', true);
+    AppState.showTips = loadFromStorage('showTips', true);
+    AppState.useVoiceLeading = loadFromStorage('useVoiceLeading', false);
+    AppState.useAdvancedTheory = loadFromStorage('useAdvancedTheory', false);
+    const savedEnvelope = loadFromStorage('envelope', null);
+    if (savedEnvelope) {
+        AppState.envelope = savedEnvelope;
+    }
+
     // Volume
     const volumeSlider = document.getElementById('volume-slider');
     volumeSlider.value = AppState.masterVolume * 100;
@@ -659,14 +873,24 @@ function initSettings() {
         });
     });
     
-    // Load saved settings first before initializing UI
-    AppState.masterVolume = loadFromStorage('masterVolume', 0.8);
-    AppState.soundType = loadFromStorage('soundType', 'sine');
-    AppState.showNumerals = loadFromStorage('showNumerals', true);
-    AppState.showTips = loadFromStorage('showTips', true);
-    const savedEnvelope = loadFromStorage('envelope', null);
-    if (savedEnvelope) {
-        AppState.envelope = savedEnvelope;
+    // Voice Leading
+    const voiceLeading = document.getElementById('voice-leading');
+    if (voiceLeading) {
+        voiceLeading.checked = AppState.useVoiceLeading;
+        voiceLeading.addEventListener('change', (e) => {
+            AppState.useVoiceLeading = e.target.checked;
+            saveToStorage('useVoiceLeading', AppState.useVoiceLeading);
+        });
+    }
+    
+    // Advanced Theory
+    const advancedTheory = document.getElementById('advanced-theory');
+    if (advancedTheory) {
+        advancedTheory.checked = AppState.useAdvancedTheory;
+        advancedTheory.addEventListener('change', (e) => {
+            AppState.useAdvancedTheory = e.target.checked;
+            saveToStorage('useAdvancedTheory', AppState.useAdvancedTheory);
+        });
     }
 
     // Envelope ADSR controls
@@ -988,19 +1212,43 @@ const PianoRoll = {
         this.notes = [];
         
         AppState.currentProgression.forEach((chord, chordIndex) => {
-            const chordNotes = CHORD_TYPES[chord.type].intervals;
-            const rootIndex = getNoteIndex(chord.root);
-            
-            chordNotes.forEach((interval) => {
-                const noteIndex = 12 - ((rootIndex + interval) % 12);
-                this.notes.push({
-                    x: chordIndex * this.beatWidth * 4,
-                    y: noteIndex * this.noteHeight,
-                    width: this.beatWidth * 4,
-                    noteIndex,
-                    beat: chordIndex * 4
+            // Use voiced notes if available for more accurate piano roll display
+            if (chord.voicedNotes && chord.voicedNotes.length > 0) {
+                chord.voicedNotes.forEach((voicedNote) => {
+                    // Convert voiced note to piano roll coordinates
+                    // Piano roll shows notes from C5 at top (noteIndex 0) to C#4 at bottom (noteIndex 23)
+                    const noteIndex = getNoteIndex(voicedNote.note);
+                    // Calculate row: octave 5 notes are at rows 0-11, octave 4 notes at rows 12-23
+                    const octaveOffset = (5 - voicedNote.octave) * 12;
+                    const noteRow = (12 - noteIndex) % 12 + octaveOffset;
+                    
+                    // Ensure note is within visible range
+                    if (noteRow >= 0 && noteRow < 24) {
+                        this.notes.push({
+                            x: chordIndex * this.beatWidth * 4,
+                            y: noteRow * this.noteHeight,
+                            width: this.beatWidth * 4,
+                            noteIndex: noteRow,
+                            beat: chordIndex * 4
+                        });
+                    }
                 });
-            });
+            } else {
+                // Fallback to original behavior
+                const chordNotes = CHORD_TYPES[chord.type].intervals;
+                const rootIndex = getNoteIndex(chord.root);
+                
+                chordNotes.forEach((interval) => {
+                    const noteIndex = 12 - ((rootIndex + interval) % 12);
+                    this.notes.push({
+                        x: chordIndex * this.beatWidth * 4,
+                        y: noteIndex * this.noteHeight,
+                        width: this.beatWidth * 4,
+                        noteIndex,
+                        beat: chordIndex * 4
+                    });
+                });
+            }
         });
         
         this.draw();
@@ -1081,12 +1329,20 @@ function playNote(note, octave = 4, duration = 0.5, time = 0) {
 
 function playChord(chord, duration = 1) {
     const ctx = initAudio();
-    const intervals = CHORD_TYPES[chord.type]?.intervals || [0, 4, 7];
     
-    intervals.forEach((interval, i) => {
-        const note = transposeNote(chord.root, interval);
-        playNote(note, 4, duration, i * 0.02); // Slight arpeggio effect
-    });
+    // Use voiced notes if available (from voice leading), otherwise use default voicing
+    if (chord.voicedNotes && chord.voicedNotes.length > 0) {
+        chord.voicedNotes.forEach((voicedNote, i) => {
+            playNote(voicedNote.note, voicedNote.octave, duration, i * 0.02);
+        });
+    } else {
+        // Fallback to original behavior
+        const intervals = CHORD_TYPES[chord.type]?.intervals || [0, 4, 7];
+        intervals.forEach((interval, i) => {
+            const note = transposeNote(chord.root, interval);
+            playNote(note, 4, duration, i * 0.02);
+        });
+    }
 }
 
 function playProgression() {
@@ -1307,12 +1563,22 @@ function exportToMIDI() {
     const channel = 0;
     
     AppState.currentProgression.forEach((chord, chordIndex) => {
-        const chordType = CHORD_TYPES[chord.type];
-        const intervals = chordType ? chordType.intervals : [0, 4, 7];
-        const notes = intervals.map(interval => {
-            const noteName = transposeNote(chord.root, interval);
-            return noteToMIDI(noteName, 4);
-        });
+        let notes;
+        
+        // Use voiced notes if available for better voice leading in MIDI export
+        if (chord.voicedNotes && chord.voicedNotes.length > 0) {
+            notes = chord.voicedNotes.map(voicedNote => 
+                noteToMIDI(voicedNote.note, voicedNote.octave)
+            );
+        } else {
+            // Fallback to original behavior
+            const chordType = CHORD_TYPES[chord.type];
+            const intervals = chordType ? chordType.intervals : [0, 4, 7];
+            notes = intervals.map(interval => {
+                const noteName = transposeNote(chord.root, interval);
+                return noteToMIDI(noteName, 4);
+            });
+        }
         
         // Note On events (delta=0 for simultaneous notes)
         notes.forEach((note, noteIndex) => {
@@ -1508,6 +1774,8 @@ if (typeof module !== 'undefined' && module.exports) {
         generateProgression,
         generateMelody,
         exportToMIDI,
+        applyVoiceLeading,
+        applyAdvancedSubstitutions,
         GENRE_PROFILES,
         CHORD_TYPES,
         SCALES
