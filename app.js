@@ -493,9 +493,9 @@ function applyAdvancedSubstitutions(progression, root, isMinorKey) {
         }
         
         // Tritone Substitution: Swap V7 for bII7
+        // bII7 is the tritone substitution - it's a minor 2nd up from the root (or a tritone from V)
         if ((chord.degree === 'V' || chord.degree === 'v') && chord.type === 'dominant7' && Math.random() > 0.75) {
-            // bII is a tritone away from V (6 semitones from root = flat 2)
-            const tritoneRoot = transposeNote(root, 1); // Minor 2nd up from root
+            const tritoneRoot = transposeNote(root, 1); // bII is a minor 2nd up from root
             const tritoneChord = {
                 root: tritoneRoot,
                 type: 'dominant7',
