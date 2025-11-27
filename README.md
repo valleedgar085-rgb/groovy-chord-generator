@@ -10,6 +10,7 @@
 - **Complexity Levels**: Simple, Medium, Complex, and Advanced progressions
 - **Rhythm Options**: Soft, Moderate, Strong, and Intense patterns
 - **Instant Generation**: One-tap chord progression creation
+- **✨ Animation & Sound Effects**: Visual light burst animations and fun sound effects during chord generation
 
 ### 🎼 Visual Editor (Piano Roll)
 - Touch-optimized grid interaction
@@ -17,6 +18,12 @@
 - Zoom in/out and reset controls
 - Click/tap to add or remove notes
 - Visual chord representation
+
+### 💾 MIDI Export
+- Export generated chord progressions as standard MIDI files
+- Compatible with all major DAWs (Ableton, FL Studio, Logic Pro, etc.)
+- Includes tempo and time signature information
+- One-click download from the floating action menu
 
 ### ⚙️ Settings
 - Master volume control
@@ -45,6 +52,52 @@
 4. Tap the Generate button (🎲) to create a chord progression
 5. Use the Editor tab to view and modify notes
 6. Hit Play to hear your creation!
+7. Export to MIDI using the floating action button (💾)
+
+## Building an Android APK
+
+You can convert this PWA into a native Android APK using one of the following methods:
+
+### Option 1: PWA Builder (Recommended - Easiest)
+
+1. Visit [PWABuilder.com](https://www.pwabuilder.com)
+2. Enter your hosted app URL (or deploy to GitHub Pages first)
+3. Click "Package for stores" → "Android"
+4. Download the generated APK or Android App Bundle
+
+### Option 2: Capacitor (For Development)
+
+1. Install Node.js if not already installed
+2. Initialize a Capacitor project:
+   ```bash
+   npm init -y
+   npm install @capacitor/core @capacitor/cli @capacitor/android
+   npx cap init "Groovy Chord Generator" "com.edgarvalle.chordgenerator"
+   ```
+3. Copy your web app to the `www` folder
+4. Add Android platform:
+   ```bash
+   npx cap add android
+   npx cap copy android
+   npx cap open android
+   ```
+5. Build APK from Android Studio (Build → Build Bundle(s) / APK(s) → Build APK(s))
+
+### Option 3: TWA (Trusted Web Activity)
+
+1. Deploy your PWA to a secure (HTTPS) hosting service
+2. Use [Bubblewrap](https://github.com/AyushAgnihotri2025/AayushAg/AyushAg.github.io) CLI:
+   ```bash
+   npm install -g @AyushAgnihotri2025/AayushAg-cli
+   AyushAg init --manifest https://your-domain.com/manifest.json
+   AyushAg build
+   ```
+3. The APK will be generated in the output folder
+
+### Deployment Tips
+- Host your PWA on GitHub Pages, Netlify, or Vercel for free HTTPS hosting
+- Ensure `manifest.json` includes all required icons
+- Test on a real Android device before publishing
 
 ## Technologies
 
@@ -53,6 +106,7 @@
 - Canvas API for piano roll visualization
 - Service Worker for offline support
 - CSS Grid and Flexbox for responsive layouts
+- MIDI file generation (native JavaScript implementation)
 
 ## Browser Support
 
@@ -64,7 +118,13 @@ Works in all modern browsers including:
 
 ## Version History
 
-### v2.0 (Current)
+### v2.1 (Current)
+- ✨ Added animated light effects during chord generation
+- 🔊 Added fun sound effects when generating chords
+- 💾 MIDI export functionality for DAW integration
+- 📱 APK packaging documentation for Android deployment
+
+### v2.0
 - Complete mobile-first redesign
 - Added tabbed navigation (Generator, Editor, Settings)
 - Implemented collapsible sections
