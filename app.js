@@ -2,7 +2,7 @@
  * Groovy Chord Progression Generator
  * app.js - Main Application Logic
  * Created by Edgar Valle
- * Version 2.0 - Mobile Optimized
+ * Version 2.4 - Next-Level Performance, UI, and Unique Chord Progression Features
  */
 
 // ===================================
@@ -195,6 +195,145 @@ const RHYTHM_PATTERNS = {
 };
 
 // ===================================
+// Smart Presets - v2.4
+// ===================================
+
+const SMART_PRESETS = {
+    'lofi-chill-sunday': {
+        name: 'Lo-Fi Chill Sunday',
+        emoji: '☕',
+        description: 'Relaxed jazzy vibes for lazy mornings',
+        genre: 'chill-lofi',
+        key: 'Dm',
+        complexity: 'medium',
+        rhythm: 'soft',
+        swing: 0.3,
+        useVoiceLeading: true,
+        useAdvancedTheory: true
+    },
+    'cyberpunk-drive': {
+        name: 'Cyberpunk Drive',
+        emoji: '🌃',
+        description: 'Dark synth energy for night drives',
+        genre: 'dark-trap',
+        key: 'Em',
+        complexity: 'complex',
+        rhythm: 'strong',
+        swing: 0.1,
+        useVoiceLeading: false,
+        useAdvancedTheory: true
+    },
+    'summer-pop': {
+        name: 'Summer Pop Hit',
+        emoji: '☀️',
+        description: 'Catchy and uplifting radio-ready vibes',
+        genre: 'happy-pop',
+        key: 'G',
+        complexity: 'simple',
+        rhythm: 'moderate',
+        swing: 0,
+        useVoiceLeading: false,
+        useAdvancedTheory: false
+    },
+    'midnight-jazz': {
+        name: 'Midnight Jazz',
+        emoji: '🎷',
+        description: 'Sophisticated harmonies for late nights',
+        genre: 'jazz-fusion',
+        key: 'Fm',
+        complexity: 'advanced',
+        rhythm: 'moderate',
+        swing: 0.4,
+        useVoiceLeading: true,
+        useAdvancedTheory: true
+    },
+    'epic-cinema': {
+        name: 'Epic Cinema',
+        emoji: '🎬',
+        description: 'Dramatic orchestral grandeur',
+        genre: 'cinematic',
+        key: 'Am',
+        complexity: 'complex',
+        rhythm: 'intense',
+        swing: 0,
+        useVoiceLeading: true,
+        useAdvancedTheory: true
+    },
+    'soul-groove': {
+        name: 'Soul Groove',
+        emoji: '🎤',
+        description: 'Smooth R&B with rich harmonies',
+        genre: 'soulful-rnb',
+        key: 'Bm',
+        complexity: 'medium',
+        rhythm: 'moderate',
+        swing: 0.25,
+        useVoiceLeading: true,
+        useAdvancedTheory: true
+    },
+    'festival-drop': {
+        name: 'Festival Drop',
+        emoji: '🔥',
+        description: 'High-energy EDM for the main stage',
+        genre: 'energetic-edm',
+        key: 'C',
+        complexity: 'simple',
+        rhythm: 'intense',
+        swing: 0,
+        useVoiceLeading: false,
+        useAdvancedTheory: false
+    },
+    'indie-sunset': {
+        name: 'Indie Sunset',
+        emoji: '🌅',
+        description: 'Dreamy guitar-driven atmosphere',
+        genre: 'indie-rock',
+        key: 'D',
+        complexity: 'medium',
+        rhythm: 'soft',
+        swing: 0.15,
+        useVoiceLeading: true,
+        useAdvancedTheory: false
+    }
+};
+
+// Modal Interchange / Borrowed Chords - v2.4
+const MODAL_INTERCHANGE = {
+    // Chords borrowed from parallel minor into major key
+    majorBorrowedFromMinor: {
+        'iv': { root: 3, type: 'minor', symbol: 'iv', description: 'Minor iv from parallel minor' },
+        'bVII': { root: 10, type: 'major', symbol: 'bVII', description: 'Flat VII from parallel minor' },
+        'bVI': { root: 8, type: 'major', symbol: 'bVI', description: 'Flat VI from parallel minor' },
+        'bIII': { root: 3, type: 'major', symbol: 'bIII', description: 'Flat III from parallel minor' },
+        'viio7': { root: 11, type: 'diminished7', symbol: 'viio7', description: 'Diminished 7 from harmonic minor' }
+    },
+    // Chords borrowed from parallel major into minor key
+    minorBorrowedFromMajor: {
+        'IV': { root: 5, type: 'major', symbol: 'IV', description: 'Major IV from parallel major' },
+        'I': { root: 0, type: 'major', symbol: 'I', description: 'Major I (Picardy third)' },
+        'ii': { root: 2, type: 'minor', symbol: 'ii', description: 'Minor ii from parallel major' }
+    }
+};
+
+// Shell voicing patterns - v2.4
+const SHELL_VOICINGS = {
+    // Shell voicings use only 3rds and 7ths (omitting root and 5th)
+    major7: { intervals: [4, 11], name: 'Shell Maj7' },
+    minor7: { intervals: [3, 10], name: 'Shell m7' },
+    dominant7: { intervals: [4, 10], name: 'Shell 7' },
+    halfDim7: { intervals: [3, 10], name: 'Shell m7b5' }
+};
+
+// Open voicing patterns (spread across octaves) - v2.4
+const OPEN_VOICINGS = {
+    major: { intervals: [0, 7, 16], name: 'Open Major' },
+    minor: { intervals: [0, 7, 15], name: 'Open Minor' },
+    major7: { intervals: [0, 11, 16], name: 'Open Maj7' },
+    minor7: { intervals: [0, 10, 15], name: 'Open m7' },
+    dominant7: { intervals: [0, 10, 16], name: 'Open 7' }
+};
+
+// ===================================
 // Application State
 // ===================================
 
@@ -225,7 +364,15 @@ const AppState = {
         decay: 0.1,
         sustain: 0.6,
         release: 0.5
-    }
+    },
+    // v2.4 New State Properties
+    swing: 0,  // 0-1, humanization amount
+    useModalInterchange: false,
+    useShellVoicing: false,
+    currentPreset: null,
+    progressionHistory: [],  // Last 5 progressions
+    wizardStep: 0,
+    wizardActive: false
 };
 
 // ===================================
@@ -513,12 +660,394 @@ function applyAdvancedSubstitutions(progression, root, isMinorKey) {
     return result;
 }
 
+// ===================================
+// Modal Interchange Functions - v2.4
+// ===================================
+
+/**
+ * Apply modal interchange (borrowed chords from parallel key)
+ * Returns a modified chord progression with borrowed chords
+ */
+function applyModalInterchange(progression, root, isMinorKey) {
+    const result = [];
+    const borrowedChords = isMinorKey 
+        ? MODAL_INTERCHANGE.minorBorrowedFromMajor 
+        : MODAL_INTERCHANGE.majorBorrowedFromMinor;
+    
+    for (let i = 0; i < progression.length; i++) {
+        const chord = progression[i];
+        
+        // Randomly decide to apply modal interchange (30% chance)
+        if (Math.random() > 0.7) {
+            const borrowOptions = Object.entries(borrowedChords);
+            if (borrowOptions.length > 0) {
+                const [symbol, borrowedInfo] = randomChoice(borrowOptions);
+                const borrowedRoot = transposeNote(root, borrowedInfo.root);
+                const borrowedChord = {
+                    root: borrowedRoot,
+                    type: borrowedInfo.type,
+                    degree: symbol,
+                    numeral: symbol,
+                    isBorrowed: true,
+                    borrowedDescription: borrowedInfo.description
+                };
+                result.push(borrowedChord);
+                continue;
+            }
+        }
+        
+        result.push(chord);
+    }
+    
+    return result;
+}
+
+/**
+ * Apply genre-specific voicing (shell voicings for jazz, open voicings for cinematic)
+ */
+function applyGenreVoicing(chord, genre) {
+    // Shell voicings for jazz
+    if (genre === 'jazz-fusion' && SHELL_VOICINGS[chord.type]) {
+        chord.shellVoicing = SHELL_VOICINGS[chord.type];
+        chord.voicingType = 'shell';
+    }
+    // Open voicings for cinematic and indie rock
+    else if ((genre === 'cinematic' || genre === 'indie-rock') && OPEN_VOICINGS[chord.type]) {
+        chord.openVoicing = OPEN_VOICINGS[chord.type];
+        chord.voicingType = 'open';
+    }
+    
+    return chord;
+}
+
+// ===================================
+// Spice It Up - Chord Substitutions v2.4
+// ===================================
+
+/**
+ * "Spice It Up" - Apply jazzy/interesting chord substitutions to the current progression
+ */
+function spiceItUp() {
+    if (AppState.currentProgression.length === 0) {
+        return;
+    }
+    
+    const { root, isMinor } = parseKey(AppState.currentKey);
+    const newProgression = AppState.currentProgression.map((chord, index) => {
+        // Create a copy of the chord
+        const spicedChord = { ...chord };
+        
+        // Apply different substitution types based on random selection
+        const spiceType = Math.random();
+        
+        if (spiceType < 0.25) {
+            // Add 7th extension
+            if (chord.type === 'major') {
+                spicedChord.type = Math.random() > 0.5 ? 'major7' : 'add9';
+            } else if (chord.type === 'minor') {
+                spicedChord.type = Math.random() > 0.5 ? 'minor7' : 'minor9';
+            }
+        } else if (spiceType < 0.5) {
+            // Tritone substitution for dominant chords
+            if (chord.type === 'dominant7' || chord.degree === 'V') {
+                const tritoneRoot = transposeNote(chord.root, 6); // Tritone = 6 semitones
+                spicedChord.root = tritoneRoot;
+                spicedChord.type = 'dominant7';
+                spicedChord.degree = 'bII7';
+                spicedChord.numeral = 'bII7';
+                spicedChord.isTritoneSubstitution = true;
+            }
+        } else if (spiceType < 0.75) {
+            // Modal interchange - borrow from parallel key
+            if (!isMinor && chord.degree === 'IV') {
+                spicedChord.type = 'minor7';
+                spicedChord.degree = 'iv7';
+                spicedChord.isBorrowed = true;
+            } else if (!isMinor && Math.random() > 0.5) {
+                // Add bVI or bVII
+                const bViRoot = transposeNote(root, 8);
+                spicedChord.root = bViRoot;
+                spicedChord.type = 'major7';
+                spicedChord.degree = 'bVImaj7';
+                spicedChord.isBorrowed = true;
+            }
+        } else {
+            // Add sus4 or sus2 as passing chord
+            if (chord.type === 'major' || chord.type === 'minor') {
+                spicedChord.type = Math.random() > 0.5 ? 'sus4' : 'sus2';
+            }
+        }
+        
+        return spicedChord;
+    });
+    
+    // Save to history before replacing
+    saveToHistory(AppState.currentProgression);
+    
+    AppState.currentProgression = newProgression;
+    
+    // Re-apply voice leading if enabled
+    if (AppState.useVoiceLeading) {
+        applyVoiceLeading(newProgression);
+    }
+    
+    // Update UI
+    renderChordDisplay();
+    PianoRoll.loadFromProgression();
+    
+    // Play spicy sound effect
+    playSpiceSound();
+}
+
+/**
+ * Play a fun sound effect when spicing up chords
+ */
+function playSpiceSound() {
+    const ctx = initAudio();
+    
+    // Ascending arpeggio with slight randomness
+    const notes = [261.63, 329.63, 392.00, 523.25, 659.25]; // C4, E4, G4, C5, E5
+    notes.forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq * (1 + Math.random() * 0.02), ctx.currentTime + i * 0.08);
+        gain.gain.setValueAtTime(0.12 * AppState.masterVolume, ctx.currentTime + i * 0.08);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.08 + 0.25);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime + i * 0.08);
+        osc.stop(ctx.currentTime + i * 0.08 + 0.25);
+    });
+}
+
+// ===================================
+// History/Saved Progressions - v2.4
+// ===================================
+
+const MAX_HISTORY_LENGTH = 5;
+
+/**
+ * Save current progression to history
+ */
+function saveToHistory(progression) {
+    if (!progression || progression.length === 0) return;
+    
+    // Create a deep copy of the progression
+    const historyCopy = JSON.parse(JSON.stringify(progression));
+    
+    // Add metadata
+    const historyEntry = {
+        progression: historyCopy,
+        key: AppState.currentKey,
+        genre: AppState.genre,
+        timestamp: Date.now()
+    };
+    
+    // Add to front of history
+    AppState.progressionHistory.unshift(historyEntry);
+    
+    // Keep only last 5 entries
+    if (AppState.progressionHistory.length > MAX_HISTORY_LENGTH) {
+        AppState.progressionHistory = AppState.progressionHistory.slice(0, MAX_HISTORY_LENGTH);
+    }
+    
+    // Save to localStorage
+    saveToStorage('progressionHistory', AppState.progressionHistory);
+}
+
+/**
+ * Load history from localStorage
+ */
+function loadHistory() {
+    AppState.progressionHistory = loadFromStorage('progressionHistory', []);
+}
+
+/**
+ * Restore a progression from history
+ */
+function restoreFromHistory(index) {
+    if (index < 0 || index >= AppState.progressionHistory.length) return;
+    
+    const entry = AppState.progressionHistory[index];
+    AppState.currentProgression = JSON.parse(JSON.stringify(entry.progression));
+    AppState.currentKey = entry.key;
+    AppState.genre = entry.genre;
+    
+    // Update UI
+    document.getElementById('key-select').value = entry.key;
+    document.getElementById('genre-select').value = entry.genre;
+    
+    // Re-apply voice leading if enabled
+    if (AppState.useVoiceLeading) {
+        applyVoiceLeading(AppState.currentProgression);
+    }
+    
+    renderChordDisplay();
+    renderHistoryPanel();
+    PianoRoll.loadFromProgression();
+    
+    // Visual feedback
+    const chordDisplay = document.getElementById('chord-display');
+    if (chordDisplay) {
+        chordDisplay.classList.add('pulse');
+        setTimeout(() => chordDisplay.classList.remove('pulse'), 500);
+    }
+}
+
+/**
+ * Render the history panel
+ */
+function renderHistoryPanel() {
+    const container = document.getElementById('history-list');
+    if (!container) return;
+    
+    if (AppState.progressionHistory.length === 0) {
+        container.innerHTML = '<div class="history-empty">No saved progressions yet</div>';
+        return;
+    }
+    
+    container.innerHTML = AppState.progressionHistory.map((entry, index) => {
+        const chords = entry.progression.map(c => c.root + (CHORD_TYPES[c.type]?.symbol || '')).join(' - ');
+        const timeAgo = getTimeAgo(entry.timestamp);
+        const genreProfile = GENRE_PROFILES[entry.genre];
+        
+        return `
+            <div class="history-item" onclick="restoreFromHistory(${index})">
+                <div class="history-item-header">
+                    <span class="history-key">${entry.key}</span>
+                    <span class="history-genre">${genreProfile?.name || entry.genre}</span>
+                </div>
+                <div class="history-chords">${chords}</div>
+                <div class="history-time">${timeAgo}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+/**
+ * Helper function to format time ago
+ */
+function getTimeAgo(timestamp) {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+    return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+// ===================================
+// Smart Presets Functions - v2.4
+// ===================================
+
+/**
+ * Apply a smart preset
+ */
+function applyPreset(presetKey) {
+    const preset = SMART_PRESETS[presetKey];
+    if (!preset) return;
+    
+    // Update state
+    AppState.genre = preset.genre;
+    AppState.currentKey = preset.key;
+    AppState.complexity = preset.complexity;
+    AppState.rhythm = preset.rhythm;
+    AppState.swing = preset.swing;
+    AppState.useVoiceLeading = preset.useVoiceLeading;
+    AppState.useAdvancedTheory = preset.useAdvancedTheory;
+    AppState.currentPreset = presetKey;
+    
+    // Update UI controls
+    document.getElementById('genre-select').value = preset.genre;
+    document.getElementById('key-select').value = preset.key;
+    document.getElementById('complexity-select').value = preset.complexity;
+    document.getElementById('rhythm-select').value = preset.rhythm;
+    
+    const swingSlider = document.getElementById('swing-slider');
+    if (swingSlider) swingSlider.value = preset.swing * 100;
+    
+    const voiceLeadingToggle = document.getElementById('voice-leading');
+    if (voiceLeadingToggle) voiceLeadingToggle.checked = preset.useVoiceLeading;
+    
+    const advancedTheoryToggle = document.getElementById('advanced-theory');
+    if (advancedTheoryToggle) advancedTheoryToggle.checked = preset.useAdvancedTheory;
+    
+    // Update tempo based on genre
+    const profile = GENRE_PROFILES[preset.genre];
+    document.getElementById('tempo-input').value = profile.tempo;
+    AppState.tempo = profile.tempo;
+    
+    // Update preset cards UI
+    updatePresetCardSelection(presetKey);
+    
+    // Generate new progression with preset settings
+    handleGenerate();
+}
+
+/**
+ * Update preset card visual selection
+ */
+function updatePresetCardSelection(selectedKey) {
+    document.querySelectorAll('.preset-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.preset === selectedKey);
+    });
+}
+
+/**
+ * Render smart presets grid
+ */
+function renderSmartPresets() {
+    const container = document.getElementById('presets-grid');
+    if (!container) return;
+    
+    container.innerHTML = Object.entries(SMART_PRESETS).map(([key, preset]) => `
+        <div class="preset-card ${AppState.currentPreset === key ? 'selected' : ''}" 
+             data-preset="${key}" 
+             onclick="applyPreset('${key}')">
+            <div class="preset-emoji">${preset.emoji}</div>
+            <div class="preset-name">${preset.name}</div>
+            <div class="preset-description">${preset.description}</div>
+        </div>
+    `).join('');
+}
+
+// ===================================
+// Swing/Humanization Functions - v2.4
+// ===================================
+
+/**
+ * Apply swing/humanization to note timing
+ */
+function applySwing(time, swingAmount) {
+    if (swingAmount === 0) return time;
+    
+    // Apply subtle timing variation for humanization
+    const variation = (Math.random() - 0.5) * swingAmount * 0.1;
+    return time + variation;
+}
+
+/**
+ * Get humanized velocity
+ */
+function getHumanizedVelocity(baseVelocity, swingAmount) {
+    if (swingAmount === 0) return baseVelocity;
+    
+    const variation = 1 + (Math.random() - 0.5) * swingAmount * 0.3;
+    return Math.max(0.1, Math.min(1, baseVelocity * variation));
+}
+
 function generateProgression() {
     const { root, isMinor } = parseKey(AppState.currentKey);
     AppState.isMinorKey = isMinor;
     
     const profile = GENRE_PROFILES[AppState.genre];
     const complexity = COMPLEXITY_SETTINGS[AppState.complexity];
+    
+    // Save current progression to history before generating new one
+    if (AppState.currentProgression.length > 0) {
+        saveToHistory(AppState.currentProgression);
+    }
     
     // Select a base progression
     const baseProgression = randomChoice(profile.progressions);
@@ -537,7 +1066,7 @@ function generateProgression() {
     // Convert degrees to actual chords
     const scale = isMinor ? 'minor' : profile.scale;
     let chords = progression.map(degree => {
-        const chord = getChordFromDegree(root, degree, isMinor, scale);
+        let chord = getChordFromDegree(root, degree, isMinor, scale);
         
         // Apply chord extensions for complex settings
         if (complexity.useExtensions && Math.random() > 0.5) {
@@ -549,8 +1078,16 @@ function generateProgression() {
             }
         }
         
+        // Apply genre-specific voicing - v2.4
+        chord = applyGenreVoicing(chord, AppState.genre);
+        
         return chord;
     });
+    
+    // Apply modal interchange if enabled - v2.4
+    if (AppState.useModalInterchange && (AppState.complexity === 'complex' || AppState.complexity === 'advanced')) {
+        chords = applyModalInterchange(chords, root, isMinor);
+    }
     
     // Apply advanced chord substitutions if enabled and complexity is high enough
     if (AppState.useAdvancedTheory && (AppState.complexity === 'complex' || AppState.complexity === 'advanced')) {
@@ -563,6 +1100,10 @@ function generateProgression() {
     }
     
     AppState.currentProgression = chords;
+    
+    // Update history panel
+    renderHistoryPanel();
+    
     return chords;
 }
 
@@ -1723,6 +2264,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initFAB();
     initOnboarding();
     
+    // Initialize v2.4 features
+    loadHistory();
+    renderSmartPresets();
+    renderHistoryPanel();
+    initSwingControl();
+    
     // Initialize piano roll
     PianoRoll.init();
     
@@ -1749,6 +2296,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('tempo-input').value = profile.tempo;
     });
     
+    // Spice It Up button - v2.4
+    const spiceBtn = document.getElementById('spice-btn');
+    if (spiceBtn) {
+        spiceBtn.addEventListener('click', spiceItUp);
+    }
+    
+    // FAB Spice It Up button - v2.4
+    const fabSpice = document.getElementById('fab-spice');
+    if (fabSpice) {
+        fabSpice.addEventListener('click', () => {
+            spiceItUp();
+            closeFABMenu();
+        });
+    }
+    
     // Initial render
     renderChordDisplay();
     renderMelodyDisplay();
@@ -1764,9 +2326,43 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 250);
     });
     
-    console.log('🎵 Groovy Chord Generator v2.0 initialized!');
+    console.log('🎵 Groovy Chord Generator v2.4 initialized!');
     console.log('Created by Edgar Valle');
 });
+
+/**
+ * Initialize swing/groove control - v2.4
+ */
+function initSwingControl() {
+    const swingSlider = document.getElementById('swing-slider');
+    if (swingSlider) {
+        AppState.swing = loadFromStorage('swing', 0);
+        swingSlider.value = AppState.swing * 100;
+        
+        swingSlider.addEventListener('input', (e) => {
+            AppState.swing = e.target.value / 100;
+            saveToStorage('swing', AppState.swing);
+            
+            // Update label if exists
+            const swingLabel = document.getElementById('swing-value');
+            if (swingLabel) {
+                swingLabel.textContent = `${Math.round(AppState.swing * 100)}%`;
+            }
+        });
+    }
+    
+    // Modal interchange toggle
+    const modalInterchangeToggle = document.getElementById('modal-interchange');
+    if (modalInterchangeToggle) {
+        AppState.useModalInterchange = loadFromStorage('useModalInterchange', false);
+        modalInterchangeToggle.checked = AppState.useModalInterchange;
+        
+        modalInterchangeToggle.addEventListener('change', (e) => {
+            AppState.useModalInterchange = e.target.checked;
+            saveToStorage('useModalInterchange', AppState.useModalInterchange);
+        });
+    }
+}
 
 // Export for potential module usage
 if (typeof module !== 'undefined' && module.exports) {
@@ -1776,8 +2372,13 @@ if (typeof module !== 'undefined' && module.exports) {
         exportToMIDI,
         applyVoiceLeading,
         applyAdvancedSubstitutions,
+        applyModalInterchange,
+        spiceItUp,
+        applyPreset,
         GENRE_PROFILES,
         CHORD_TYPES,
-        SCALES
+        SCALES,
+        SMART_PRESETS,
+        MODAL_INTERCHANGE
     };
 }

@@ -1,14 +1,32 @@
-# Groovy Chord Generator v2.0
+# Groovy Chord Generator v2.4
 
 🎵 A modern, mobile-optimized web app for creating amazing chord progressions for any genre.
 
 ## Features
+
+### ✨ Smart Presets (v2.4)
+- **Visual Preset Cards**: 8 creative presets with instant one-tap application
+- **Curated Moods**: Lo-Fi Chill Sunday, Cyberpunk Drive, Summer Pop Hit, Midnight Jazz, Epic Cinema, Soul Groove, Festival Drop, Indie Sunset
+- **Auto-Configuration**: Presets automatically set genre, key, complexity, rhythm, and theory options
+
+### 🌶️ "Spice It Up" (v2.4)
+- **Chord Substitutions**: Auto-substitute chords for richer, jazzy variations
+- **Tritone Substitutions**: Add sophisticated harmonic twists
+- **Modal Interchange**: Borrow chords from parallel keys
+- **Extension Upgrades**: Transform basic chords to 7ths, 9ths, sus chords
+
+### 📜 Progression History (v2.4)
+- **Auto-Save**: Automatically saves last 5 progressions
+- **Instant Recall**: One-tap restore of any saved progression
+- **Metadata Tracking**: Shows key, genre, and time for each saved progression
 
 ### 🎛️ Generator
 - **Genre Selection**: Choose from 8 different genres (Happy Pop, Chill Lo-Fi, EDM, R&B, Jazz, Trap, Cinematic, Indie Rock)
 - **Key Selection**: Support for major and minor keys
 - **Complexity Levels**: Simple, Medium, Complex, and Advanced progressions
 - **Rhythm Options**: Soft, Moderate, Strong, and Intense patterns
+- **Groove/Swing Slider**: Add humanization for a more natural feel (v2.4)
+- **Modal Interchange Toggle**: Enable borrowed chords from parallel keys (v2.4)
 - **Instant Generation**: One-tap chord progression creation
 - **✨ Animation & Sound Effects**: Visual light burst animations and fun sound effects during chord generation
 
@@ -28,6 +46,7 @@
 ### ⚙️ Settings
 - Master volume control
 - Sound type selection (Sine, Triangle, Square, Sawtooth)
+- ADSR Envelope controls
 - Toggle Roman numeral display
 - Show/hide tips option
 
@@ -118,7 +137,17 @@ Works in all modern browsers including:
 
 ## Version History
 
-### v2.1 (Current)
+### v2.4 (Current)
+- ✨ **Smart Presets**: Visual preset cards for instant creativity (Lo-Fi Chill Sunday, Cyberpunk Drive, Summer Pop Hit, etc.)
+- 🌶️ **"Spice It Up" Button**: Auto-substitute chords for richer, jazzy, or genre-twisted variations
+- 📜 **History/Saved Progressions**: Auto-save last 5 progressions for instant recall
+- 🎸 **Modal Interchange**: Borrow chords from parallel keys for more colorful harmonies
+- 🎹 **Genre-Based Voicing**: Shell voicings for jazz, open voicings for cinematic sounds
+- 🎛️ **Groove/Swing Slider**: Rhythm humanization for more natural feel
+- 🎨 **Enhanced Animations**: Music-driven visual feedback on chord cards
+- ⚡ **Performance Improvements**: Optimized piano roll rendering
+
+### v2.1
 - ✨ Added animated light effects during chord generation
 - 🔊 Added fun sound effects when generating chords
 - 💾 MIDI export functionality for DAW integration
@@ -143,4 +172,4 @@ Works in all modern browsers including:
 
 ## Credits
 
-Created by **Edgar Valle** | © 2024
+Created by **Edgar Valle** | © 2025

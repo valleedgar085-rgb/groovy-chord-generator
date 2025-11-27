@@ -1,7 +1,7 @@
 /* ===================================
    Groovy Chord Progression Generator
    Style.css - Mobile-First Dark Theme
-   Version 2.0
+   Version 2.4
    =================================== */
 
 /* CSS Variables for Easy Theming */
@@ -1413,5 +1413,282 @@ input[type="range"]::-webkit-slider-thumb {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* ==========================================
+   SMART PRESETS - v2.4
+   ========================================== */
+.presets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs);
+}
+
+.preset-card {
+    background: var(--bg-tertiary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: var(--spacing-md);
+    text-align: center;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    touch-action: manipulation;
+}
+
+.preset-card:hover,
+.preset-card:active {
+    border-color: var(--accent-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+}
+
+.preset-card.selected {
+    border-color: var(--accent-secondary);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(236, 72, 153, 0.2));
+}
+
+.preset-emoji {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-xs);
+}
+
+.preset-name {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.preset-description {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    line-height: 1.3;
+}
+
+/* ==========================================
+   SPICE IT UP BUTTON - v2.4
+   ========================================== */
+.spice-button-container {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--spacing-md);
+}
+
+.btn-spice {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-lg);
+    background: linear-gradient(135deg, #f97316 0%, #ef4444 100%);
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+    touch-action: manipulation;
+}
+
+.btn-spice:hover,
+.btn-spice:active {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6);
+}
+
+.btn-spice span {
+    font-size: 1.1rem;
+}
+
+/* ==========================================
+   HISTORY PANEL - v2.4
+   ========================================== */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.history-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: var(--spacing-lg);
+}
+
+.history-item {
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius-sm);
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid var(--border-color);
+}
+
+.history-item:hover,
+.history-item:active {
+    background: var(--bg-elevated);
+    border-color: var(--accent-primary);
+}
+
+.history-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xs);
+}
+
+.history-key {
+    font-weight: 600;
+    color: var(--accent-secondary);
+}
+
+.history-genre {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    background: var(--bg-secondary);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.history-chords {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-time {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+/* ==========================================
+   SWING CONTROL - v2.4
+   ========================================== */
+.swing-control {
+    margin-top: var(--spacing-md);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.swing-control .setting-item {
+    width: 100%;
+}
+
+.swing-control label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-sm);
+}
+
+#swing-value {
+    color: var(--accent-secondary);
+    font-weight: 600;
+}
+
+/* ==========================================
+   ENHANCED ANIMATIONS - v2.4
+   ========================================== */
+@keyframes pulseGlow {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(124, 58, 237, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(124, 58, 237, 0.8);
+    }
+}
+
+.chord-card.playing {
+    animation: pulseGlow 0.5s ease infinite;
+}
+
+/* Music-driven note visualization */
+@keyframes noteVisualize {
+    0% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: translateY(-10px) scale(1.1);
+        opacity: 0.8;
+    }
+    100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.chord-card.active .chord-name {
+    animation: noteVisualize 0.3s ease;
+}
+
+/* Preset selection animation */
+@keyframes presetSelect {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(0.95);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.preset-card.selected {
+    animation: presetSelect 0.3s ease;
+}
+
+/* ==========================================
+   TABLET BREAKPOINT ADDITIONS - v2.4
+   ========================================== */
+@media (min-width: 768px) {
+    .presets-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-md);
+    }
+    
+    .preset-emoji {
+        font-size: 2.5rem;
+    }
+    
+    .preset-name {
+        font-size: 1rem;
+    }
+    
+    .preset-description {
+        font-size: 0.8rem;
+    }
+    
+    .history-list {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--spacing-md);
+    }
+}
+
+/* ==========================================
+   DESKTOP BREAKPOINT ADDITIONS - v2.4
+   ========================================== */
+@media (min-width: 1024px) {
+    .presets-grid {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-lg);
+    }
+    
+    .preset-card {
+        padding: var(--spacing-lg);
+    }
+    
+    .history-list {
+        grid-template-columns: repeat(3, 1fr);
     }
 }
