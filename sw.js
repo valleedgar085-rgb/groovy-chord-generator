@@ -1,10 +1,10 @@
 /**
  * Groovy Chord Generator - Service Worker
  * Provides offline capability and caching for PWA
- * Version 2.0
+ * Version 2.4
  */
 
-const CACHE_NAME = 'groovy-chord-v2.0';
+const CACHE_NAME = 'groovy-chord-v2.4';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
