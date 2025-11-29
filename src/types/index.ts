@@ -50,7 +50,11 @@ export type GenreKey =
   | 'jazz-fusion' 
   | 'dark-trap' 
   | 'cinematic' 
-  | 'indie-rock';
+  | 'indie-rock'
+  | 'reggae'
+  | 'blues'
+  | 'country'
+  | 'funk';
 
 export type ComplexityLevel = 'simple' | 'medium' | 'complex' | 'advanced';
 
