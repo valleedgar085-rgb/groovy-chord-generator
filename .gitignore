@@ -39,3 +39,20 @@ coverage
 # Package lock files (keep package-lock.json only)
 yarn.lock
 pnpm-lock.yaml
+
+# Android
+android/app/build
+android/app/release
+android/.gradle
+android/build
+android/local.properties
+android/key.properties
+android/*.iml
+*.keystore
+*.jks
+*.apk
+*.aab
+
+# Capacitor
+.capacitor
+ios/
