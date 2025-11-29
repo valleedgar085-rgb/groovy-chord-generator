@@ -174,6 +174,59 @@ export const GENRE_PROFILES: Record<GenreKey, GenreProfile> = {
     melodyScale: 'major',
     tempo: 115,
   },
+  reggae: {
+    name: 'Reggae',
+    scale: 'major',
+    progressions: [
+      ['I', 'IV', 'I', 'V'],
+      ['I', 'V', 'vi', 'IV'],
+      ['I', 'IV', 'V', 'IV'],
+      ['vi', 'IV', 'I', 'V'],
+    ],
+    chordTypes: ['major', 'minor', 'dominant7', 'minor7'],
+    melodyScale: 'pentatonicMajor',
+    tempo: 80,
+  },
+  blues: {
+    name: 'Blues',
+    scale: 'mixolydian',
+    progressions: [
+      // Standard 12-bar blues form: 4 bars of I, 2 of IV, 2 of I, then V-IV-I-V turnaround
+      ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V'],
+      ['I', 'IV', 'I', 'V'],
+      ['i', 'iv', 'i', 'V'],
+      ['I', 'I', 'IV', 'I', 'V', 'I'],
+    ],
+    chordTypes: ['dominant7', 'minor7', 'major', 'minor'],
+    melodyScale: 'blues',
+    tempo: 90,
+  },
+  country: {
+    name: 'Country',
+    scale: 'major',
+    progressions: [
+      ['I', 'IV', 'V', 'I'],
+      ['I', 'V', 'vi', 'IV'],
+      ['I', 'IV', 'I', 'V'],
+      ['I', 'vi', 'IV', 'V'],
+    ],
+    chordTypes: ['major', 'minor', 'sus4', 'add9'],
+    melodyScale: 'pentatonicMajor',
+    tempo: 110,
+  },
+  funk: {
+    name: 'Funk',
+    scale: 'mixolydian',
+    progressions: [
+      ['I', 'IV', 'I', 'IV'],
+      ['i', 'IV', 'i', 'IV'],
+      ['I', 'I', 'IV', 'I'],
+      ['i', 'VII', 'i', 'VII'],
+    ],
+    chordTypes: ['dominant7', 'minor7', 'major', 'minor9'],
+    melodyScale: 'pentatonicMinor',
+    tempo: 105,
+  },
 };
 
 // Complexity settings
@@ -310,6 +363,54 @@ export const SMART_PRESETS: Record<string, SmartPreset> = {
     useVoiceLeading: true,
     useAdvancedTheory: false,
   },
+  'island-vibes': {
+    name: 'Island Vibes',
+    emoji: '🏝️',
+    description: 'Laid-back reggae rhythms for sunny days',
+    genre: 'reggae',
+    key: 'G',
+    complexity: 'simple',
+    rhythm: 'moderate',
+    swing: 0.2,
+    useVoiceLeading: false,
+    useAdvancedTheory: false,
+  },
+  'delta-blues': {
+    name: 'Delta Blues',
+    emoji: '🎸',
+    description: 'Soulful 12-bar blues progressions',
+    genre: 'blues',
+    key: 'E',
+    complexity: 'medium',
+    rhythm: 'moderate',
+    swing: 0.35,
+    useVoiceLeading: true,
+    useAdvancedTheory: true,
+  },
+  'nashville-nights': {
+    name: 'Nashville Nights',
+    emoji: '🤠',
+    description: 'Classic country with heartfelt chords',
+    genre: 'country',
+    key: 'G',
+    complexity: 'simple',
+    rhythm: 'moderate',
+    swing: 0.1,
+    useVoiceLeading: false,
+    useAdvancedTheory: false,
+  },
+  'groovy-funk': {
+    name: 'Groovy Funk',
+    emoji: '🕺',
+    description: 'Tight rhythms and syncopated grooves',
+    genre: 'funk',
+    key: 'Am',
+    complexity: 'medium',
+    rhythm: 'strong',
+    swing: 0.25,
+    useVoiceLeading: true,
+    useAdvancedTheory: true,
+  },
 };
 
 // Modal Interchange / Borrowed Chords - v2.4
@@ -404,6 +505,10 @@ export const GENRE_OPTIONS = [
   { value: 'dark-trap', label: 'Trap' },
   { value: 'cinematic', label: 'Cinematic' },
   { value: 'indie-rock', label: 'Indie Rock' },
+  { value: 'reggae', label: 'Reggae' },
+  { value: 'blues', label: 'Blues' },
+  { value: 'country', label: 'Country' },
+  { value: 'funk', label: 'Funk' },
 ];
 
 export const KEY_OPTIONS = [
