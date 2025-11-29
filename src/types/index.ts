@@ -220,9 +220,8 @@ export interface AppState {
 export interface ChordCardProps {
   chord: Chord;
   index: number;
-  isActive: boolean;
   showNumerals: boolean;
-  onToggle: (index: number) => void;
+  onPlayChord: (chord: Chord) => void;
 }
 
 export interface PresetCardProps {
