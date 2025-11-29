@@ -65,13 +65,20 @@
 
 ## Getting Started
 
-1. Open `index.html` in a modern web browser
-2. Complete the onboarding tutorial (or skip it)
-3. Select your preferred genre and key
-4. Tap the Generate button (🎲) to create a chord progression
-5. Use the Editor tab to view and modify notes
-6. Hit Play to hear your creation!
-7. Export to MIDI using the floating action button (💾)
+### Quick Start (Development)
+```bash
+npm install
+npm run dev
+```
+Then open http://localhost:5173 in your browser.
+
+### Usage
+1. Complete the onboarding tutorial (or skip it)
+2. Select your preferred genre and key
+3. Tap the Generate button (🎲) to create a chord progression
+4. Use the Editor tab to view and modify notes
+5. Hit Play to hear your creation!
+6. Export to MIDI using the floating action button (💾)
 
 ## Building an Android APK
 
@@ -120,12 +127,36 @@ You can convert this PWA into a native Android APK using one of the following me
 
 ## Technologies
 
-- Pure HTML5, CSS3, and JavaScript (no frameworks)
+- **React 19** with TypeScript for component-based UI
+- **Vite** for fast development and optimized production builds
 - Web Audio API for sound synthesis
 - Canvas API for piano roll visualization
 - Service Worker for offline support
 - CSS Grid and Flexbox for responsive layouts
-- MIDI file generation (native JavaScript implementation)
+- MIDI file generation (native TypeScript implementation)
+
+## Development
+
+### Prerequisites
+- Node.js 18+ and npm
+
+### Getting Started
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+
+# Run linting
+npm run lint
+```
 
 ## Browser Support
 
