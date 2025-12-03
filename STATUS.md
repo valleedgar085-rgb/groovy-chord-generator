@@ -1,21 +1,4 @@
-# If you have Chocolatey installed:
-choco install nodejs-lts -y# In a NEW PowerShell window
-cd "C:\Users\Edgar Valle\AndroidStudioProjects\groovy-chord-generator"
-node --version
-npm --version
-Get-Command node
-Get-Command npm# In a NEW PowerShell window
-cd "C:\Users\Edgar Valle\AndroidStudioProjects\groovy-chord-generator"
-node --version
-npm --version
-Get-Command node
-Get-Command npm# In a NEW PowerShell window
-cd "C:\Users\Edgar Valle\AndroidStudioProjects\groovy-chord-generator"
-node --version
-npm --version
-Get-Command node
-Get-Command npm# If you have Chocolatey installed:
-choco install nodejs-lts -y# ✅ Setup Complete - Here's What's Going On
+# ✅ Setup Complete - Here's What's Going On
 
 ## Status: CONFIGURATION COMPLETE ✓
 
