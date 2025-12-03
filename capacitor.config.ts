@@ -1,19 +1,18 @@
 import { CapacitorConfig } from '@capacitor/cli';
-export default config;
 
-};
-  }
-    }
-      keystoreAlias: 'groovy-key',
-      keystorePath: 'release-key.keystore',
-    buildOptions: {
-  android: {
-  },
-    androidScheme: 'https'
-  server: {
-  webDir: 'dist',
-  appName: 'Groovy Chord Generator',
-  appId: 'com.edgarvalle.groovychordgenerator',
 const config: CapacitorConfig = {
+  appId: 'com.edgarvalle.groovychordgenerator',
+  appName: 'Groovy Chord Generator',
+  webDir: 'dist',
+  server: {
+    androidScheme: 'https'
+  },
+  android: {
+    buildOptions: {
+      keystorePath: 'release-key.keystore',
+      keystoreAlias: 'groovy-key',
+    }
+  }
+};
 
-
+export default config;
