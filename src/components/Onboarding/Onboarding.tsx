@@ -4,7 +4,7 @@
  * Version 2.5
  */
 
-import { useState } from 'react';
+import { useState, useCallback, type KeyboardEvent } from 'react';
 import { useApp } from '../../hooks';
 
 const slides = [
@@ -29,25 +29,32 @@ export function Onboarding() {
   const { state, actions } = useApp();
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  if (state.onboardingComplete) {
-    return null;
-  }
-
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentSlide < slides.length - 1) {
       setCurrentSlide(currentSlide + 1);
     } else {
       actions.setOnboardingComplete(true);
     }
-  };
+  }, [currentSlide, actions]);
 
-  const handleSkip = () => {
+  const handleSkip = useCallback(() => {
     actions.setOnboardingComplete(true);
-  };
+  }, [actions]);
 
-  const handleDotClick = (index: number) => {
+  const handleDotClick = useCallback((index: number) => {
     setCurrentSlide(index);
-  };
+  }, []);
+
+  const handleDotKeyDown = useCallback((e: KeyboardEvent, index: number) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      setCurrentSlide(index);
+    }
+  }, []);
+
+  if (state.onboardingComplete) {
+    return null;
+  }
 
   return (
     <div id="onboarding-overlay" className="onboarding-overlay">
@@ -64,13 +71,18 @@ export function Onboarding() {
           </div>
         ))}
         <div className="onboarding-nav">
-          <div className="onboarding-dots">
+          <div className="onboarding-dots" role="tablist" aria-label="Onboarding slides">
             {slides.map((_, index) => (
               <span
                 key={index}
                 className={`dot ${index === currentSlide ? 'active' : ''}`}
                 data-dot={index}
                 onClick={() => handleDotClick(index)}
+                onKeyDown={(e) => handleDotKeyDown(e, index)}
+                role="tab"
+                aria-selected={index === currentSlide}
+                aria-label={`Slide ${index + 1}`}
+                tabIndex={0}
               />
             ))}
           </div>
