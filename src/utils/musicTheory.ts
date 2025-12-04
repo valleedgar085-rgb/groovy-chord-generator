@@ -380,6 +380,13 @@ export function spiceUpProgression(
 // Bass Line Generation Functions - v2.5
 // ===================================
 
+// Bass generation constants
+const BASS_CHROMATIC_PROBABILITY = 0.3;
+const BASS_APPROACH_NOTE_PROBABILITY = 0.5;
+const BASS_ALTERNATE_NOTE_PROBABILITY = 0.4;
+const BASS_REST_PROBABILITY = 0.2;
+const BASS_OCTAVE = 2;
+
 export function generateBassLine(
   progression: Chord[],
   style: BassStyle,
@@ -404,7 +411,7 @@ export function generateBassLine(
             note: root,
             duration: 4 / notesPerChord,
             velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
-            octave: 2,
+            octave: BASS_OCTAVE,
             chordIndex,
             style,
           });
@@ -417,12 +424,12 @@ export function generateBassLine(
         const scaleNotes = getScaleNotes(root, 'major');
         const notesPerChord = 4;
         for (let i = 0; i < notesPerChord; i++) {
-          const useChromatic = Math.random() < varietyFactor * 0.3;
+          const useChromatic = Math.random() < varietyFactor * BASS_CHROMATIC_PROBABILITY;
           let note: NoteName;
           if (i === 0) {
             note = root;
-          } else if (i === notesPerChord - 1 && Math.random() < 0.5) {
-            // Approach note to next chord
+          } else if (i === notesPerChord - 1 && Math.random() < BASS_APPROACH_NOTE_PROBABILITY) {
+            // Approach note to next chord (semitone above or below)
             const nextChord = progression[(chordIndex + 1) % progression.length];
             note = transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : 11);
           } else if (useChromatic) {
@@ -434,7 +441,7 @@ export function generateBassLine(
             note,
             duration: 1,
             velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
-            octave: 2,
+            octave: BASS_OCTAVE,
             chordIndex,
             style,
           });
@@ -451,15 +458,15 @@ export function generateBassLine(
         ];
         const pattern = randomChoice(patterns);
         pattern.forEach((dur, i) => {
-          const isRest = Math.random() < 0.2 * (1 - varietyFactor);
+          const isRest = Math.random() < BASS_REST_PROBABILITY * (1 - varietyFactor);
           if (!isRest) {
-            const useAlternate = Math.random() < varietyFactor * 0.4;
+            const useAlternate = Math.random() < varietyFactor * BASS_ALTERNATE_NOTE_PROBABILITY;
             const note = useAlternate ? randomChoice(chordNotes) : root;
             bassLine.push({
               note,
               duration: dur,
               velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
-              octave: 2,
+              octave: BASS_OCTAVE,
               chordIndex,
               style,
             });
@@ -472,8 +479,8 @@ export function generateBassLine(
         // Octave jumps
         const notesPerChord = 2 + Math.floor(varietyFactor * 2);
         for (let i = 0; i < notesPerChord; i++) {
-          const octave = i % 2 === 0 ? 2 : 3;
-          const useAlternate = Math.random() < varietyFactor * 0.3;
+          const octave = i % 2 === 0 ? BASS_OCTAVE : BASS_OCTAVE + 1;
+          const useAlternate = Math.random() < varietyFactor * BASS_CHROMATIC_PROBABILITY;
           const note = useAlternate ? fifth : root;
           bassLine.push({
             note,
@@ -497,7 +504,7 @@ export function generateBassLine(
             note,
             duration: 1,
             velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
-            octave: 2,
+            octave: BASS_OCTAVE,
             chordIndex,
             style,
           });

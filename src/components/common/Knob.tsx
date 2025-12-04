@@ -41,7 +41,9 @@ export function Knob({
     large: 'knob-large',
   };
 
-  const normalizedValue = (value - min) / (max - min);
+  // Avoid division by zero when min equals max
+  const range = max - min;
+  const normalizedValue = range > 0 ? (value - min) / range : 0;
   const rotation = normalizedValue * 270 - 135; // -135 to 135 degrees
 
   const handleMouseDown = useCallback(
@@ -56,6 +58,7 @@ export function Knob({
   const handleTouchStart = useCallback(
     (e: React.TouchEvent) => {
       e.preventDefault();
+      if (e.touches.length === 0) return;
       setIsDragging(true);
       dragStartRef.current = { y: e.touches[0].clientY, value };
     },
@@ -69,7 +72,7 @@ export function Knob({
       if (!dragStartRef.current) return;
 
       const deltaY = dragStartRef.current.y - clientY;
-      const sensitivity = (max - min) / 100;
+      const sensitivity = range > 0 ? range / 100 : 1;
       const newValue = Math.round(
         Math.min(max, Math.max(min, dragStartRef.current.value + deltaY * sensitivity)) / step
       ) * step;
@@ -84,6 +87,7 @@ export function Knob({
     };
 
     const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 0) return;
       handleMove(e.touches[0].clientY);
     };
 
@@ -103,7 +107,7 @@ export function Knob({
       document.removeEventListener('touchmove', handleTouchMove);
       document.removeEventListener('touchend', handleEnd);
     };
-  }, [isDragging, max, min, onChange, step, value]);
+  }, [isDragging, max, min, onChange, range, step, value]);
 
   return (
     <div className={`knob-container ${sizeClasses[size]}`}>

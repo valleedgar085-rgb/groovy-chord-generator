@@ -158,6 +158,9 @@ export function playChord(
   }
 }
 
+// Bass volume scaling constant
+const BASS_VOLUME_SCALE = 0.7;
+
 export function playBassNote(
   bassNote: BassNote,
   duration = 1,
@@ -172,7 +175,7 @@ export function playBassNote(
   // Play bass note with lower octave and adjusted envelope for bass
   playNote(bassNote.note, bassNote.octave, duration, 0, {
     ...options,
-    masterVolume: options.masterVolume * 0.7,
+    masterVolume: options.masterVolume * BASS_VOLUME_SCALE,
     noteIndex: 0,
   });
 }
