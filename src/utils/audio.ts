@@ -39,6 +39,7 @@ export function playNote(
     masterVolume: number;
     envelope: Envelope;
     useFilter?: boolean;
+    noteIndex?: number; // For deterministic detuning
   }
 ): OscillatorNode {
   const ctx = initAudio();
@@ -50,10 +51,13 @@ export function playNote(
   oscillator.type = options.soundType;
   oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + time);
 
-  // Add a subtle detuning for a richer sound
-  const detuneAmount = (Math.random() - 0.5) * 4; // +/- 2 cents for warmth
+  // Add subtle deterministic detuning based on note position for a richer, chorus-like sound
+  // This creates consistent audio output while still providing warmth
+  const noteIdx = options.noteIndex ?? 0;
+  const detuneAmount = ((noteIdx % 3) - 1) * 2; // -2, 0, or +2 cents based on note index
   oscillator.detune.setValueAtTime(detuneAmount, ctx.currentTime + time);
 
+  // Volume reduced to 0.25 from 0.3 to prevent clipping when playing chords with bass notes
   const volume = 0.25 * options.masterVolume;
   const env = options.envelope;
   const startTime = ctx.currentTime + time;
@@ -108,8 +112,8 @@ export function playChord(
 ): void {
   initAudio();
 
-  // Add bass note an octave below root for fuller sound
-  const addBass = Math.random() > 0.5;
+  // Always add bass note for fuller sound (deterministic behavior)
+  const addBass = true;
   
   if (chord.voicedNotes && chord.voicedNotes.length > 0) {
     // Play bass note
@@ -118,13 +122,17 @@ export function playChord(
       playNote(bassNote.note, Math.max(2, bassNote.octave - 1), duration, 0, {
         ...options,
         masterVolume: options.masterVolume * 0.6,
+        noteIndex: 0,
       });
     }
     
     chord.voicedNotes.forEach((voicedNote, i) => {
       // Slight delay between notes for arpeggio-like effect
       const delay = i * 0.015;
-      playNote(voicedNote.note, voicedNote.octave, duration, delay, options);
+      playNote(voicedNote.note, voicedNote.octave, duration, delay, {
+        ...options,
+        noteIndex: i + 1,
+      });
     });
   } else {
     const intervals = CHORD_TYPES[chord.type]?.intervals || [0, 4, 7];
@@ -134,6 +142,7 @@ export function playChord(
       playNote(chord.root, 3, duration, 0, {
         ...options,
         masterVolume: options.masterVolume * 0.6,
+        noteIndex: 0,
       });
     }
     
@@ -141,7 +150,10 @@ export function playChord(
       const note = transposeNote(chord.root, interval);
       // Slight delay between notes for arpeggio-like effect
       const delay = i * 0.015;
-      playNote(note, 4, duration, delay, options);
+      playNote(note, 4, duration, delay, {
+        ...options,
+        noteIndex: i + 1,
+      });
     });
   }
 }
