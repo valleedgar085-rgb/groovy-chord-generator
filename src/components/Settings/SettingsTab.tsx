@@ -1,12 +1,12 @@
 /**
  * Groovy Chord Generator
  * Settings Tab Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useApp } from '../../hooks';
 import { Slider, Toggle, ControlSelect } from '../common';
-import { SOUND_TYPE_OPTIONS } from '../../constants';
+import { SOUND_TYPE_OPTIONS, APP_VERSION } from '../../constants';
 import type { SoundType } from '../../types';
 
 export function SettingsTab() {
@@ -110,7 +110,7 @@ export function SettingsTab() {
             <p>
               <strong>Groovy Chord Generator</strong>
             </p>
-            <p>Version 2.4</p>
+            <p>Version {APP_VERSION}</p>
             <p>
               Created by <span className="accent">Edgar Valle</span>
             </p>

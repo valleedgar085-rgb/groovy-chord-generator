@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Generation Animation Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useState, useEffect } from 'react';

@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Floating Action Button Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useState, useRef, useEffect } from 'react';

@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Editor Components Index
- * Version 2.4
+ * Version 2.5
  */
 
 export { EditorTab } from './EditorTab';

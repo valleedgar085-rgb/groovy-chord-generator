@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Collapsible Section Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useState, type ReactNode } from 'react';

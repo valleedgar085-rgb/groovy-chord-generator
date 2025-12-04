@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Main Entry Point
- * Version 2.4
+ * Version 2.5
  * Author: Edgar Valle
  */
 
@@ -9,6 +9,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import App from './App';
 import { AppProvider } from './hooks';
+import { APP_VERSION } from './constants';
 
 // Mount root safely
 const rootElement = document.getElementById('root');
@@ -28,5 +29,5 @@ root.render(
   </StrictMode>,
 );
 
-console.info('🎵 Groovy Chord Generator v2.4 initialized');
+console.info(`🎵 Groovy Chord Generator v${APP_VERSION} initialized`);
 console.info('Created by Edgar Valle');

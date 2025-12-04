@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * TypeScript Type Definitions
- * Version 2.4
+ * Version 2.5
  */
 
 // ===================================
