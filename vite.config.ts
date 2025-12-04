@@ -8,11 +8,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: false,
-    rollupOptions: {
-      output: {
-        // Remove manual chunks for single file output
-      },
-    },
   },
   server: {
     port: 5173,
