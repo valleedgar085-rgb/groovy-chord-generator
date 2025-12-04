@@ -4,9 +4,14 @@
 
 ## Quick Start
 
-This repository includes a **self-contained HTML file** ready for Android APK conversion.
+Build the project to generate a **self-contained HTML file** ready for Android APK conversion:
 
-- **`android-apk/index.html`** - Single-file version with all CSS and JavaScript inlined, optimized for Android WebView
+```bash
+npm install
+npm run build
+```
+
+This creates `dist/index.html` - a single-file version with all CSS and JavaScript inlined, optimized for Android WebView.
 
 ## Building an Android APK with Android Studio
 
@@ -39,8 +44,9 @@ Follow these steps to convert this web app into a native Android APK using Andro
 
 ### Step 3: Copy index.html
 
-1. Copy the `android-apk/index.html` file from this repository
-2. Paste it into `app/src/main/assets/index.html` in your Android project
+1. Build the project with `npm run build` (if not already done)
+2. Copy the `dist/index.html` file from this repository
+3. Paste it into `app/src/main/assets/index.html` in your Android project
 
 ### Step 4: Modify activity_main.xml
 
@@ -297,7 +303,7 @@ The build process automatically creates a single self-contained HTML file:
 npm run build
 ```
 
-This generates `dist/index.html` with all CSS and JavaScript inlined. Copy this file to `android-apk/index.html` if you want to update the APK-ready version.
+This generates `dist/index.html` with all CSS and JavaScript inlined, ready for Android APK conversion.
 
 ---
 
