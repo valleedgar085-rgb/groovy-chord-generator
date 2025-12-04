@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Piano Roll Component
- * Version 2.4
+ * Version 2.5
  */
 
 import React, { useEffect, useRef, useCallback, useState } from 'react';

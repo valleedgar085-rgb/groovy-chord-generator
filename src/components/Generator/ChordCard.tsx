@@ -1,10 +1,11 @@
 /**
  * Groovy Chord Generator
  * Chord Card Component
- * Version 2.4
+ * Version 2.5
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
+import { useKeyboardClickSimple } from '../../hooks';
 import type { Chord } from '../../types';
 import { CHORD_TYPES } from '../../constants';
 
@@ -22,23 +23,20 @@ export function ChordCard({ chord, index, showNumerals, onPlayChord }: ChordCard
   const displayName = chord.root + chordSymbol;
   const chordTypeName = CHORD_TYPES[chord.type]?.name || chord.type;
 
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     setIsActive(true);
     onPlayChord(chord);
     setTimeout(() => setIsActive(false), 500);
-  };
+  }, [chord, onPlayChord]);
+
+  const handleKeyDown = useKeyboardClickSimple(handleClick);
 
   return (
     <div
       className={`chord-card ${isActive ? 'active' : ''}`}
       data-index={index}
       onClick={handleClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          handleClick();
-        }
-      }}
+      onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
     >

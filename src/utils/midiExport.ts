@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Utility Functions - MIDI Export
- * Version 2.4
+ * Version 2.5
  */
 
 import type { Chord, KeyName, GenreKey } from '../types';

@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Utility Functions - Local Storage
- * Version 2.4
+ * Version 2.5
  */
 
 export function saveToStorage<T>(key: string, value: T): void {

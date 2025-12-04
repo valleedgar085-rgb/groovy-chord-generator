@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Animation Utilities
- * Version 2.4
+ * Version 2.5
  */
 
 // Helper function to trigger the generation animation

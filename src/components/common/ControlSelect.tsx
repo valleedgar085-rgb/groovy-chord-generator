@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Control Select Component
- * Version 2.4
+ * Version 2.5
  */
 
 import type { ControlSelectProps } from '../../types';

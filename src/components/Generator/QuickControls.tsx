@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Quick Controls Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useApp } from '../../hooks';

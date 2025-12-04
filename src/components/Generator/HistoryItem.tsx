@@ -1,9 +1,10 @@
 /**
  * Groovy Chord Generator
  * History Item Component
- * Version 2.4
+ * Version 2.5
  */
 
+import { useKeyboardClick } from '../../hooks';
 import type { HistoryEntry } from '../../types';
 import { CHORD_TYPES, GENRE_PROFILES } from '../../constants';
 import { getTimeAgo } from '../../utils';
@@ -20,17 +21,13 @@ export function HistoryItem({ entry, index, onRestore }: HistoryItemProps) {
     .join(' - ');
   const timeAgo = getTimeAgo(entry.timestamp);
   const genreProfile = GENRE_PROFILES[entry.genre];
+  const handleKeyDown = useKeyboardClick(onRestore, index);
 
   return (
     <div
       className="history-item"
       onClick={() => onRestore(index)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onRestore(index);
-        }
-      }}
+      onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
     >

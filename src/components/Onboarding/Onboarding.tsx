@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Onboarding Overlay Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useState } from 'react';

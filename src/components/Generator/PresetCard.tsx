@@ -1,9 +1,10 @@
 /**
  * Groovy Chord Generator
  * Preset Card Component
- * Version 2.4
+ * Version 2.5
  */
 
+import { useKeyboardClick } from '../../hooks';
 import type { SmartPreset } from '../../types';
 
 interface PresetCardProps {
@@ -14,17 +15,14 @@ interface PresetCardProps {
 }
 
 export function PresetCard({ presetKey, preset, isSelected, onSelect }: PresetCardProps) {
+  const handleKeyDown = useKeyboardClick(onSelect, presetKey);
+
   return (
     <div
       className={`preset-card ${isSelected ? 'selected' : ''}`}
       data-preset={presetKey}
       onClick={() => onSelect(presetKey)}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          onSelect(presetKey);
-        }
-      }}
+      onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
     >

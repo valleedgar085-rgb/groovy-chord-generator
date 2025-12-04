@@ -1,8 +1,14 @@
 /**
  * Groovy Chord Generator
  * Constants - Music Theory Data
- * Version 2.4
+ * Version 2.5
  */
+
+// ===================================
+// Application Version
+// ===================================
+
+export const APP_VERSION = '2.5';
 
 import type {
   NoteName,
