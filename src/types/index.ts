@@ -213,6 +213,7 @@ export interface AppState {
   envelope: Envelope;
   swing: number;
   useModalInterchange: boolean;
+  includeMelody: boolean;
   currentPreset: string | null;
   progressionHistory: HistoryEntry[];
 }
@@ -288,6 +289,7 @@ export interface AppContextType {
     setUseVoiceLeading: (use: boolean) => void;
     setUseAdvancedTheory: (use: boolean) => void;
     setUseModalInterchange: (use: boolean) => void;
+    setIncludeMelody: (include: boolean) => void;
     setCurrentTab: (tab: TabName) => void;
     setOnboardingComplete: (complete: boolean) => void;
     generateProgression: () => void;
