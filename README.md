@@ -13,9 +13,45 @@ npm run build
 
 This creates `dist/index.html` - a single-file version with all CSS and JavaScript inlined, optimized for Android WebView.
 
-## Building an Android APK with Android Studio
+## Building an Android APK with Android Studio (Easy Method)
 
-Follow these steps to convert this web app into a native Android APK using Android Studio's WebView:
+This repository includes a **complete Android Studio project** with Kotlin in the `android/` folder. Here's the quick way to build an APK:
+
+### Prerequisites
+
+- [Android Studio](https://developer.android.com/studio) (Hedgehog 2023.1.1 or newer)
+- Android SDK 34 (installed with Android Studio)
+
+### Steps
+
+1. **Build the web app and copy to Android assets:**
+   ```bash
+   npm install
+   npm run build:android
+   ```
+
+2. **Open the Android project:**
+   - Open Android Studio
+   - Select **File → Open**
+   - Navigate to the `android` folder in this repository
+   - Wait for Gradle sync to complete
+
+3. **Build the APK:**
+   - Click **Build → Build Bundle(s) / APK(s) → Build APK(s)**
+   - Find your APK at: `android/app/build/outputs/apk/debug/app-debug.apk`
+
+4. **Install on your device:**
+   - Transfer the APK to your Android device
+   - Enable "Install from unknown sources" if needed
+   - Install and enjoy!
+
+For more details, see the [Android README](android/README.md).
+
+---
+
+## Building an Android APK (Manual Method)
+
+If you prefer to create your own Android project from scratch, follow these steps:
 
 ### Prerequisites
 

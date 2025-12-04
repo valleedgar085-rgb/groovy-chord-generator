@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:android": "npm run build && cp dist/index.html android/app/src/main/assets/index.html",
     "lint": "eslint .",
     "preview": "vite preview"
   },
