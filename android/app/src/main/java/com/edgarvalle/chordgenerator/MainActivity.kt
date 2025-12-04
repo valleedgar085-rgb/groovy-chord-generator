@@ -3,6 +3,7 @@ package com.edgarvalle.chordgenerator
 import android.os.Bundle
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import com.edgarvalle.chordgenerator.databinding.ActivityMainBinding
 
@@ -26,6 +27,7 @@ class MainActivity : AppCompatActivity() {
         
         webView = binding.webView
         setupWebView()
+        setupBackPressHandler()
         
         // Load the local HTML file from assets
         webView.loadUrl("file:///android_asset/index.html")
@@ -33,7 +35,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupWebView() {
         webView.settings.apply {
-            // Enable JavaScript (required for the app to work)
+            // JavaScript is required for the React app to function.
+            // This is safe because we only load local content from assets,
+            // not from the internet, eliminating XSS risks.
             javaScriptEnabled = true
             
             // Enable DOM storage for localStorage support
@@ -62,14 +66,19 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
     }
 
-    @Deprecated("Deprecated in Java")
-    override fun onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack()
-        } else {
-            @Suppress("DEPRECATION")
-            super.onBackPressed()
-        }
+    private fun setupBackPressHandler() {
+        // Use the modern OnBackPressedCallback for Android 13+ compatibility
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                if (webView.canGoBack()) {
+                    webView.goBack()
+                } else {
+                    // Disable this callback and trigger the default back behavior
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
+                }
+            }
+        })
     }
     
     override fun onPause() {
