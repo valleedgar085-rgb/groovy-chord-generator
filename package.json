@@ -1,7 +1,7 @@
 {
   "name": "groovy-chord-generator",
   "private": true,
-  "version": "2.4.0",
+  "version": "2.5.0",
   "description": "Create amazing chord progressions for any genre - A mobile-optimized music creation tool",
   "author": "Edgar Valle",
   "type": "module",
