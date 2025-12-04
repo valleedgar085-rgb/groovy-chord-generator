@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Bottom Navigation Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { useApp } from '../../hooks';
@@ -9,6 +9,7 @@ import type { TabName } from '../../types';
 
 const navItems: { tab: TabName; icon: string; label: string }[] = [
   { tab: 'generator', icon: '🎵', label: 'Generator' },
+  { tab: 'bass', icon: '🎸', label: 'Bass' },
   { tab: 'editor', icon: '🎼', label: 'Editor' },
   { tab: 'settings', icon: '⚙️', label: 'Settings' },
 ];

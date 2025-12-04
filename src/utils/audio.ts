@@ -1,10 +1,10 @@
 /**
  * Groovy Chord Generator
  * Utility Functions - Audio (Web Audio API)
- * Version 2.4
+ * Version 2.5
  */
 
-import type { Chord, Envelope, SoundType, NoteName } from '../types';
+import type { Chord, Envelope, SoundType, NoteName, BassNote } from '../types';
 import { CHORD_TYPES } from '../constants';
 import { getNoteIndex, transposeNote } from './musicTheory';
 
@@ -156,6 +156,28 @@ export function playChord(
       });
     });
   }
+}
+
+// Bass volume scaling constant
+const BASS_VOLUME_SCALE = 0.7;
+
+export function playBassNote(
+  bassNote: BassNote,
+  duration = 1,
+  options: {
+    soundType: SoundType;
+    masterVolume: number;
+    envelope: Envelope;
+  }
+): void {
+  initAudio();
+
+  // Play bass note with lower octave and adjusted envelope for bass
+  playNote(bassNote.note, bassNote.octave, duration, 0, {
+    ...options,
+    masterVolume: options.masterVolume * BASS_VOLUME_SCALE,
+    noteIndex: 0,
+  });
 }
 
 export function playSpiceSound(masterVolume: number): void {

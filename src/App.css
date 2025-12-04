@@ -1713,3 +1713,258 @@ input[type="range"]::-webkit-slider-thumb {
         grid-template-columns: repeat(3, 1fr);
     }
 }
+
+/* ==========================================
+   KNOB COMPONENT - v2.5
+   ========================================== */
+.knob-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.knob-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    text-align: center;
+}
+
+.knob {
+    position: relative;
+    cursor: grab;
+    user-select: none;
+    touch-action: none;
+    transition: transform var(--transition-fast);
+}
+
+.knob:focus {
+    outline: none;
+}
+
+.knob:focus-visible {
+    outline: 2px solid var(--accent-secondary);
+    outline-offset: 4px;
+    border-radius: 50%;
+}
+
+.knob-active {
+    cursor: grabbing;
+}
+
+.knob-small {
+    --knob-size: 48px;
+}
+
+.knob-medium {
+    --knob-size: 64px;
+}
+
+.knob-large {
+    --knob-size: 80px;
+}
+
+.knob-track {
+    width: var(--knob-size);
+    height: var(--knob-size);
+    position: relative;
+}
+
+.knob-arc {
+    width: 100%;
+    height: 100%;
+}
+
+.knob-progress {
+    transition: stroke-dasharray var(--transition-fast);
+    filter: drop-shadow(0 0 4px var(--knob-color));
+}
+
+.knob-inner {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: calc(var(--knob-size) - 24px);
+    height: calc(var(--knob-size) - 24px);
+    margin-left: calc((var(--knob-size) - 24px) / -2);
+    margin-top: calc((var(--knob-size) - 24px) / -2);
+    background: var(--bg-tertiary);
+    border-radius: 50%;
+    box-shadow: 
+        inset 0 2px 4px rgba(0, 0, 0, 0.3),
+        0 2px 4px rgba(0, 0, 0, 0.2);
+    transition: transform var(--transition-fast);
+}
+
+.knob-indicator {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    width: 4px;
+    height: 8px;
+    margin-left: -2px;
+    background: var(--knob-color, var(--accent-primary));
+    border-radius: 2px;
+    box-shadow: 0 0 4px var(--knob-color, var(--accent-primary));
+}
+
+.knob-value {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    text-align: center;
+}
+
+.knobs-container {
+    display: flex;
+    justify-content: center;
+    gap: var(--spacing-xl);
+    padding: var(--spacing-md);
+    flex-wrap: wrap;
+}
+
+/* ==========================================
+   BASS TAB STYLES - v2.5
+   ========================================== */
+.bass-controls {
+    padding: var(--spacing-xs);
+}
+
+.bass-controls .control-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.bass-controls .control-row:last-child {
+    grid-template-columns: 1fr;
+}
+
+.bass-display {
+    min-height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-sm);
+}
+
+.bass-placeholder {
+    color: var(--text-muted);
+    font-style: italic;
+    text-align: center;
+    padding: var(--spacing-lg);
+}
+
+.bass-notes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-sm);
+    justify-content: center;
+}
+
+.bass-note-card {
+    background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-pink) 100%);
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: var(--border-radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    min-width: 50px;
+    animation: fadeInUp 0.3s ease forwards;
+    opacity: 0;
+    box-shadow: var(--shadow-glow);
+}
+
+.bass-note-name {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: white;
+}
+
+.bass-note-octave {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.bass-actions-section {
+    padding: var(--spacing-md);
+}
+
+.bass-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.bass-actions .btn-primary,
+.bass-actions .btn-secondary {
+    justify-content: center;
+}
+
+/* ==========================================
+   UI IMPROVEMENTS - v2.5
+   ========================================== */
+
+/* Scrollable content for full card visibility */
+.collapsible-section.expanded .collapsible-content {
+    max-height: 600px;
+    overflow-y: auto;
+    padding: 0 var(--spacing-md) var(--spacing-md);
+}
+
+/* Professional card styling enhancements */
+.quick-controls,
+.collapsible-section,
+.settings-group {
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow var(--transition-normal), transform var(--transition-fast);
+}
+
+.quick-controls:hover,
+.collapsible-section:hover,
+.settings-group:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* Enhanced chord display with scrolling */
+.chord-display {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: var(--spacing-md);
+}
+
+/* Tablet breakpoint for knobs */
+@media (min-width: 768px) {
+    .knobs-container {
+        gap: var(--spacing-xl);
+    }
+    
+    .knob-large {
+        --knob-size: 100px;
+    }
+    
+    .bass-actions {
+        flex-direction: row;
+    }
+    
+    .bass-actions .btn-primary,
+    .bass-actions .btn-secondary {
+        flex: 1;
+    }
+}
+
+/* Desktop breakpoint for knobs */
+@media (min-width: 1024px) {
+    .knobs-container {
+        gap: calc(var(--spacing-xl) * 1.5);
+    }
+    
+    .knob-large {
+        --knob-size: 120px;
+    }
+}

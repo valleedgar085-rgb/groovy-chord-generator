@@ -66,7 +66,7 @@ export type KeyName =
   | 'C' | 'G' | 'D' | 'A' | 'E' | 'F' | 'Bb'
   | 'Am' | 'Em' | 'Dm' | 'Bm' | 'Fm';
 
-export type TabName = 'generator' | 'editor' | 'settings';
+export type TabName = 'generator' | 'editor' | 'bass' | 'settings';
 
 // ===================================
 // Data Structure Interfaces
@@ -110,6 +110,17 @@ export interface MelodyNote {
   chordIndex: number;
   octave: number;
 }
+
+export interface BassNote {
+  note: NoteName;
+  duration: number;
+  velocity: number;
+  octave: number;
+  chordIndex: number;
+  style: BassStyle;
+}
+
+export type BassStyle = 'root' | 'walking' | 'syncopated' | 'octave' | 'fifths';
 
 export interface GenreProfile {
   name: string;
@@ -192,6 +203,7 @@ export interface PianoRollNote {
 export interface AppState {
   currentProgression: Chord[];
   currentMelody: MelodyNote[];
+  currentBassLine: BassNote[];
   currentKey: KeyName;
   isMinorKey: boolean;
   genre: GenreKey;
@@ -214,6 +226,11 @@ export interface AppState {
   swing: number;
   useModalInterchange: boolean;
   includeMelody: boolean;
+  includeBass: boolean;
+  bassStyle: BassStyle;
+  bassVariety: number;
+  chordVariety: number;
+  rhythmVariety: number;
   currentPreset: string | null;
   progressionHistory: HistoryEntry[];
 }
@@ -290,14 +307,21 @@ export interface AppContextType {
     setUseAdvancedTheory: (use: boolean) => void;
     setUseModalInterchange: (use: boolean) => void;
     setIncludeMelody: (include: boolean) => void;
+    setIncludeBass: (include: boolean) => void;
+    setBassStyle: (style: BassStyle) => void;
+    setBassVariety: (variety: number) => void;
+    setChordVariety: (variety: number) => void;
+    setRhythmVariety: (variety: number) => void;
     setCurrentTab: (tab: TabName) => void;
     setOnboardingComplete: (complete: boolean) => void;
     generateProgression: () => void;
+    generateBassLine: () => void;
     regenerateProgression: () => void;
     spiceItUp: () => void;
     applyPreset: (presetKey: string) => void;
     restoreFromHistory: (index: number) => void;
     playProgression: () => void;
+    playBassLine: () => void;
     stopPlayback: () => void;
     playChord: (chord: Chord) => void;
     exportToMIDI: () => void;
