@@ -4,6 +4,7 @@
  * Version 2.4
  */
 
+import { memo } from 'react';
 import { useApp } from './hooks';
 import {
   Header,
@@ -17,8 +18,11 @@ import {
 } from './components';
 import './App.css';
 
-function AppContent() {
+type TabId = 'generator' | 'editor' | 'settings';
+
+function AppContentBase() {
   const { state } = useApp();
+  const currentTab: TabId = state.currentTab;
 
   return (
     <>
@@ -28,10 +32,10 @@ function AppContent() {
       <div className="app-container">
         <Header />
 
-        <main className="main-content">
-          {state.currentTab === 'generator' && <GeneratorTab />}
-          {state.currentTab === 'editor' && <EditorTab />}
-          {state.currentTab === 'settings' && <SettingsTab />}
+        <main className="main-content" aria-live="polite">
+          {currentTab === 'generator' && <GeneratorTab />}
+          {currentTab === 'editor' && <EditorTab />}
+          {currentTab === 'settings' && <SettingsTab />}
         </main>
 
         <FAB />
@@ -40,6 +44,8 @@ function AppContent() {
     </>
   );
 }
+
+const AppContent = memo(AppContentBase);
 
 function App() {
   return <AppContent />;
