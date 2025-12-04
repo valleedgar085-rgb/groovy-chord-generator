@@ -1,4 +1,4 @@
-# Groovy Chord Generator v2.4
+# Groovy Chord Generator v2.5
 
 🎵 A modern, mobile-optimized web app for creating amazing chord progressions for any genre.
 
@@ -200,6 +200,25 @@ For publishing to the Google Play Store:
 
 ## Features
 
+### 🎛️ Variety Knobs (v2.5) - NEW!
+- **Rotary Knob Controls**: Intuitive drag-based knobs for fine-tuned control
+- **Chord Variety**: Adjust how much variation is applied to chord progressions
+- **Rhythm Variety**: Control the rhythmic complexity and variation
+- **Swing Control**: Add groove and humanization with an easy-to-use knob interface
+
+### 🎸 Bass Notes Page (v2.5) - NEW!
+- **Dedicated Bass Tab**: Separate page focused entirely on bass line creation
+- **Multiple Bass Styles**: Choose from Root Notes, Walking Bass, Syncopated, Octave Jumps, and Root & Fifth patterns
+- **Bass Variety Knob**: Control the complexity and variation of generated bass lines
+- **Play Bass Line**: Listen to your generated bass patterns independently
+- **Generate Bass Lines**: Create bass lines that complement your chord progressions
+
+### 🎨 UI/UX Improvements (v2.5)
+- **Enhanced Card Visibility**: All UI cards now have proper scrolling for full visibility
+- **Professional Visual Design**: Refined styling with improved shadows and transitions
+- **Improved Navigation**: Added Bass tab to bottom navigation for easy access
+- **Touch-Optimized Knobs**: Responsive knob controls that work great on mobile devices
+
 ### ✨ Smart Presets (v2.4)
 - **Visual Preset Cards**: 8 creative presets with instant one-tap application
 - **Curated Moods**: Lo-Fi Chill Sunday, Cyberpunk Drive, Summer Pop Hit, Midnight Jazz, Epic Cinema, Soul Groove, Festival Drop, Indie Sunset
@@ -216,12 +235,11 @@ For publishing to the Google Play Store:
 - **Instant Recall**: One-tap restore of any saved progression
 - **Metadata Tracking**: Shows key, genre, and time for each saved progression
 
-### 🎛️ Generator
-- **Genre Selection**: Choose from multiple genres (Pop, Lo-Fi, EDM, R&B, Jazz, Trap, Cinematic, Indie Rock)
+### 🎵 Generator
+- **Genre Selection**: Choose from multiple genres (Pop, Lo-Fi, EDM, R&B, Jazz, Trap, Cinematic, Indie Rock, Reggae, Blues, Country, Funk)
 - **Key Selection**: Support for major and minor keys
 - **Complexity Levels**: Simple, Medium, Complex, and Advanced progressions
 - **Rhythm Options**: Soft, Moderate, Strong, and Intense patterns
-- **Groove/Swing Slider**: Add humanization for a more natural feel
 - **Modal Interchange Toggle**: Enable borrowed chords from parallel keys
 - **Instant Generation**: One-tap chord progression creation
 - **Animation & Sound Effects**: Visual light burst animations and fun sound effects
@@ -297,7 +315,14 @@ This generates `dist/index.html` with all CSS and JavaScript inlined. Copy this 
 
 ## Version History
 
-### v2.4 (Current)
+### v2.5 (Current)
+- 🎛️ **Variety Knobs**: New rotary knob controls for chord and rhythm variety
+- 🎸 **Bass Notes Page**: Dedicated tab for bass line generation with multiple styles
+- 🎨 **UI/UX Improvements**: Enhanced card visibility with scrolling, professional styling
+- 🔧 **Code Cleanup**: Improved codebase structure and organization
+- 📱 **Better Mobile Experience**: Touch-optimized knob controls and improved navigation
+
+### v2.4
 - ✨ Smart Presets with visual preset cards
 - 🌶️ "Spice It Up" button for chord substitutions
 - 📜 History/Saved Progressions with auto-save

@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Utility Functions - Music Theory
- * Version 2.4
+ * Version 2.5
  */
 
 import type {
@@ -12,6 +12,9 @@ import type {
   Chord,
   VoicedNote,
   GenreKey,
+  BassNote,
+  BassStyle,
+  RhythmLevel,
 } from '../types';
 
 import {
@@ -25,6 +28,7 @@ import {
   MODAL_INTERCHANGE,
   MODAL_INTERCHANGE_PROBABILITY,
   SPICE_PROBABILITY_THRESHOLDS,
+  RHYTHM_PATTERNS,
 } from '../constants';
 
 // ===================================
@@ -370,6 +374,140 @@ export function spiceUpProgression(
 
     return spicedChord;
   });
+}
+
+// ===================================
+// Bass Line Generation Functions - v2.5
+// ===================================
+
+export function generateBassLine(
+  progression: Chord[],
+  style: BassStyle,
+  variety: number,
+  rhythm: RhythmLevel
+): BassNote[] {
+  const bassLine: BassNote[] = [];
+  const rhythmPattern = RHYTHM_PATTERNS[rhythm];
+  const varietyFactor = variety / 100; // 0 to 1
+
+  progression.forEach((chord, chordIndex) => {
+    const chordNotes = getChordNotes(chord);
+    const root = chord.root;
+    const fifth = transposeNote(root, 7);
+
+    switch (style) {
+      case 'root': {
+        // Simple root notes
+        const notesPerChord = 1 + Math.floor(varietyFactor * 3);
+        for (let i = 0; i < notesPerChord; i++) {
+          bassLine.push({
+            note: root,
+            duration: 4 / notesPerChord,
+            velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
+            octave: 2,
+            chordIndex,
+            style,
+          });
+        }
+        break;
+      }
+
+      case 'walking': {
+        // Walking bass line - chromatic approach notes
+        const scaleNotes = getScaleNotes(root, 'major');
+        const notesPerChord = 4;
+        for (let i = 0; i < notesPerChord; i++) {
+          const useChromatic = Math.random() < varietyFactor * 0.3;
+          let note: NoteName;
+          if (i === 0) {
+            note = root;
+          } else if (i === notesPerChord - 1 && Math.random() < 0.5) {
+            // Approach note to next chord
+            const nextChord = progression[(chordIndex + 1) % progression.length];
+            note = transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : 11);
+          } else if (useChromatic) {
+            note = transposeNote(root, randomInt(1, 11));
+          } else {
+            note = randomChoice(scaleNotes);
+          }
+          bassLine.push({
+            note,
+            duration: 1,
+            velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
+            octave: 2,
+            chordIndex,
+            style,
+          });
+        }
+        break;
+      }
+
+      case 'syncopated': {
+        // Syncopated rhythms with rests
+        const patterns = [
+          [1, 0.5, 0.5, 1, 1],
+          [0.5, 0.5, 1, 0.5, 0.5, 1],
+          [1.5, 0.5, 1, 1],
+        ];
+        const pattern = randomChoice(patterns);
+        pattern.forEach((dur, i) => {
+          const isRest = Math.random() < 0.2 * (1 - varietyFactor);
+          if (!isRest) {
+            const useAlternate = Math.random() < varietyFactor * 0.4;
+            const note = useAlternate ? randomChoice(chordNotes) : root;
+            bassLine.push({
+              note,
+              duration: dur,
+              velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
+              octave: 2,
+              chordIndex,
+              style,
+            });
+          }
+        });
+        break;
+      }
+
+      case 'octave': {
+        // Octave jumps
+        const notesPerChord = 2 + Math.floor(varietyFactor * 2);
+        for (let i = 0; i < notesPerChord; i++) {
+          const octave = i % 2 === 0 ? 2 : 3;
+          const useAlternate = Math.random() < varietyFactor * 0.3;
+          const note = useAlternate ? fifth : root;
+          bassLine.push({
+            note,
+            duration: 4 / notesPerChord,
+            velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
+            octave,
+            chordIndex,
+            style,
+          });
+        }
+        break;
+      }
+
+      case 'fifths': {
+        // Root and fifth pattern
+        const pattern = varietyFactor > 0.5
+          ? [root, fifth, root, fifth]
+          : [root, root, fifth, root];
+        pattern.forEach((note, i) => {
+          bassLine.push({
+            note,
+            duration: 1,
+            velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
+            octave: 2,
+            chordIndex,
+            style,
+          });
+        });
+        break;
+      }
+    }
+  });
+
+  return bassLine;
 }
 
 // ===================================

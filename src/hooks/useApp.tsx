@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * React Context Hook for App State
- * Version 2.4
+ * Version 2.5
  */
 
 import {
@@ -24,6 +24,7 @@ import type {
   TabName,
   Chord,
   MelodyNote,
+  BassStyle,
   HistoryEntry,
   AppContextType,
   ScaleName,
@@ -50,10 +51,12 @@ import {
   randomInt,
   getScaleNotes,
   transposeNote,
+  generateBassLine as generateBassLineUtil,
 } from '../utils/musicTheory';
 import { saveToStorage, loadFromStorage } from '../utils/storage';
 import {
   playChord as playChordAudio,
+  playBassNote as playBassNoteAudio,
   playSpiceSound,
   playGenerationSounds,
   playExportSound,
@@ -73,6 +76,7 @@ function loadInitialState(): AppState {
   return {
     currentProgression: [],
     currentMelody: [],
+    currentBassLine: [],
     currentKey: loadFromStorage('currentKey', DEFAULT_STATE.currentKey),
     isMinorKey: false,
     genre: loadFromStorage('genre', DEFAULT_STATE.genre),
@@ -98,6 +102,11 @@ function loadInitialState(): AppState {
       DEFAULT_STATE.useModalInterchange,
     ),
     includeMelody: loadFromStorage('includeMelody', DEFAULT_STATE.includeMelody),
+    includeBass: loadFromStorage('includeBass', DEFAULT_STATE.includeBass),
+    bassStyle: loadFromStorage('bassStyle', DEFAULT_STATE.bassStyle),
+    bassVariety: loadFromStorage('bassVariety', DEFAULT_STATE.bassVariety),
+    chordVariety: loadFromStorage('chordVariety', DEFAULT_STATE.chordVariety),
+    rhythmVariety: loadFromStorage('rhythmVariety', DEFAULT_STATE.rhythmVariety),
     currentPreset: null,
     progressionHistory: loadFromStorage('progressionHistory', []),
   };
@@ -297,6 +306,41 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [updateState],
   );
 
+  const setIncludeBass = useCallback(
+    (include: boolean) => {
+      updateState('includeBass', include, true);
+    },
+    [updateState],
+  );
+
+  const setBassStyle = useCallback(
+    (style: BassStyle) => {
+      updateState('bassStyle', style, true);
+    },
+    [updateState],
+  );
+
+  const setBassVariety = useCallback(
+    (variety: number) => {
+      updateState('bassVariety', variety, true);
+    },
+    [updateState],
+  );
+
+  const setChordVariety = useCallback(
+    (variety: number) => {
+      updateState('chordVariety', variety, true);
+    },
+    [updateState],
+  );
+
+  const setRhythmVariety = useCallback(
+    (variety: number) => {
+      updateState('rhythmVariety', variety, true);
+    },
+    [updateState],
+  );
+
   const setCurrentTab = useCallback(
     (tab: TabName) => {
       updateState('currentTab', tab);
@@ -429,16 +473,47 @@ export function AppProvider({ children }: { children: ReactNode }) {
           )
         : [];
 
+      // Generate bass line if includeBass is enabled
+      const bassLine = next.includeBass
+        ? generateBassLineUtil(
+            chords,
+            next.bassStyle,
+            next.bassVariety,
+            next.rhythm,
+          )
+        : [];
+
       playGenerationSounds(next.masterVolume);
 
       return {
         ...next,
         currentProgression: chords,
         currentMelody: melody,
+        currentBassLine: bassLine,
         isMinorKey: isMinor,
       };
     });
   }, [generateMelodyNotes]);
+
+  const generateBassLine = useCallback(() => {
+    setState((prev) => {
+      if (prev.currentProgression.length === 0) return prev;
+
+      const bassLine = generateBassLineUtil(
+        prev.currentProgression,
+        prev.bassStyle,
+        prev.bassVariety,
+        prev.rhythm,
+      );
+
+      playGenerationSounds(prev.masterVolume);
+
+      return {
+        ...prev,
+        currentBassLine: bassLine,
+      };
+    });
+  }, []);
 
   const regenerateProgression = useCallback(() => {
     generateProgression();
@@ -567,6 +642,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateState('isPlaying', false);
   }, [updateState]);
 
+  // Bass line playback
+  const playBassLine = useCallback(() => {
+    setState((prev) => {
+      if (prev.isPlaying || prev.currentBassLine.length === 0) return prev;
+
+      const beatDuration = 60 / prev.tempo;
+
+      playbackTimeoutRef.current.forEach(clearTimeout);
+      playbackTimeoutRef.current = [];
+
+      let currentTime = 0;
+
+      prev.currentBassLine.forEach((bassNote) => {
+        const noteDurationSeconds = bassNote.duration * beatDuration;
+        const timeout = setTimeout(() => {
+          const s = stateRef.current;
+          playBassNoteAudio(bassNote, noteDurationSeconds * 0.9, {
+            soundType: s.soundType,
+            masterVolume: s.masterVolume,
+            envelope: s.envelope,
+          });
+        }, currentTime * 1000);
+
+        playbackTimeoutRef.current.push(timeout);
+        currentTime += noteDurationSeconds;
+      });
+
+      const endTimeout = setTimeout(() => {
+        isPlayingRef.current = false;
+        setState((s) => ({ ...s, isPlaying: false }));
+      }, currentTime * 1000);
+
+      playbackTimeoutRef.current.push(endTimeout);
+      isPlayingRef.current = true;
+
+      return { ...prev, isPlaying: true };
+    });
+  }, []);
+
   // One-shot chord & export
 
   const playChord = useCallback((chord: Chord) => {
@@ -602,14 +716,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUseAdvancedTheory,
       setUseModalInterchange,
       setIncludeMelody,
+      setIncludeBass,
+      setBassStyle,
+      setBassVariety,
+      setChordVariety,
+      setRhythmVariety,
       setCurrentTab,
       setOnboardingComplete,
       generateProgression,
+      generateBassLine,
       regenerateProgression,
       spiceItUp,
       applyPreset,
       restoreFromHistory,
       playProgression,
+      playBassLine,
       stopPlayback,
       playChord,
       exportToMIDI: handleExportToMIDI,

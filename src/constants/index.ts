@@ -519,6 +519,11 @@ export const DEFAULT_STATE = {
   useAdvancedTheory: false,
   useModalInterchange: false,
   includeMelody: true,
+  includeBass: true,
+  bassStyle: 'root' as const,
+  bassVariety: 50,
+  chordVariety: 50,
+  rhythmVariety: 50,
 };
 
 export const MAX_HISTORY_LENGTH = 5;
@@ -576,4 +581,12 @@ export const SOUND_TYPE_OPTIONS = [
   { value: 'triangle', label: 'Triangle (Mellow)' },
   { value: 'square', label: 'Square (Retro)' },
   { value: 'sawtooth', label: 'Sawtooth (Bright)' },
+];
+
+export const BASS_STYLE_OPTIONS = [
+  { value: 'root', label: 'Root Notes' },
+  { value: 'walking', label: 'Walking Bass' },
+  { value: 'syncopated', label: 'Syncopated' },
+  { value: 'octave', label: 'Octave Jumps' },
+  { value: 'fifths', label: 'Root & Fifth' },
 ];

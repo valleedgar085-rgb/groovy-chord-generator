@@ -1,7 +1,7 @@
 /**
  * Groovy Chord Generator
  * Main App Component
- * Version 2.4
+ * Version 2.5
  */
 
 import { memo } from 'react';
@@ -16,13 +16,14 @@ import {
   FAB,
   GenerationAnimation,
 } from './components';
+import { BassTab } from './components/Bass';
 import './App.css';
 
-type TabId = 'generator' | 'editor' | 'settings';
+import type { TabName } from './types';
 
 function AppContentBase() {
   const { state } = useApp();
-  const currentTab: TabId = state.currentTab;
+  const currentTab: TabName = state.currentTab;
 
   return (
     <>
@@ -35,6 +36,7 @@ function AppContentBase() {
         <main className="main-content" aria-live="polite">
           {currentTab === 'generator' && <GeneratorTab />}
           {currentTab === 'editor' && <EditorTab />}
+          {currentTab === 'bass' && <BassTab />}
           {currentTab === 'settings' && <SettingsTab />}
         </main>
 
