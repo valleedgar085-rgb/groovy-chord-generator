@@ -97,6 +97,7 @@ function loadInitialState(): AppState {
       'useModalInterchange',
       DEFAULT_STATE.useModalInterchange,
     ),
+    includeMelody: loadFromStorage('includeMelody', DEFAULT_STATE.includeMelody),
     currentPreset: null,
     progressionHistory: loadFromStorage('progressionHistory', []),
   };
@@ -289,6 +290,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [updateState],
   );
 
+  const setIncludeMelody = useCallback(
+    (include: boolean) => {
+      updateState('includeMelody', include, true);
+    },
+    [updateState],
+  );
+
   const setCurrentTab = useCallback(
     (tab: TabName) => {
       updateState('currentTab', tab);
@@ -411,12 +419,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         applyVoiceLeading(chords);
       }
 
-      const melody = generateMelodyNotes(
-        chords,
-        next.genre,
-        next.rhythm,
-        next.currentKey,
-      );
+      // Only generate melody if includeMelody is enabled
+      const melody = next.includeMelody
+        ? generateMelodyNotes(
+            chords,
+            next.genre,
+            next.rhythm,
+            next.currentKey,
+          )
+        : [];
 
       playGenerationSounds(next.masterVolume);
 
@@ -590,6 +601,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setUseVoiceLeading,
       setUseAdvancedTheory,
       setUseModalInterchange,
+      setIncludeMelody,
       setCurrentTab,
       setOnboardingComplete,
       generateProgression,

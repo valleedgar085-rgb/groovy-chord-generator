@@ -38,6 +38,7 @@ export function playNote(
     soundType: SoundType;
     masterVolume: number;
     envelope: Envelope;
+    useFilter?: boolean;
   }
 ): OscillatorNode {
   const ctx = initAudio();
@@ -49,7 +50,11 @@ export function playNote(
   oscillator.type = options.soundType;
   oscillator.frequency.setValueAtTime(frequency, ctx.currentTime + time);
 
-  const volume = 0.3 * options.masterVolume;
+  // Add a subtle detuning for a richer sound
+  const detuneAmount = (Math.random() - 0.5) * 4; // +/- 2 cents for warmth
+  oscillator.detune.setValueAtTime(detuneAmount, ctx.currentTime + time);
+
+  const volume = 0.25 * options.masterVolume;
   const env = options.envelope;
   const startTime = ctx.currentTime + time;
 
@@ -71,7 +76,19 @@ export function playNote(
   gainNode.gain.setValueAtTime(effectiveSustain, releaseStartTime);
   gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN, releaseStartTime + env.release);
 
-  oscillator.connect(gainNode);
+  // Add low-pass filter for warmer sound
+  if (options.useFilter !== false) {
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2000 + frequency * 2, startTime);
+    filter.Q.setValueAtTime(0.5, startTime);
+    
+    oscillator.connect(filter);
+    filter.connect(gainNode);
+  } else {
+    oscillator.connect(gainNode);
+  }
+  
   gainNode.connect(ctx.destination);
 
   oscillator.start(startTime);
@@ -91,15 +108,40 @@ export function playChord(
 ): void {
   initAudio();
 
+  // Add bass note an octave below root for fuller sound
+  const addBass = Math.random() > 0.5;
+  
   if (chord.voicedNotes && chord.voicedNotes.length > 0) {
+    // Play bass note
+    if (addBass && chord.voicedNotes.length > 0) {
+      const bassNote = chord.voicedNotes[0];
+      playNote(bassNote.note, Math.max(2, bassNote.octave - 1), duration, 0, {
+        ...options,
+        masterVolume: options.masterVolume * 0.6,
+      });
+    }
+    
     chord.voicedNotes.forEach((voicedNote, i) => {
-      playNote(voicedNote.note, voicedNote.octave, duration, i * 0.02, options);
+      // Slight delay between notes for arpeggio-like effect
+      const delay = i * 0.015;
+      playNote(voicedNote.note, voicedNote.octave, duration, delay, options);
     });
   } else {
     const intervals = CHORD_TYPES[chord.type]?.intervals || [0, 4, 7];
+    
+    // Play bass note
+    if (addBass) {
+      playNote(chord.root, 3, duration, 0, {
+        ...options,
+        masterVolume: options.masterVolume * 0.6,
+      });
+    }
+    
     intervals.forEach((interval, i) => {
       const note = transposeNote(chord.root, interval);
-      playNote(note, 4, duration, i * 0.02, options);
+      // Slight delay between notes for arpeggio-like effect
+      const delay = i * 0.015;
+      playNote(note, 4, duration, delay, options);
     });
   }
 }
