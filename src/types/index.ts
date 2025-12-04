@@ -62,6 +62,31 @@ export type RhythmLevel = 'soft' | 'moderate' | 'strong' | 'intense';
 
 export type SoundType = 'sine' | 'triangle' | 'square' | 'sawtooth';
 
+// Phase 1: Functional Harmony Types
+export type HarmonyFunction = 'tonic' | 'subdominant' | 'dominant' | 'passing';
+
+export type MoodType = 
+  | 'happy' 
+  | 'sad' 
+  | 'dreamy' 
+  | 'energetic' 
+  | 'dark' 
+  | 'mysterious'
+  | 'triumphant'
+  | 'relaxed';
+
+// Phase 2: Groove Engine Types
+export type GrooveTemplate = 
+  | 'four-on-floor' 
+  | 'neo-soul-swing' 
+  | 'funk-syncopation'
+  | 'straight'
+  | 'shuffle'
+  | 'half-time';
+
+// Spice Level for complexity control (Phase 3)
+export type SpiceLevel = 'mild' | 'medium' | 'hot' | 'fire';
+
 export type KeyName = 
   | 'C' | 'G' | 'D' | 'A' | 'E' | 'F' | 'Bb'
   | 'Am' | 'Em' | 'Dm' | 'Bm' | 'Fm';
@@ -101,6 +126,11 @@ export interface Chord {
   shellVoicing?: ShellVoicing;
   openVoicing?: OpenVoicing;
   voicingType?: 'shell' | 'open';
+  // Phase 1: Functional Harmony
+  harmonyFunction?: HarmonyFunction;
+  // Phase 2: Groove Engine
+  grooveIntensity?: number;
+  swingOffset?: number;
 }
 
 export interface MelodyNote {
@@ -174,6 +204,62 @@ export interface OpenVoicing {
   name: string;
 }
 
+// ===================================
+// Phase 1: Functional Harmony Interfaces
+// ===================================
+
+export interface FunctionalChord {
+  degree: string;
+  function: HarmonyFunction;
+  chordTypes: ChordTypeName[];
+  tension: number; // 0-1, how much tension this chord creates
+}
+
+export interface MoodProfile {
+  name: string;
+  scales: ScaleName[];
+  preferredFunctions: HarmonyFunction[];
+  chordTypes: ChordTypeName[];
+  tensionRange: [number, number];
+  description: string;
+}
+
+// ===================================
+// Phase 2: Groove Engine Interfaces
+// ===================================
+
+export interface GroovePattern {
+  name: string;
+  template: GrooveTemplate;
+  beatPattern: number[]; // Rhythmic mask for chord placement
+  swingAmount: number;
+  accentBeats: number[];
+}
+
+export interface BassAgentConfig {
+  rootEmphasis: number; // 0-1, how much to emphasize root on downbeat
+  chromaticApproach: boolean;
+  octaveJumps: boolean;
+  fifthApproach: boolean;
+  syncopation: number; // 0-1
+}
+
+// ===================================
+// Phase 3: Spice Control Interfaces
+// ===================================
+
+export interface SpiceConfig {
+  level: SpiceLevel;
+  allowExtensions: boolean;
+  allowAlterations: boolean;
+  maxExtension: number; // 7, 9, 11, 13
+}
+
+export interface LockedChord {
+  index: number;
+  locked: boolean;
+}
+
 export interface Envelope {
   attack: number;
   decay: number;
@@ -233,6 +319,14 @@ export interface AppState {
   rhythmVariety: number;
   currentPreset: string | null;
   progressionHistory: HistoryEntry[];
+  // Phase 1: Mood/Mode Selector
+  currentMood: MoodType;
+  useFunctionalHarmony: boolean;
+  // Phase 2: Groove Engine
+  grooveTemplate: GrooveTemplate;
+  // Phase 3: Spice Control
+  spiceLevel: SpiceLevel;
+  lockedChords: LockedChord[];
 }
 
 // ===================================
@@ -326,5 +420,13 @@ export interface AppContextType {
     playChord: (chord: Chord) => void;
     exportToMIDI: () => void;
     clearPianoRoll: () => void;
+    // Phase 1: Mood/Mode Selector
+    setMood: (mood: MoodType) => void;
+    setUseFunctionalHarmony: (use: boolean) => void;
+    // Phase 2: Groove Engine
+    setGrooveTemplate: (template: GrooveTemplate) => void;
+    // Phase 3: Spice Control
+    setSpiceLevel: (level: SpiceLevel) => void;
+    toggleChordLock: (index: number) => void;
   };
 }

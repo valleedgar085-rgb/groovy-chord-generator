@@ -13,10 +13,19 @@ interface ChordCardProps {
   chord: Chord;
   index: number;
   showNumerals: boolean;
+  isLocked?: boolean;
   onPlayChord: (chord: Chord) => void;
+  onToggleLock?: (index: number) => void;
 }
 
-export function ChordCard({ chord, index, showNumerals, onPlayChord }: ChordCardProps) {
+export function ChordCard({ 
+  chord, 
+  index, 
+  showNumerals, 
+  isLocked = false,
+  onPlayChord, 
+  onToggleLock 
+}: ChordCardProps) {
   const [isActive, setIsActive] = useState(false);
 
   const chordSymbol = CHORD_TYPES[chord.type]?.symbol || '';
@@ -29,20 +38,37 @@ export function ChordCard({ chord, index, showNumerals, onPlayChord }: ChordCard
     setTimeout(() => setIsActive(false), 500);
   }, [chord, onPlayChord]);
 
+  const handleLockClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    onToggleLock?.(index);
+  }, [index, onToggleLock]);
+
   const handleKeyDown = useKeyboardClickSimple(handleClick);
 
   return (
     <div
-      className={`chord-card ${isActive ? 'active' : ''}`}
+      className={`chord-card ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`}
       data-index={index}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       tabIndex={0}
       role="button"
     >
+      {onToggleLock && (
+        <button 
+          className="chord-lock-btn" 
+          onClick={handleLockClick}
+          title={isLocked ? 'Unlock chord' : 'Lock chord (preserve on regenerate)'}
+        >
+          {isLocked ? '🔒' : '🔓'}
+        </button>
+      )}
       <div className="chord-name">{displayName}</div>
       <div className="chord-type">{chordTypeName}</div>
       {showNumerals && <div className="chord-numeral">{chord.degree}</div>}
+      {chord.harmonyFunction && (
+        <div className="chord-function">{chord.harmonyFunction}</div>
+      )}
     </div>
   );
 }

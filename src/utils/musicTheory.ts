@@ -15,6 +15,9 @@ import type {
   BassNote,
   BassStyle,
   RhythmLevel,
+  HarmonyFunction,
+  MoodType,
+  SpiceLevel,
 } from '../types';
 
 import {
@@ -29,6 +32,10 @@ import {
   MODAL_INTERCHANGE_PROBABILITY,
   SPICE_PROBABILITY_THRESHOLDS,
   RHYTHM_PATTERNS,
+  FUNCTIONAL_HARMONY,
+  FUNCTIONAL_PROGRESSIONS,
+  MOOD_PROFILES,
+  SPICE_CONFIGS,
 } from '../constants';
 
 // ===================================
@@ -515,6 +522,229 @@ export function generateBassLine(
   });
 
   return bassLine;
+}
+
+// ===================================
+// Phase 1: Functional Harmony Functions
+// ===================================
+
+/**
+ * Generate a chord progression using functional harmony principles
+ * Ensures smooth progressions following Tonic -> Subdominant -> Dominant -> Tonic patterns
+ */
+export function generateFunctionalProgression(
+  root: string,
+  isMinorKey: boolean,
+  length: number = 4,
+  mood: MoodType = 'happy'
+): Chord[] {
+  const moodProfile = MOOD_PROFILES[mood];
+  const scale = randomChoice(moodProfile.scales);
+  
+  // Choose a functional progression template
+  const template = randomChoice(FUNCTIONAL_PROGRESSIONS);
+  
+  // Extend or truncate template to match desired length
+  const functions: HarmonyFunction[] = [];
+  for (let i = 0; i < length; i++) {
+    functions.push(template[i % template.length]);
+  }
+  
+  // Generate chords based on functions
+  const progression: Chord[] = [];
+  
+  functions.forEach((func) => {
+    const chord = generateChordFromFunction(
+      root,
+      isMinorKey,
+      func,
+      scale,
+      moodProfile.chordTypes,
+      moodProfile.tensionRange
+    );
+    progression.push(chord);
+  });
+  
+  return progression;
+}
+
+/**
+ * Generate a chord from a harmonic function
+ */
+export function generateChordFromFunction(
+  root: string,
+  _isMinorKey: boolean,
+  func: HarmonyFunction,
+  _scale: ScaleName,
+  allowedTypes: ChordTypeName[],
+  tensionRange: [number, number]
+): Chord {
+  const functionalChords = FUNCTIONAL_HARMONY[func];
+  
+  // Filter by tension range
+  const validChords = functionalChords.filter(
+    fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
+  );
+  
+  const chosenChord = validChords.length > 0
+    ? randomChoice(validChords)
+    : randomChoice(functionalChords);
+  
+  // Determine chord type
+  const validTypes = chosenChord.chordTypes.filter(t => allowedTypes.includes(t));
+  const chordType = validTypes.length > 0
+    ? randomChoice(validTypes)
+    : randomChoice(chosenChord.chordTypes);
+  
+  // Get the degree index and calculate root note
+  const degreeMap: Record<string, number> = {
+    'I': 0, 'i': 0,
+    'II': 2, 'ii': 2,
+    'III': 4, 'iii': 4,
+    'IV': 5, 'iv': 5,
+    'V': 7, 'v': 7,
+    'VI': 9, 'vi': 9,
+    'VII': 11, 'vii': 11,
+    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+  };
+  
+  // Map degree symbols to roman numeral indices (0-6)
+  const degreeToIndex: Record<string, number> = {
+    'I': 0, 'i': 0,
+    'II': 1, 'ii': 1,
+    'III': 2, 'iii': 2,
+    'IV': 3, 'iv': 3,
+    'V': 4, 'v': 4,
+    'VI': 5, 'vi': 5,
+    'VII': 6, 'vii': 6,
+    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
+  };
+  
+  const interval = degreeMap[chosenChord.degree] || 0;
+  const chordRoot = transposeNote(root, interval);
+  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  
+  return {
+    root: chordRoot,
+    type: chordType,
+    degree: chosenChord.degree,
+    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    harmonyFunction: func,
+  };
+}
+
+/**
+ * Analyze a progression's harmonic tension
+ */
+export function analyzeProgressionTension(progression: Chord[]): number[] {
+  return progression.map((chord) => {
+    // Find the chord in functional harmony groups
+    for (const func of Object.keys(FUNCTIONAL_HARMONY) as HarmonyFunction[]) {
+      const matches = FUNCTIONAL_HARMONY[func].filter(fc => fc.degree === chord.degree);
+      if (matches.length > 0) {
+        return matches[0].tension;
+      }
+    }
+    return 0.5; // Default tension
+  });
+}
+
+// ===================================
+// Phase 3: Spice Level Control Functions
+// ===================================
+
+/**
+ * Apply spice level to a chord, upgrading it based on complexity
+ */
+export function applySpiceToChord(chord: Chord, level: SpiceLevel): Chord {
+  const config = SPICE_CONFIGS[level];
+  const spicedChord = { ...chord };
+  
+  if (!config.allowExtensions) {
+    // Mild: Keep as triads
+    if (spicedChord.type.includes('7') || spicedChord.type.includes('9')) {
+      // Downgrade to basic triad
+      if (spicedChord.type.includes('minor')) {
+        spicedChord.type = 'minor';
+      } else if (spicedChord.type.includes('dim')) {
+        spicedChord.type = 'diminished';
+      } else if (spicedChord.type.includes('aug')) {
+        spicedChord.type = 'augmented';
+      } else {
+        spicedChord.type = 'major';
+      }
+    }
+    return spicedChord;
+  }
+  
+  // Medium and above: Allow 7ths
+  if (config.maxExtension >= 7) {
+    if (chord.type === 'major' && Math.random() > 0.5) {
+      spicedChord.type = 'major7';
+    } else if (chord.type === 'minor' && Math.random() > 0.5) {
+      spicedChord.type = 'minor7';
+    }
+  }
+  
+  // Hot and above: Allow 9ths and alterations
+  if (config.maxExtension >= 9 && config.allowAlterations) {
+    if (spicedChord.type === 'major7' && Math.random() > 0.6) {
+      spicedChord.type = 'major9';
+    } else if (spicedChord.type === 'minor7' && Math.random() > 0.6) {
+      spicedChord.type = 'minor9';
+    } else if (spicedChord.type === 'major' && Math.random() > 0.7) {
+      spicedChord.type = 'add9';
+    }
+  }
+  
+  // Fire level: Maximum complexity
+  if (level === 'fire' && Math.random() > 0.5) {
+    // Add sus variations
+    if (Math.random() > 0.7) {
+      if (spicedChord.type === 'major') {
+        spicedChord.type = Math.random() > 0.5 ? 'sus4' : 'sus2';
+      }
+    }
+  }
+  
+  return spicedChord;
+}
+
+/**
+ * Apply spice level to entire progression
+ */
+export function applySpiceToProgression(
+  progression: Chord[],
+  level: SpiceLevel
+): Chord[] {
+  return progression.map(chord => applySpiceToChord(chord, level));
+}
+
+/**
+ * Enhanced voice leading with melodic top voice
+ * Ensures the top note of each chord creates a smooth melodic line
+ */
+export function applyMelodicVoiceLeading(progression: Chord[]): Chord[] {
+  if (!progression || progression.length === 0) return progression;
+  
+  let previousTopNote: VoicedNote | null = null;
+  
+  progression.forEach((chord) => {
+    const chordNotes = getChordNotes(chord);
+    const voicing = findBestVoicing(
+      chordNotes,
+      previousTopNote ? [previousTopNote] : null,
+      4
+    );
+    
+    // Sort by pitch to find top note
+    const sortedVoicing = [...voicing].sort((a, b) => b.pitch - a.pitch);
+    
+    chord.voicedNotes = voicing;
+    previousTopNote = sortedVoicing[0];
+  });
+  
+  return progression;
 }
 
 // ===================================
