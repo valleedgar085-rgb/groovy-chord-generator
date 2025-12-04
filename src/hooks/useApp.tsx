@@ -4,7 +4,15 @@
  * Version 2.4
  */
 
-import { createContext, useContext, useState, useCallback, useRef, type ReactNode } from 'react';
+import {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useRef,
+  useEffect,
+  type ReactNode,
+} from 'react';
 import type {
   AppState,
   GenreKey,
@@ -27,6 +35,7 @@ import {
   DEFAULT_STATE,
   DEFAULT_ENVELOPE,
   MAX_HISTORY_LENGTH,
+  CHORD_TYPES,
 } from '../constants';
 import {
   parseKey,
@@ -49,12 +58,16 @@ import {
   playExportSound,
 } from '../utils/audio';
 import { exportToMIDI } from '../utils/midiExport';
-import { CHORD_TYPES } from '../constants';
 
-// Create context
-const AppContext = createContext<AppContextType | null>(null);
+// Helpers
 
-// Load initial state from localStorage
+function deepCloneProgression(prog: Chord[]): Chord[] {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(prog) as Chord[];
+  }
+  return JSON.parse(JSON.stringify(prog)) as Chord[];
+}
+
 function loadInitialState(): AppState {
   return {
     currentProgression: [],
@@ -79,30 +92,100 @@ function loadInitialState(): AppState {
     useAdvancedTheory: loadFromStorage('useAdvancedTheory', DEFAULT_STATE.useAdvancedTheory),
     envelope: loadFromStorage('envelope', DEFAULT_ENVELOPE),
     swing: loadFromStorage('swing', DEFAULT_STATE.swing),
-    useModalInterchange: loadFromStorage('useModalInterchange', DEFAULT_STATE.useModalInterchange),
+    useModalInterchange: loadFromStorage(
+      'useModalInterchange',
+      DEFAULT_STATE.useModalInterchange,
+    ),
     currentPreset: null,
     progressionHistory: loadFromStorage('progressionHistory', []),
   };
 }
 
-// Provider component
+// Build base degree sequence given complexity
+function buildDegreeSequence(
+  baseProgression: string[],
+  complexityConfig: (typeof COMPLEXITY_SETTINGS)[ComplexityLevel],
+): string[] {
+  const progression = [...baseProgression];
+  const targetLength = randomInt(
+    complexityConfig.chordCount[0],
+    complexityConfig.chordCount[1],
+  );
+
+  while (progression.length < targetLength) {
+    const insertIndex = randomInt(0, progression.length);
+    const newChord = randomChoice(['ii', 'IV', 'V', 'vi', 'iii']);
+    progression.splice(insertIndex, 0, newChord);
+  }
+
+  return progression;
+}
+
+interface BuildChordArgs {
+  degree: string;
+  root: string;
+  isMinor: boolean;
+  scale: string;
+  profile: (typeof GENRE_PROFILES)[GenreKey];
+  complexityConfig: (typeof COMPLEXITY_SETTINGS)[ComplexityLevel];
+  genre: GenreKey;
+}
+
+function buildChordForDegree({
+  degree,
+  root,
+  isMinor,
+  scale,
+  profile,
+  complexityConfig,
+  genre,
+}: BuildChordArgs): Chord {
+  let chord = getChordFromDegree(root, degree, isMinor, scale);
+
+  if (complexityConfig.useExtensions && Math.random() > 0.5) {
+    const extensions = profile.chordTypes.filter(
+      (t) => t.includes('7') || t.includes('9') || t.includes('sus') || t.includes('add'),
+    );
+
+    if (extensions.length > 0 && Math.random() > 0.6) {
+      chord.type = randomChoice(extensions);
+    }
+  }
+
+  chord = applyGenreVoicing(chord, genre);
+  return chord;
+}
+
+// Context
+
+const AppContext = createContext<AppContextType | null>(null);
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AppState>(loadInitialState);
+  const stateRef = useRef<AppState>(state);
   const playbackTimeoutRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const isPlayingRef = useRef(false);
 
-  // Helper to update state and optionally save to storage
-  const updateState = useCallback(<K extends keyof AppState>(
-    key: K,
-    value: AppState[K],
-    persist = false
-  ) => {
-    setState((prev) => ({ ...prev, [key]: value }));
-    if (persist) {
-      saveToStorage(key, value);
-    }
-  }, []);
+  useEffect(() => {
+    stateRef.current = state;
+  }, [state]);
 
-  // Actions
+  // Generic state updater with optional persistence
+  const updateState = useCallback(
+    <K extends keyof AppState>(key: K, value: AppState[K], persist = false) => {
+      setState((prev) => {
+        const next = { ...prev, [key]: value };
+        return next;
+      });
+      if (persist) {
+        saveToStorage(key, value);
+      }
+    },
+    [],
+  );
+
+  // Actions: preferences / UI
+
   const setGenre = useCallback((genre: GenreKey) => {
     const profile = GENRE_PROFILES[genre];
     setState((prev) => ({
@@ -114,180 +197,230 @@ export function AppProvider({ children }: { children: ReactNode }) {
     saveToStorage('tempo', profile.tempo);
   }, []);
 
-  const setKey = useCallback((key: KeyName) => {
-    updateState('currentKey', key, true);
+  const setKey = useCallback(
+    (key: KeyName) => {
+      updateState('currentKey', key, true);
+    },
+    [updateState],
+  );
+
+  const setComplexity = useCallback(
+    (complexity: ComplexityLevel) => {
+      updateState('complexity', complexity, true);
+    },
+    [updateState],
+  );
+
+  const setRhythm = useCallback(
+    (rhythm: RhythmLevel) => {
+      updateState('rhythm', rhythm, true);
+    },
+    [updateState],
+  );
+
+  const setTempo = useCallback(
+    (tempo: number) => {
+      updateState('tempo', tempo, true);
+    },
+    [updateState],
+  );
+
+  const setVolume = useCallback(
+    (volume: number) => {
+      updateState('masterVolume', volume, true);
+    },
+    [updateState],
+  );
+
+  const setSoundType = useCallback(
+    (type: SoundType) => {
+      updateState('soundType', type, true);
+    },
+    [updateState],
+  );
+
+  const setEnvelope = useCallback(
+    (envelope: Envelope) => {
+      updateState('envelope', envelope, true);
+    },
+    [updateState],
+  );
+
+  const setShowNumerals = useCallback(
+    (show: boolean) => {
+      updateState('showNumerals', show, true);
+    },
+    [updateState],
+  );
+
+  const setShowTips = useCallback(
+    (show: boolean) => {
+      updateState('showTips', show, true);
+    },
+    [updateState],
+  );
+
+  const setSwing = useCallback(
+    (swing: number) => {
+      updateState('swing', swing, true);
+    },
+    [updateState],
+  );
+
+  const setUseVoiceLeading = useCallback(
+    (use: boolean) => {
+      updateState('useVoiceLeading', use, true);
+    },
+    [updateState],
+  );
+
+  const setUseAdvancedTheory = useCallback(
+    (use: boolean) => {
+      updateState('useAdvancedTheory', use, true);
+    },
+    [updateState],
+  );
+
+  const setUseModalInterchange = useCallback(
+    (use: boolean) => {
+      updateState('useModalInterchange', use, true);
+    },
+    [updateState],
+  );
+
+  const setCurrentTab = useCallback(
+    (tab: TabName) => {
+      updateState('currentTab', tab);
+    },
+    [updateState],
+  );
+
+  const setOnboardingComplete = useCallback(
+    (complete: boolean) => {
+      updateState('onboardingComplete', complete, true);
+    },
+    [updateState],
+  );
+
+  const clearPianoRoll = useCallback(() => {
+    updateState('pianoRollNotes', []);
   }, [updateState]);
 
-  const setComplexity = useCallback((complexity: ComplexityLevel) => {
-    updateState('complexity', complexity, true);
-  }, [updateState]);
+  // Melody generation
 
-  const setRhythm = useCallback((rhythm: RhythmLevel) => {
-    updateState('rhythm', rhythm, true);
-  }, [updateState]);
+  const generateMelodyNotes = useCallback(
+    (progression: Chord[], genre: GenreKey, rhythm: RhythmLevel, currentKey: KeyName): MelodyNote[] => {
+      const profile = GENRE_PROFILES[genre];
+      const rhythmPattern = RHYTHM_PATTERNS[rhythm];
+      const { root } = parseKey(currentKey);
 
-  const setTempo = useCallback((tempo: number) => {
-    updateState('tempo', tempo, true);
-  }, [updateState]);
+      const scaleNotes = getScaleNotes(root, profile.melodyScale);
+      const melody: MelodyNote[] = [];
 
-  const setVolume = useCallback((volume: number) => {
-    updateState('masterVolume', volume, true);
-  }, [updateState]);
+      progression.forEach((chord, chordIndex) => {
+        const notesPerChord = Math.ceil(4 * rhythmPattern.melodyDensity) + 1;
+        const chordTones = CHORD_TYPES[chord.type].intervals.map((interval) =>
+          transposeNote(chord.root, interval),
+        );
 
-  const setSoundType = useCallback((type: SoundType) => {
-    updateState('soundType', type, true);
-  }, [updateState]);
+        for (let i = 0; i < notesPerChord; i++) {
+          const useChordTone = Math.random() > 0.3;
+          const sourcePool = useChordTone ? chordTones : scaleNotes;
 
-  const setEnvelope = useCallback((envelope: Envelope) => {
-    updateState('envelope', envelope, true);
-  }, [updateState]);
+          const note = randomChoice(sourcePool);
+          const duration = randomChoice(rhythmPattern.durations);
+          const velocity = rhythmPattern.dynamics[i % rhythmPattern.dynamics.length];
 
-  const setShowNumerals = useCallback((show: boolean) => {
-    updateState('showNumerals', show, true);
-  }, [updateState]);
+          melody.push({
+            note,
+            duration,
+            velocity,
+            chordIndex,
+            octave: randomInt(4, 5),
+          });
+        }
+      });
 
-  const setShowTips = useCallback((show: boolean) => {
-    updateState('showTips', show, true);
-  }, [updateState]);
+      return melody;
+    },
+    [],
+  );
 
-  const setSwing = useCallback((swing: number) => {
-    updateState('swing', swing, true);
-  }, [updateState]);
+  // Progression generation / history
 
-  const setUseVoiceLeading = useCallback((use: boolean) => {
-    updateState('useVoiceLeading', use, true);
-  }, [updateState]);
-
-  const setUseAdvancedTheory = useCallback((use: boolean) => {
-    updateState('useAdvancedTheory', use, true);
-  }, [updateState]);
-
-  const setUseModalInterchange = useCallback((use: boolean) => {
-    updateState('useModalInterchange', use, true);
-  }, [updateState]);
-
-  const setCurrentTab = useCallback((tab: TabName) => {
-    updateState('currentTab', tab);
-  }, [updateState]);
-
-  const setOnboardingComplete = useCallback((complete: boolean) => {
-    updateState('onboardingComplete', complete, true);
-  }, [updateState]);
-
-  // Generate melody
-  const generateMelodyNotes = useCallback((progression: Chord[], genre: GenreKey, rhythm: RhythmLevel, currentKey: KeyName): MelodyNote[] => {
-    const profile = GENRE_PROFILES[genre];
-    const rhythmPattern = RHYTHM_PATTERNS[rhythm];
-    const { root } = parseKey(currentKey);
-
-    const scaleNotes = getScaleNotes(root, profile.melodyScale);
-    const melody: MelodyNote[] = [];
-
-    progression.forEach((chord, chordIndex) => {
-      const notesPerChord = Math.ceil(4 * rhythmPattern.melodyDensity) + 1;
-      const chordTones = CHORD_TYPES[chord.type].intervals.map((i) =>
-        transposeNote(chord.root, i)
-      );
-
-      for (let i = 0; i < notesPerChord; i++) {
-        const useChordTone = Math.random() > 0.3;
-        const note = useChordTone
-          ? randomChoice(chordTones)
-          : randomChoice(scaleNotes);
-
-        const duration = randomChoice(rhythmPattern.durations);
-        const velocity = rhythmPattern.dynamics[i % rhythmPattern.dynamics.length];
-
-        melody.push({
-          note,
-          duration,
-          velocity,
-          chordIndex,
-          octave: randomInt(4, 5),
-        });
-      }
-    });
-
-    return melody;
-  }, []);
-
-  // Generate progression
   const generateProgression = useCallback(() => {
     setState((prev) => {
-      // Save current progression to history before generating new one
+      let next: AppState = prev;
+
+      // Save current progression to history if present
       if (prev.currentProgression.length > 0) {
-        const historyCopy = JSON.parse(JSON.stringify(prev.currentProgression)) as Chord[];
+        const historyCopy = deepCloneProgression(prev.currentProgression);
         const historyEntry: HistoryEntry = {
           progression: historyCopy,
           key: prev.currentKey,
           genre: prev.genre,
           timestamp: Date.now(),
         };
-        const newHistory = [historyEntry, ...prev.progressionHistory].slice(0, MAX_HISTORY_LENGTH);
+
+        const newHistory = [historyEntry, ...prev.progressionHistory].slice(
+          0,
+          MAX_HISTORY_LENGTH,
+        );
         saveToStorage('progressionHistory', newHistory);
-        prev = { ...prev, progressionHistory: newHistory };
+
+        next = { ...prev, progressionHistory: newHistory };
       }
 
-      const { root, isMinor } = parseKey(prev.currentKey);
-      const profile = GENRE_PROFILES[prev.genre];
-      const complexity = COMPLEXITY_SETTINGS[prev.complexity];
+      const { root, isMinor } = parseKey(next.currentKey);
+      const profile = GENRE_PROFILES[next.genre];
+      const complexityConfig = COMPLEXITY_SETTINGS[next.complexity];
 
-      // Select a base progression
       const baseProgression = randomChoice(profile.progressions);
-      const progression = [...baseProgression];
+      const degreeSequence = buildDegreeSequence(baseProgression, complexityConfig);
 
-      // Extend based on complexity
-      const targetLength = randomInt(complexity.chordCount[0], complexity.chordCount[1]);
-      while (progression.length < targetLength) {
-        const insertIndex = randomInt(0, progression.length);
-        const newChord = randomChoice(['ii', 'IV', 'V', 'vi', 'iii']);
-        progression.splice(insertIndex, 0, newChord);
-      }
-
-      // Convert degrees to actual chords
       const scale = isMinor ? 'minor' : profile.scale;
-      let chords = progression.map((degree) => {
-        let chord = getChordFromDegree(root, degree, isMinor, scale);
 
-        // Apply chord extensions
-        if (complexity.useExtensions && Math.random() > 0.5) {
-          const extensions = profile.chordTypes.filter(
-            (t) => t.includes('7') || t.includes('9') || t.includes('sus') || t.includes('add')
-          );
-          if (extensions.length > 0 && Math.random() > 0.6) {
-            chord.type = randomChoice(extensions);
-          }
-        }
+      let chords = degreeSequence.map((degree) =>
+        buildChordForDegree({
+          degree,
+          root,
+          isMinor,
+          scale,
+          profile,
+          complexityConfig,
+          genre: next.genre,
+        }),
+      );
 
-        // Apply genre-specific voicing
-        chord = applyGenreVoicing(chord, prev.genre);
-
-        return chord;
-      });
-
-      // Apply modal interchange if enabled
-      if (prev.useModalInterchange && (prev.complexity === 'complex' || prev.complexity === 'advanced')) {
+      if (
+        next.useModalInterchange &&
+        (next.complexity === 'complex' || next.complexity === 'advanced')
+      ) {
         chords = applyModalInterchange(chords, root, isMinor);
       }
 
-      // Apply advanced substitutions if enabled
-      if (prev.useAdvancedTheory && (prev.complexity === 'complex' || prev.complexity === 'advanced')) {
+      if (
+        next.useAdvancedTheory &&
+        (next.complexity === 'complex' || next.complexity === 'advanced')
+      ) {
         chords = applyAdvancedSubstitutions(chords, root, isMinor);
       }
 
-      // Apply voice leading if enabled
-      if (prev.useVoiceLeading) {
+      if (next.useVoiceLeading) {
         applyVoiceLeading(chords);
       }
 
-      // Generate melody
-      const melody = generateMelodyNotes(chords, prev.genre, prev.rhythm, prev.currentKey);
+      const melody = generateMelodyNotes(
+        chords,
+        next.genre,
+        next.rhythm,
+        next.currentKey,
+      );
 
-      // Play generation sounds
-      playGenerationSounds(prev.masterVolume);
+      playGenerationSounds(next.masterVolume);
 
       return {
-        ...prev,
+        ...next,
         currentProgression: chords,
         currentMelody: melody,
         isMinorKey: isMinor,
@@ -306,12 +439,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const { root, isMinor } = parseKey(prev.currentKey);
       let newProgression = spiceUpProgression(prev.currentProgression, root, isMinor);
 
-      // Re-apply voice leading if enabled
       if (prev.useVoiceLeading) {
         newProgression = applyVoiceLeading(newProgression);
       }
 
-      // Play spice sound
       playSpiceSound(prev.masterVolume);
 
       return {
@@ -321,48 +452,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const applyPreset = useCallback((presetKey: string) => {
-    const preset = SMART_PRESETS[presetKey];
-    if (!preset) return;
+  const applyPreset = useCallback(
+    (presetKey: string) => {
+      const preset = SMART_PRESETS[presetKey];
+      if (!preset) return;
 
-    setState((prev) => {
-      const profile = GENRE_PROFILES[preset.genre];
+      setState((prev) => {
+        const profile = GENRE_PROFILES[preset.genre];
 
-      return {
-        ...prev,
-        genre: preset.genre,
-        currentKey: preset.key,
-        complexity: preset.complexity,
-        rhythm: preset.rhythm,
-        swing: preset.swing,
-        useVoiceLeading: preset.useVoiceLeading,
-        useAdvancedTheory: preset.useAdvancedTheory,
-        currentPreset: presetKey,
-        tempo: profile.tempo,
-      };
-    });
+        return {
+          ...prev,
+          genre: preset.genre,
+          currentKey: preset.key,
+          complexity: preset.complexity,
+          rhythm: preset.rhythm,
+          swing: preset.swing,
+          useVoiceLeading: preset.useVoiceLeading,
+          useAdvancedTheory: preset.useAdvancedTheory,
+          currentPreset: presetKey,
+          tempo: profile.tempo,
+        };
+      });
 
-    // Save preferences
-    saveToStorage('genre', preset.genre);
-    saveToStorage('currentKey', preset.key);
-    saveToStorage('complexity', preset.complexity);
-    saveToStorage('rhythm', preset.rhythm);
-    saveToStorage('swing', preset.swing);
-    saveToStorage('useVoiceLeading', preset.useVoiceLeading);
-    saveToStorage('useAdvancedTheory', preset.useAdvancedTheory);
+      saveToStorage('genre', preset.genre);
+      saveToStorage('currentKey', preset.key);
+      saveToStorage('complexity', preset.complexity);
+      saveToStorage('rhythm', preset.rhythm);
+      saveToStorage('swing', preset.swing);
+      saveToStorage('useVoiceLeading', preset.useVoiceLeading);
+      saveToStorage('useAdvancedTheory', preset.useAdvancedTheory);
 
-    // Generate new progression with preset settings
-    setTimeout(() => generateProgression(), 0);
-  }, [generateProgression]);
+      setTimeout(() => generateProgression(), 0);
+    },
+    [generateProgression],
+  );
 
   const restoreFromHistory = useCallback((index: number) => {
     setState((prev) => {
       if (index < 0 || index >= prev.progressionHistory.length) return prev;
 
       const entry = prev.progressionHistory[index];
-      let restoredProgression = JSON.parse(JSON.stringify(entry.progression)) as Chord[];
+      let restoredProgression = deepCloneProgression(entry.progression);
 
-      // Re-apply voice leading if enabled
       if (prev.useVoiceLeading) {
         restoredProgression = applyVoiceLeading(restoredProgression);
       }
@@ -376,14 +507,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Playback
+
   const playProgression = useCallback(() => {
     setState((prev) => {
       if (prev.isPlaying || prev.currentProgression.length === 0) return prev;
 
       const beatDuration = 60 / prev.tempo;
-      const chordDuration = beatDuration * 4;
+      const beatsPerChord = 4;
+      const chordDurationSeconds = beatDuration * beatsPerChord;
 
-      // Clear any existing timeouts
       playbackTimeoutRef.current.forEach(clearTimeout);
       playbackTimeoutRef.current = [];
 
@@ -391,21 +524,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
       prev.currentProgression.forEach((chord) => {
         const timeout = setTimeout(() => {
-          playChordAudio(chord, chordDuration * 0.9, {
-            soundType: prev.soundType,
-            masterVolume: prev.masterVolume,
-            envelope: prev.envelope,
+          const s = stateRef.current;
+          playChordAudio(chord, chordDurationSeconds * 0.9, {
+            soundType: s.soundType,
+            masterVolume: s.masterVolume,
+            envelope: s.envelope,
           });
         }, currentTime * 1000);
+
         playbackTimeoutRef.current.push(timeout);
-        currentTime += chordDuration;
+        currentTime += chordDurationSeconds;
       });
 
-      // Reset after progression ends
       const endTimeout = setTimeout(() => {
+        isPlayingRef.current = false;
         setState((s) => ({ ...s, isPlaying: false }));
       }, currentTime * 1000);
+
       playbackTimeoutRef.current.push(endTimeout);
+      isPlayingRef.current = true;
 
       return { ...prev, isPlaying: true };
     });
@@ -414,31 +551,26 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const stopPlayback = useCallback(() => {
     playbackTimeoutRef.current.forEach(clearTimeout);
     playbackTimeoutRef.current = [];
+    isPlayingRef.current = false;
     updateState('isPlaying', false);
   }, [updateState]);
 
+  // One-shot chord & export
+
   const playChord = useCallback((chord: Chord) => {
-    setState((prev) => {
-      playChordAudio(chord, 1, {
-        soundType: prev.soundType,
-        masterVolume: prev.masterVolume,
-        envelope: prev.envelope,
-      });
-      return prev;
+    const s = stateRef.current;
+    playChordAudio(chord, 1, {
+      soundType: s.soundType,
+      masterVolume: s.masterVolume,
+      envelope: s.envelope,
     });
   }, []);
 
   const handleExportToMIDI = useCallback(() => {
-    setState((prev) => {
-      exportToMIDI(prev.currentProgression, prev.currentKey, prev.genre, prev.tempo);
-      playExportSound(prev.masterVolume);
-      return prev;
-    });
+    const s = stateRef.current;
+    exportToMIDI(s.currentProgression, s.currentKey, s.genre, s.tempo);
+    playExportSound(s.masterVolume);
   }, []);
-
-  const clearPianoRoll = useCallback(() => {
-    updateState('pianoRollNotes', []);
-  }, [updateState]);
 
   const contextValue: AppContextType = {
     state,
