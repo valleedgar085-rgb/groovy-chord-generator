@@ -2,8 +2,6 @@
  * Groovy Chord Generator
  * Keyboard Click Handler Hook
  * Version 2.5
- * 
- * Provides accessible keyboard interaction (Enter/Space) for interactive elements.
  */
 
 import { useCallback, type KeyboardEvent } from 'react';
