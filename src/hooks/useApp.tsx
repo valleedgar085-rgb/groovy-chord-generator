@@ -26,6 +26,7 @@ import type {
   MelodyNote,
   HistoryEntry,
   AppContextType,
+  ScaleName,
 } from '../types';
 import {
   GENRE_PROFILES,
@@ -125,7 +126,7 @@ interface BuildChordArgs {
   degree: string;
   root: string;
   isMinor: boolean;
-  scale: string;
+  scale: ScaleName;
   profile: (typeof GENRE_PROFILES)[GenreKey];
   complexityConfig: (typeof COMPLEXITY_SETTINGS)[ComplexityLevel];
   genre: GenreKey;

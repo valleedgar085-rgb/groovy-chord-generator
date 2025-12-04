@@ -20,20 +20,6 @@ if (!rootElement) {
 
 const root = createRoot(rootElement);
 
-// Optional: guard service worker registration behind production check
-if (process.env.NODE_ENV === 'production' && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((registration) => {
-        console.info('Service worker registered:', registration.scope);
-      })
-      .catch((error) => {
-        console.error('Service worker registration failed:', error);
-      });
-  });
-}
-
 root.render(
   <StrictMode>
     <AppProvider>
