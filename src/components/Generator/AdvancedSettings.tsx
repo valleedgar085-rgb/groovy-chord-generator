@@ -45,6 +45,12 @@ export function AdvancedSettings() {
 
       <div className="control-row music-theory-options">
         <Toggle
+          id="include-melody"
+          label="Include Melody"
+          checked={state.includeMelody}
+          onChange={actions.setIncludeMelody}
+        />
+        <Toggle
           id="voice-leading"
           label="Smooth Voice Leading"
           checked={state.useVoiceLeading}
