@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary brand color (violet) -->
+    <color name="purple_500">#7C3AED</color>
+    <color name="purple_700">#6D28D9</color>
+    
+    <!-- Secondary color -->
+    <color name="teal_200">#14B8A6</color>
+    <color name="teal_700">#0F766E</color>
+    
+    <!-- Neutral colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    
+    <!-- Background colors -->
+    <color name="background_dark">#1F2937</color>
+    <color name="surface_dark">#111827</color>
+</resources>

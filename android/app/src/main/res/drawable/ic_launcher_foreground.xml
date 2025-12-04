@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Music note icon (treble clef inspired) -->
+    <group
+        android:translateX="27"
+        android:translateY="27">
+        
+        <!-- Main note circle -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M27,38c6.075,0 11,-4.925 11,-11s-4.925,-11 -11,-11s-11,4.925 -11,11S20.925,38 27,38z"/>
+        
+        <!-- Note stem -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M35,27V8c0,-2.209 -1.791,-4 -4,-4h-1c-2.209,0 -4,1.791 -4,4v19c0,0.552 0.448,1 1,1h7C34.552,28 35,27.552 35,27z"/>
+        
+        <!-- Flag/beam -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M35,8c0,0 8,4 8,12c0,4 -3,7 -6,8c-0.552,0.184 -1,-0.164 -1,-0.75V8c0,-0.414 0.336,-0.75 0.75,-0.75S35,7.586 35,8z"/>
+        
+        <!-- Second note circle -->
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M45,46c5.523,0 10,-4.477 10,-10s-4.477,-10 -10,-10s-10,4.477 -10,10S39.477,46 45,46z"/>
+            
+    </group>
+</vector>
