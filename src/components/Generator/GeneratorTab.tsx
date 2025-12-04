@@ -8,6 +8,7 @@ import { CollapsibleSection } from '../common';
 import { SmartPresets } from './SmartPresets';
 import { QuickControls } from './QuickControls';
 import { AdvancedSettings } from './AdvancedSettings';
+import { GrooveSettings } from './GrooveSettings';
 import { ChordDisplay } from './ChordDisplay';
 import { ChordKnobs } from './ChordKnobs';
 import { SpiceButton } from './SpiceButton';
@@ -28,6 +29,11 @@ export function GeneratorTab() {
       {/* Variety Knobs */}
       <CollapsibleSection title="Variety Controls" icon="🎛️" defaultExpanded>
         <ChordKnobs />
+      </CollapsibleSection>
+
+      {/* Groove & Mood Settings - NEW Phase 1 & 2 */}
+      <CollapsibleSection title="Groove & Mood" icon="🎵" defaultExpanded>
+        <GrooveSettings />
       </CollapsibleSection>
 
       {/* Advanced Controls */}

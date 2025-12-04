@@ -28,6 +28,10 @@ import type {
   HistoryEntry,
   AppContextType,
   ScaleName,
+  MoodType,
+  GrooveTemplate,
+  SpiceLevel,
+  LockedChord,
 } from '../types';
 import {
   GENRE_PROFILES,
@@ -52,6 +56,8 @@ import {
   getScaleNotes,
   transposeNote,
   generateBassLine as generateBassLineUtil,
+  generateFunctionalProgression,
+  applySpiceToProgression,
 } from '../utils/musicTheory';
 import { saveToStorage, loadFromStorage } from '../utils/storage';
 import {
@@ -62,6 +68,7 @@ import {
   playExportSound,
 } from '../utils/audio';
 import { exportToMIDI } from '../utils/midiExport';
+import { applyGrooveToProgression } from '../utils/GrooveEngine';
 
 // Helpers
 
@@ -109,6 +116,14 @@ function loadInitialState(): AppState {
     rhythmVariety: loadFromStorage('rhythmVariety', DEFAULT_STATE.rhythmVariety),
     currentPreset: null,
     progressionHistory: loadFromStorage('progressionHistory', []),
+    // Phase 1: Mood/Mode Selector
+    currentMood: loadFromStorage('currentMood', DEFAULT_STATE.currentMood),
+    useFunctionalHarmony: loadFromStorage('useFunctionalHarmony', DEFAULT_STATE.useFunctionalHarmony),
+    // Phase 2: Groove Engine
+    grooveTemplate: loadFromStorage('grooveTemplate', DEFAULT_STATE.grooveTemplate),
+    // Phase 3: Spice Control
+    spiceLevel: loadFromStorage('spiceLevel', DEFAULT_STATE.spiceLevel),
+    lockedChords: [],
   };
 }
 
@@ -359,6 +374,56 @@ export function AppProvider({ children }: { children: ReactNode }) {
     updateState('pianoRollNotes', []);
   }, [updateState]);
 
+  // Phase 1: Mood/Mode Selector Actions
+  const setMood = useCallback(
+    (mood: MoodType) => {
+      updateState('currentMood', mood, true);
+    },
+    [updateState],
+  );
+
+  const setUseFunctionalHarmony = useCallback(
+    (use: boolean) => {
+      updateState('useFunctionalHarmony', use, true);
+    },
+    [updateState],
+  );
+
+  // Phase 2: Groove Engine Actions
+  const setGrooveTemplate = useCallback(
+    (template: GrooveTemplate) => {
+      updateState('grooveTemplate', template, true);
+    },
+    [updateState],
+  );
+
+  // Phase 3: Spice Control Actions
+  const setSpiceLevel = useCallback(
+    (level: SpiceLevel) => {
+      updateState('spiceLevel', level, true);
+    },
+    [updateState],
+  );
+
+  const toggleChordLock = useCallback((index: number) => {
+    setState((prev) => {
+      const existingLock = prev.lockedChords.find((lc) => lc.index === index);
+      let newLockedChords: LockedChord[];
+      
+      if (existingLock) {
+        // Toggle existing lock
+        newLockedChords = prev.lockedChords.map((lc) =>
+          lc.index === index ? { ...lc, locked: !lc.locked } : lc
+        );
+      } else {
+        // Add new lock
+        newLockedChords = [...prev.lockedChords, { index, locked: true }];
+      }
+      
+      return { ...prev, lockedChords: newLockedChords };
+    });
+  }, []);
+
   // Melody generation
 
   const generateMelodyNotes = useCallback(
@@ -428,22 +493,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
       const profile = GENRE_PROFILES[next.genre];
       const complexityConfig = COMPLEXITY_SETTINGS[next.complexity];
 
-      const baseProgression = randomChoice(profile.progressions);
-      const degreeSequence = buildDegreeSequence(baseProgression, complexityConfig);
+      let chords: Chord[];
 
-      const scale = isMinor ? 'minor' : profile.scale;
-
-      let chords = degreeSequence.map((degree) =>
-        buildChordForDegree({
-          degree,
+      // Phase 1: Use functional harmony if enabled
+      if (next.useFunctionalHarmony) {
+        chords = generateFunctionalProgression(
           root,
           isMinor,
-          scale,
-          profile,
-          complexityConfig,
-          genre: next.genre,
-        }),
-      );
+          complexityConfig.chordCount[1],
+          next.currentMood
+        );
+      } else {
+        // Original progression generation
+        const baseProgression = randomChoice(profile.progressions);
+        const degreeSequence = buildDegreeSequence(baseProgression, complexityConfig);
+
+        const scale = isMinor ? 'minor' : profile.scale;
+
+        chords = degreeSequence.map((degree) =>
+          buildChordForDegree({
+            degree,
+            root,
+            isMinor,
+            scale,
+            profile,
+            complexityConfig,
+            genre: next.genre,
+          }),
+        );
+      }
+
+      // Preserve locked chords
+      if (next.lockedChords.length > 0 && prev.currentProgression.length > 0) {
+        next.lockedChords.forEach((lc) => {
+          if (lc.locked && lc.index < prev.currentProgression.length && lc.index < chords.length) {
+            chords[lc.index] = prev.currentProgression[lc.index];
+          }
+        });
+      }
 
       if (
         next.useModalInterchange &&
@@ -458,6 +545,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       ) {
         chords = applyAdvancedSubstitutions(chords, root, isMinor);
       }
+
+      // Phase 3: Apply spice level to chords
+      chords = applySpiceToProgression(chords, next.spiceLevel);
+
+      // Phase 2: Apply groove template
+      chords = applyGrooveToProgression(chords, next.grooveTemplate);
 
       if (next.useVoiceLeading) {
         applyVoiceLeading(chords);
@@ -735,6 +828,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       playChord,
       exportToMIDI: handleExportToMIDI,
       clearPianoRoll,
+      // Phase 1: Mood/Mode Selector
+      setMood,
+      setUseFunctionalHarmony,
+      // Phase 2: Groove Engine
+      setGrooveTemplate,
+      // Phase 3: Spice Control
+      setSpiceLevel,
+      toggleChordLock,
     },
   };
 

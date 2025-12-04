@@ -9,3 +9,5 @@ export * from './storage';
 export * from './audio';
 export * from './midiExport';
 export * from './animation';
+export * from './GrooveEngine';
+export * from './BassAgent';

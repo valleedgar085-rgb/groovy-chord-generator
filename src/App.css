@@ -342,6 +342,7 @@ input:focus {
     cursor: pointer;
     min-width: 80px;
     touch-action: manipulation;
+    position: relative;
 }
 
 .chord-card:hover,
@@ -373,6 +374,67 @@ input:focus {
     color: var(--accent-secondary);
     margin-top: 4px;
     font-weight: 600;
+}
+
+/* Phase 3: Chord Lock Button */
+.chord-lock-btn {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    background: transparent;
+    border: none;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: all var(--transition-fast);
+    opacity: 0.6;
+}
+
+.chord-lock-btn:hover {
+    opacity: 1;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.chord-card.locked {
+    border-color: var(--success);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+}
+
+.chord-card.locked .chord-lock-btn {
+    opacity: 1;
+}
+
+/* Phase 1: Harmony Function Display */
+.chord-function {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-top: 2px;
+    text-transform: capitalize;
+    font-style: italic;
+}
+
+/* Info Text Helper */
+.info-text {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(124, 58, 237, 0.1);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-sm);
+}
+
+.info-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+/* Groove Options */
+.groove-options {
+    padding: var(--spacing-sm) 0;
 }
 
 /* ==========================================

@@ -27,6 +27,14 @@ import type {
   ModalInterchangeChord,
   ShellVoicing,
   OpenVoicing,
+  FunctionalChord,
+  MoodProfile,
+  MoodType,
+  GroovePattern,
+  GrooveTemplate,
+  SpiceLevel,
+  SpiceConfig,
+  HarmonyFunction,
 } from '../types';
 
 // ===================================
@@ -530,6 +538,13 @@ export const DEFAULT_STATE = {
   bassVariety: 50,
   chordVariety: 50,
   rhythmVariety: 50,
+  // Phase 1: Mood/Mode Selector defaults
+  currentMood: 'happy' as MoodType,
+  useFunctionalHarmony: false,
+  // Phase 2: Groove Engine defaults
+  grooveTemplate: 'straight' as GrooveTemplate,
+  // Phase 3: Spice Control defaults
+  spiceLevel: 'medium' as SpiceLevel,
 };
 
 export const MAX_HISTORY_LENGTH = 5;
@@ -595,4 +610,264 @@ export const BASS_STYLE_OPTIONS = [
   { value: 'syncopated', label: 'Syncopated' },
   { value: 'octave', label: 'Octave Jumps' },
   { value: 'fifths', label: 'Root & Fifth' },
+];
+
+// ===================================
+// Phase 1: Functional Harmony Constants
+// ===================================
+
+// Functional harmony groups - defines which scale degrees belong to each function
+export const FUNCTIONAL_HARMONY: Record<HarmonyFunction, FunctionalChord[]> = {
+  tonic: [
+    { degree: 'I', function: 'tonic', chordTypes: ['major', 'major7', 'add9'], tension: 0 },
+    { degree: 'i', function: 'tonic', chordTypes: ['minor', 'minor7', 'minor9'], tension: 0 },
+    { degree: 'vi', function: 'tonic', chordTypes: ['minor', 'minor7'], tension: 0.2 },
+    { degree: 'iii', function: 'tonic', chordTypes: ['minor', 'minor7'], tension: 0.3 },
+  ],
+  subdominant: [
+    { degree: 'IV', function: 'subdominant', chordTypes: ['major', 'major7', 'add9'], tension: 0.4 },
+    { degree: 'iv', function: 'subdominant', chordTypes: ['minor', 'minor7'], tension: 0.5 },
+    { degree: 'ii', function: 'subdominant', chordTypes: ['minor', 'minor7', 'halfDim7'], tension: 0.5 },
+    { degree: 'II', function: 'subdominant', chordTypes: ['major', 'dominant7'], tension: 0.6 },
+  ],
+  dominant: [
+    { degree: 'V', function: 'dominant', chordTypes: ['major', 'dominant7', 'sus4'], tension: 0.8 },
+    { degree: 'v', function: 'dominant', chordTypes: ['minor', 'minor7'], tension: 0.6 },
+    { degree: 'vii', function: 'dominant', chordTypes: ['diminished', 'halfDim7', 'diminished7'], tension: 0.9 },
+    { degree: 'VII', function: 'dominant', chordTypes: ['major', 'dominant7'], tension: 0.7 },
+  ],
+  passing: [
+    { degree: 'bVII', function: 'passing', chordTypes: ['major', 'dominant7'], tension: 0.5 },
+    { degree: 'bVI', function: 'passing', chordTypes: ['major', 'major7'], tension: 0.4 },
+    { degree: 'bIII', function: 'passing', chordTypes: ['major', 'major7'], tension: 0.3 },
+    { degree: '#iv', function: 'passing', chordTypes: ['diminished', 'halfDim7'], tension: 0.7 },
+  ],
+};
+
+// Common functional progressions (Tonic -> Subdominant -> Dominant -> Tonic)
+export const FUNCTIONAL_PROGRESSIONS: HarmonyFunction[][] = [
+  ['tonic', 'subdominant', 'dominant', 'tonic'],
+  ['tonic', 'tonic', 'subdominant', 'dominant'],
+  ['tonic', 'subdominant', 'subdominant', 'dominant'],
+  ['subdominant', 'dominant', 'tonic', 'tonic'],
+  ['tonic', 'passing', 'subdominant', 'dominant'],
+  ['subdominant', 'tonic', 'subdominant', 'dominant'],
+];
+
+// Mood profiles with associated scales and chord preferences
+export const MOOD_PROFILES: Record<MoodType, MoodProfile> = {
+  happy: {
+    name: 'Happy',
+    scales: ['major', 'lydian', 'pentatonicMajor'],
+    preferredFunctions: ['tonic', 'subdominant'],
+    chordTypes: ['major', 'major7', 'add9', 'sus2'],
+    tensionRange: [0, 0.5],
+    description: 'Bright, uplifting progressions',
+  },
+  sad: {
+    name: 'Sad',
+    scales: ['minor', 'dorian', 'phrygian'],
+    preferredFunctions: ['tonic', 'subdominant'],
+    chordTypes: ['minor', 'minor7', 'minor9', 'sus4'],
+    tensionRange: [0.2, 0.6],
+    description: 'Melancholic, introspective progressions',
+  },
+  dreamy: {
+    name: 'Dreamy',
+    scales: ['lydian', 'dorian', 'pentatonicMajor'],
+    preferredFunctions: ['tonic', 'passing'],
+    chordTypes: ['major7', 'minor7', 'add9', 'sus2'],
+    tensionRange: [0.1, 0.4],
+    description: 'Ethereal, floating progressions',
+  },
+  energetic: {
+    name: 'Energetic',
+    scales: ['major', 'mixolydian'],
+    preferredFunctions: ['dominant', 'subdominant'],
+    chordTypes: ['major', 'dominant7', 'sus4'],
+    tensionRange: [0.5, 0.9],
+    description: 'Driving, powerful progressions',
+  },
+  dark: {
+    name: 'Dark',
+    scales: ['harmonicMinor', 'phrygian', 'locrian'],
+    preferredFunctions: ['dominant', 'passing'],
+    chordTypes: ['minor', 'diminished', 'halfDim7', 'augmented'],
+    tensionRange: [0.6, 1.0],
+    description: 'Tense, ominous progressions',
+  },
+  mysterious: {
+    name: 'Mysterious',
+    scales: ['dorian', 'phrygian', 'harmonicMinor'],
+    preferredFunctions: ['passing', 'subdominant'],
+    chordTypes: ['minor7', 'halfDim7', 'sus4', 'diminished7'],
+    tensionRange: [0.4, 0.8],
+    description: 'Enigmatic, suspenseful progressions',
+  },
+  triumphant: {
+    name: 'Triumphant',
+    scales: ['major', 'lydian'],
+    preferredFunctions: ['dominant', 'tonic'],
+    chordTypes: ['major', 'major7', 'sus4', 'add9'],
+    tensionRange: [0.3, 0.8],
+    description: 'Victorious, heroic progressions',
+  },
+  relaxed: {
+    name: 'Relaxed',
+    scales: ['major', 'dorian', 'pentatonicMajor'],
+    preferredFunctions: ['tonic', 'subdominant'],
+    chordTypes: ['major7', 'minor7', 'add9', 'sus2'],
+    tensionRange: [0, 0.3],
+    description: 'Calm, soothing progressions',
+  },
+};
+
+// ===================================
+// Phase 2: Groove Engine Constants
+// ===================================
+
+export const GROOVE_PATTERNS: Record<GrooveTemplate, GroovePattern> = {
+  'four-on-floor': {
+    name: 'Four on the Floor',
+    template: 'four-on-floor',
+    beatPattern: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    swingAmount: 0,
+    accentBeats: [0, 4, 8, 12],
+  },
+  'neo-soul-swing': {
+    name: 'Neo-Soul Swing',
+    template: 'neo-soul-swing',
+    beatPattern: [1, 0, 0.5, 0, 1, 0, 0.7, 0.3, 1, 0, 0.5, 0, 1, 0, 0.7, 0],
+    swingAmount: 0.3,
+    accentBeats: [0, 6, 8, 14],
+  },
+  'funk-syncopation': {
+    name: 'Funk Syncopation',
+    template: 'funk-syncopation',
+    beatPattern: [1, 0.3, 0, 0.8, 0, 0.5, 0.9, 0, 1, 0.3, 0, 0.8, 0, 0.5, 0.9, 0],
+    swingAmount: 0.15,
+    accentBeats: [0, 3, 6, 8, 11, 14],
+  },
+  'straight': {
+    name: 'Straight',
+    template: 'straight',
+    beatPattern: [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+    swingAmount: 0,
+    accentBeats: [0, 4, 8, 12],
+  },
+  'shuffle': {
+    name: 'Shuffle',
+    template: 'shuffle',
+    beatPattern: [1, 0, 0.6, 0, 1, 0, 0.6, 0, 1, 0, 0.6, 0, 1, 0, 0.6, 0],
+    swingAmount: 0.4,
+    accentBeats: [0, 2, 4, 6, 8, 10, 12, 14],
+  },
+  'half-time': {
+    name: 'Half-Time',
+    template: 'half-time',
+    beatPattern: [1, 0, 0, 0, 0, 0, 0, 0, 0.8, 0, 0, 0, 0, 0, 0, 0],
+    swingAmount: 0,
+    accentBeats: [0, 8],
+  },
+};
+
+// Bass agent configurations for different styles
+export const BASS_AGENT_CONFIGS = {
+  root: {
+    rootEmphasis: 1.0,
+    chromaticApproach: false,
+    octaveJumps: false,
+    fifthApproach: false,
+    syncopation: 0,
+  },
+  walking: {
+    rootEmphasis: 0.7,
+    chromaticApproach: true,
+    octaveJumps: false,
+    fifthApproach: true,
+    syncopation: 0.2,
+  },
+  syncopated: {
+    rootEmphasis: 0.6,
+    chromaticApproach: false,
+    octaveJumps: false,
+    fifthApproach: true,
+    syncopation: 0.7,
+  },
+  octave: {
+    rootEmphasis: 0.8,
+    chromaticApproach: false,
+    octaveJumps: true,
+    fifthApproach: false,
+    syncopation: 0.3,
+  },
+  fifths: {
+    rootEmphasis: 0.6,
+    chromaticApproach: false,
+    octaveJumps: false,
+    fifthApproach: true,
+    syncopation: 0.1,
+  },
+};
+
+// ===================================
+// Phase 3: Spice Control Constants
+// ===================================
+
+export const SPICE_CONFIGS: Record<SpiceLevel, SpiceConfig> = {
+  mild: {
+    level: 'mild',
+    allowExtensions: false,
+    allowAlterations: false,
+    maxExtension: 7,
+  },
+  medium: {
+    level: 'medium',
+    allowExtensions: true,
+    allowAlterations: false,
+    maxExtension: 9,
+  },
+  hot: {
+    level: 'hot',
+    allowExtensions: true,
+    allowAlterations: true,
+    maxExtension: 11,
+  },
+  fire: {
+    level: 'fire',
+    allowExtensions: true,
+    allowAlterations: true,
+    maxExtension: 13,
+  },
+};
+
+// ===================================
+// New UI Options
+// ===================================
+
+export const MOOD_OPTIONS = [
+  { value: 'happy', label: '😊 Happy' },
+  { value: 'sad', label: '😢 Sad' },
+  { value: 'dreamy', label: '✨ Dreamy' },
+  { value: 'energetic', label: '⚡ Energetic' },
+  { value: 'dark', label: '🌑 Dark' },
+  { value: 'mysterious', label: '🔮 Mysterious' },
+  { value: 'triumphant', label: '🏆 Triumphant' },
+  { value: 'relaxed', label: '😌 Relaxed' },
+];
+
+export const GROOVE_TEMPLATE_OPTIONS = [
+  { value: 'straight', label: 'Straight' },
+  { value: 'four-on-floor', label: 'Four on the Floor' },
+  { value: 'neo-soul-swing', label: 'Neo-Soul Swing' },
+  { value: 'funk-syncopation', label: 'Funk Syncopation' },
+  { value: 'shuffle', label: 'Shuffle' },
+  { value: 'half-time', label: 'Half-Time' },
+];
+
+export const SPICE_LEVEL_OPTIONS = [
+  { value: 'mild', label: '🌶️ Mild (Triads)' },
+  { value: 'medium', label: '🌶️🌶️ Medium (7ths)' },
+  { value: 'hot', label: '🌶️🌶️🌶️ Hot (Extensions)' },
+  { value: 'fire', label: '🔥 Fire (Altered)' },
 ];
