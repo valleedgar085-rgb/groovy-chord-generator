@@ -47,19 +47,29 @@ class SharedChordSet {
     );
   }
 
-  /// Encode a chord to compact string format: "root:typeIndex:degree"
+  /// Encode a chord to compact string format: "root:typeIndex:degree:numeral"
   static String _encodeChord(Chord chord) {
-    return '${chord.root}:${chord.type.index}:${chord.degree}';
+    return '${chord.root}:${chord.type.index}:${chord.degree}:${chord.numeral}';
   }
 
   /// Decode a chord from compact string format
   static Chord _decodeChord(String encoded) {
     final parts = encoded.split(':');
+    if (parts.isEmpty) {
+      return const Chord(
+        root: 'C',
+        type: ChordTypeName.major,
+        degree: 'I',
+        numeral: 'I',
+      );
+    }
     return Chord(
       root: parts[0],
-      type: ChordTypeName.values[int.parse(parts[1])],
+      type: parts.length > 1 
+          ? ChordTypeName.values[int.parse(parts[1])]
+          : ChordTypeName.major,
       degree: parts.length > 2 ? parts[2] : 'I',
-      numeral: parts.length > 2 ? parts[2] : 'I',
+      numeral: parts.length > 3 ? parts[3] : (parts.length > 2 ? parts[2] : 'I'),
     );
   }
 }
@@ -140,7 +150,10 @@ class ShareService {
     }
   }
 
-  /// Parse a compact share code
+  /// Parse a compact share code.
+  /// Note: The compact share code format does not preserve degree/numeral information.
+  /// These are derived from the chord type and position. For full fidelity,
+  /// use the full URL format with parseShareUrl.
   static SharedChordSet? parseShareCode(String code) {
     try {
       final parts = code.split('-');
@@ -150,22 +163,35 @@ class ShareService {
       final genreIndex = int.parse(parts[1]);
       final chordStrings = parts[2].split('_');
 
-      final progression = chordStrings.map((cs) {
+      final romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+      
+      final progression = chordStrings.asMap().entries.map((entry) {
+        final index = entry.key;
+        final cs = entry.value;
         // Parse format: RootTypeIndex (e.g., "C0" for C Major)
         final match = RegExp(r'([A-G][#b]?)(\d+)').firstMatch(cs);
         if (match == null) {
-          return Chord(
+          return const Chord(
             root: 'C',
             type: ChordTypeName.major,
             degree: 'I',
             numeral: 'I',
           );
         }
+        final chordType = ChordTypeName.values[int.parse(match.group(2)!)];
+        // Derive numeral from position (simplified)
+        final numeral = romanNumerals[index % romanNumerals.length];
+        // Convert to lowercase for minor chords
+        final isMinor = chordType == ChordTypeName.minor ||
+            chordType == ChordTypeName.minor7 ||
+            chordType == ChordTypeName.minor9;
+        final degree = isMinor ? numeral.toLowerCase() : numeral;
+        
         return Chord(
           root: match.group(1)!,
-          type: ChordTypeName.values[int.parse(match.group(2)!)],
-          degree: 'I',
-          numeral: 'I',
+          type: chordType,
+          degree: degree,
+          numeral: numeral,
         );
       }).toList();
 

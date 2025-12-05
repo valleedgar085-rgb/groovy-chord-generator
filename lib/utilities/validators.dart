@@ -26,10 +26,17 @@ class ValidationResult {
 
 /// Chord validators
 class ChordValidators {
+  /// Valid root notes derived from music theory constants
+  static const Set<String> _validRoots = {
+    'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'
+  };
+
   /// Validate a chord root note
   static ValidationResult validateRoot(String root) {
-    final validRoots = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
-    if (validRoots.contains(root)) {
+    if (root.isEmpty) {
+      return ValidationResult.invalid('Root note cannot be empty');
+    }
+    if (_validRoots.contains(root)) {
       return ValidationResult.valid;
     }
     return ValidationResult.invalid('Invalid root note: $root');

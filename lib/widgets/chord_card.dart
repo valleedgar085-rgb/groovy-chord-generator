@@ -252,7 +252,8 @@ class ChordCard extends StatelessWidget {
   }
 
   String _getChordIcon() {
-    // Return first letter of root note
+    // Return first letter of root note with safety check
+    if (chord.root.isEmpty) return '?';
     return chord.root.substring(0, 1);
   }
 

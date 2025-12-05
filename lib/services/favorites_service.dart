@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/types.dart';
 import '../models/constants.dart';
+import '../utilities/helpers.dart';
 
 /// Represents a saved favorite progression
 class FavoriteProgression {
@@ -159,7 +160,7 @@ class FavoritesService {
     }
 
     final favorite = FavoriteProgression(
-      id: DateTime.now().millisecondsSinceEpoch.toString(),
+      id: IdGenerator.generate(),
       name: name.trim(),
       progression: progression,
       key: key,
