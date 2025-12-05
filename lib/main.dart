@@ -20,7 +20,12 @@ class GroovyChordGeneratorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
-      create: (_) => AppState(),
+      create: (_) {
+        final appState = AppState();
+        // Load favorites on startup
+        appState.loadFavorites();
+        return appState;
+      },
       child: MaterialApp(
         title: 'Groovy Chord Generator',
         debugShowCheckedModeBanner: false,
