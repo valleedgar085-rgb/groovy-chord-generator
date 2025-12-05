@@ -1,26 +1,35 @@
-# Dependencies
-node_modules
-.pnp
-.pnp.js
+# Flutter/Dart specific
+*.dart.js
+*.info.json
+*.js
+*.js_
+*.js.deps
+*.js.map
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+pubspec.lock
 
-# Build output
-dist
-build
-*.tsbuildinfo
+# Android specific
+android/app/build
+android/build
+android/.gradle
+android/local.properties
+android/key.properties
+android/*.iml
+android/app/*.iml
+*.keystore
+*.jks
+*.apk
+*.aab
 
-# Local env files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# iOS specific
+ios/
 
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Editor directories and files
+# IDE
 .idea
 .vscode
 *.suo
@@ -33,28 +42,23 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 
-# Test
-coverage
+# Logs
+*.log
 
-# Package lock files (keep package-lock.json only)
-yarn.lock
-pnpm-lock.yaml
+# Local env files
+.env
+.env.local
+.env.*
 
-# Android
-android/app/build
-android/app/release
-android/app/src/main/assets/index.html
-android/.gradle
-android/build
-android/local.properties
-android/key.properties
-android/*.iml
-android/app/*.iml
-*.keystore
-*.jks
-*.apk
-*.aab
+# Test coverage
+coverage/
 
-# Capacitor
-.capacitor
-ios/
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# Build output
+dist
+build
+*.tsbuildinfo

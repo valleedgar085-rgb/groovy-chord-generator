@@ -1,5 +1,21 @@
-// Top-level build file where you can add configuration options common to all sub-projects/modules.
-plugins {
-    id("com.android.application") version "8.2.0" apply false
-    id("org.jetbrains.kotlin.android") version "1.9.21" apply false
+// Top-level build file for Flutter project
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.buildDir = file("../build")
+
+subprojects {
+    project.buildDir = file("${rootProject.buildDir}/${project.name}")
+}
+
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register<Delete>("clean") {
+    delete(rootProject.buildDir)
 }
