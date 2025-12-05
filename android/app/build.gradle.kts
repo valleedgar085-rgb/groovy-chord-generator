@@ -1,29 +1,13 @@
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("kotlin-android")
+    id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
     namespace = "com.edgarvalle.chordgenerator"
-    compileSdk = 34
-
-    defaultConfig {
-        applicationId = "com.edgarvalle.chordgenerator"
-        minSdk = 24
-        targetSdk = 34
-        versionCode = 1
-        versionName = "2.5.0"
-    }
-
-    buildTypes {
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-    }
+    compileSdk = flutter.compileSdkVersion
+    ndkVersion = flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -34,15 +18,21 @@ android {
         jvmTarget = "1.8"
     }
 
-    buildFeatures {
-        viewBinding = true
+    defaultConfig {
+        applicationId = "com.edgarvalle.chordgenerator"
+        minSdk = flutter.minSdkVersion
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+    }
+
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("debug")
+        }
     }
 }
 
-dependencies {
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0")
-    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
-    implementation("androidx.webkit:webkit:1.9.0")
+flutter {
+    source = "../.."
 }
