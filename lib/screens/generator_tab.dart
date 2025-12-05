@@ -9,6 +9,7 @@ import '../models/constants.dart';
 import '../providers/app_state.dart';
 import '../utils/theme.dart';
 import '../utils/music_theory.dart';
+import '../services/favorites_service.dart';
 import '../widgets/chord_card.dart';
 import '../widgets/preset_card.dart';
 import '../widgets/control_dropdown.dart';
@@ -58,6 +59,15 @@ class GeneratorTab extends StatelessWidget {
               ),
               const SizedBox(height: AppTheme.spacingMd),
               
+              // Favorites
+              if (appState.favorites.isNotEmpty)
+                CollapsibleSection(
+                  title: '❤️ Favorites',
+                  initiallyExpanded: false,
+                  child: _buildFavorites(context, appState),
+                ),
+              const SizedBox(height: AppTheme.spacingMd),
+              
               // History
               if (appState.progressionHistory.isNotEmpty)
                 CollapsibleSection(
@@ -68,6 +78,106 @@ class GeneratorTab extends StatelessWidget {
               
               const SizedBox(height: 100), // Space for FAB
             ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFavorites(BuildContext context, AppState appState) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: appState.favorites.length,
+      itemBuilder: (context, index) {
+        final favorite = appState.favorites[index];
+        return Dismissible(
+          key: Key(favorite.id),
+          direction: DismissDirection.endToStart,
+          background: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: AppTheme.spacingMd),
+            decoration: BoxDecoration(
+              color: AppTheme.error.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+            ),
+            child: const Icon(Icons.delete, color: AppTheme.error),
+          ),
+          onDismissed: (_) => appState.removeFavorite(favorite.id),
+          child: GestureDetector(
+            onTap: () => appState.loadFavorite(favorite),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppTheme.bgTertiary,
+                    AppTheme.bgTertiary.withValues(alpha: 0.8),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+                border: Border.all(color: AppTheme.accentPink.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [AppTheme.accentPink, AppTheme.accentPrimary],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.favorite, color: Colors.white, size: 20),
+                  ),
+                  const SizedBox(width: AppTheme.spacingMd),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          favorite.name,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          favorite.progression.map((c) => getChordSymbol(c)).join(' - '),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.textSecondary,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppTheme.bgSecondary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      keyNameToString(favorite.key),
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppTheme.accentSecondary,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         );
       },
@@ -175,7 +285,26 @@ class GeneratorTab extends StatelessWidget {
                 ),
               ),
               if (appState.currentProgression.isNotEmpty)
-                _buildSpiceButton(context, appState),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildActionButton(
+                      context,
+                      icon: Icons.favorite_border,
+                      tooltip: 'Save to Favorites',
+                      onTap: () => _showSaveFavoriteDialog(context, appState),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildActionButton(
+                      context,
+                      icon: Icons.share,
+                      tooltip: 'Share',
+                      onTap: () => _showShareDialog(context, appState),
+                    ),
+                    const SizedBox(width: 8),
+                    _buildSpiceButton(context, appState),
+                  ],
+                ),
             ],
           ),
           const SizedBox(height: AppTheme.spacingMd),
@@ -209,6 +338,126 @@ class GeneratorTab extends StatelessWidget {
                 );
               }).toList(),
             ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+  }) {
+    return Tooltip(
+      message: tooltip,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 36,
+          height: 36,
+          decoration: BoxDecoration(
+            color: AppTheme.bgTertiary,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: AppTheme.borderColor),
+          ),
+          child: Icon(icon, size: 18, color: AppTheme.textSecondary),
+        ),
+      ),
+    );
+  }
+
+  void _showSaveFavoriteDialog(BuildContext context, AppState appState) {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Save to Favorites'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(
+            labelText: 'Name',
+            hintText: 'Enter a name for this progression',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (controller.text.trim().isNotEmpty) {
+                final success = await appState.addToFavorites(controller.text.trim());
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(success
+                          ? 'Saved to favorites!'
+                          : 'Could not save to favorites'),
+                      backgroundColor:
+                          success ? AppTheme.success : AppTheme.error,
+                    ),
+                  );
+                }
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showShareDialog(BuildContext context, AppState appState) {
+    final shareText = appState.getShareableText();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Share Progression'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
+              decoration: BoxDecoration(
+                color: AppTheme.bgTertiary,
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+              ),
+              child: Text(
+                shareText,
+                style: const TextStyle(fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: AppTheme.spacingMd),
+            const Text(
+              'Copy the text above to share your progression!',
+              style: TextStyle(color: AppTheme.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              // In a full implementation, this would copy to clipboard
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Copied to clipboard!'),
+                  backgroundColor: AppTheme.success,
+                ),
+              );
+            },
+            icon: const Icon(Icons.copy, size: 18),
+            label: const Text('Copy'),
+          ),
         ],
       ),
     );

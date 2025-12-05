@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import '../models/types.dart';
 import '../models/constants.dart';
 import '../utils/music_theory.dart';
+import '../services/favorites_service.dart';
+import '../services/share_service.dart';
 
 class AppState extends ChangeNotifier {
   // Current state
@@ -44,6 +46,10 @@ class AppState extends ChangeNotifier {
   GrooveTemplate _grooveTemplate = defaultGrooveTemplate;
   SpiceLevel _spiceLevel = defaultSpiceLevel;
   List<LockedChord> _lockedChords = [];
+  
+  // Favorites state
+  List<FavoriteProgression> _favorites = [];
+  bool _favoritesLoading = false;
 
   // Getters
   List<Chord> get currentProgression => _currentProgression;
@@ -80,6 +86,19 @@ class AppState extends ChangeNotifier {
   GrooveTemplate get grooveTemplate => _grooveTemplate;
   SpiceLevel get spiceLevel => _spiceLevel;
   List<LockedChord> get lockedChords => _lockedChords;
+  List<FavoriteProgression> get favorites => _favorites;
+  bool get favoritesLoading => _favoritesLoading;
+
+  // Initialize favorites on app start
+  Future<void> loadFavorites() async {
+    _favoritesLoading = true;
+    notifyListeners();
+    
+    _favorites = await FavoritesService.getFavorites();
+    
+    _favoritesLoading = false;
+    notifyListeners();
+  }
 
   // Setters with notification
   void setGenre(GenreKey value) {
@@ -490,6 +509,181 @@ class AppState extends ChangeNotifier {
     _currentMelody = [];
     _currentBassLine = [];
     _lockedChords = [];
+    notifyListeners();
+  }
+
+  // ===================================
+  // Favorites Methods
+  // ===================================
+
+  /// Add current progression to favorites
+  Future<bool> addToFavorites(String name) async {
+    if (_currentProgression.isEmpty) return false;
+    
+    final favorite = await FavoritesService.addFavorite(
+      name: name,
+      progression: _currentProgression,
+      key: _currentKey,
+      genre: _genre,
+    );
+    
+    if (favorite != null) {
+      _favorites.insert(0, favorite);
+      notifyListeners();
+      return true;
+    }
+    return false;
+  }
+
+  /// Remove a favorite by ID
+  Future<bool> removeFavorite(String id) async {
+    final result = await FavoritesService.removeFavorite(id);
+    if (result) {
+      _favorites.removeWhere((f) => f.id == id);
+      notifyListeners();
+    }
+    return result;
+  }
+
+  /// Load a favorite progression
+  void loadFavorite(FavoriteProgression favorite) {
+    // Save current to history first
+    if (_currentProgression.isNotEmpty) {
+      final historyEntry = HistoryEntry(
+        progression: List.from(_currentProgression),
+        key: _currentKey,
+        genre: _genre,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+      _progressionHistory.insert(0, historyEntry);
+      if (_progressionHistory.length > maxHistoryLength) {
+        _progressionHistory = _progressionHistory.sublist(0, maxHistoryLength);
+      }
+    }
+
+    var restoredProgression = List<Chord>.from(favorite.progression);
+
+    if (_useVoiceLeading) {
+      restoredProgression = applyVoiceLeading(restoredProgression);
+    }
+
+    _currentProgression = restoredProgression;
+    _currentKey = favorite.key;
+    _genre = favorite.genre;
+    _isMinorKey = favorite.key.name.contains('m') && favorite.key.name.length > 1;
+
+    final profile = genreProfiles[favorite.genre];
+    if (profile != null) {
+      _tempo = profile.tempo;
+    }
+
+    // Regenerate melody and bass if enabled
+    if (_includeMelody) {
+      _currentMelody = _generateMelodyNotes(
+        _currentProgression, _genre, _rhythm, _currentKey);
+    }
+    if (_includeBass) {
+      _currentBassLine = generateBassLine(
+        _currentProgression, _bassStyle, _bassVariety, _rhythm);
+    }
+
+    notifyListeners();
+  }
+
+  /// Check if current progression is a favorite
+  Future<bool> isCurrentFavorite() async {
+    return FavoritesService.isFavorite(_currentProgression);
+  }
+
+  // ===================================
+  // Share Methods
+  // ===================================
+
+  /// Generate a shareable URL for current progression
+  String generateShareUrl() {
+    return ShareService.generateShareUrl(
+      progression: _currentProgression,
+      key: _currentKey,
+      genre: _genre,
+      tempo: _tempo,
+    );
+  }
+
+  /// Generate a compact share code
+  String generateShareCode() {
+    return ShareService.generateShareCode(
+      progression: _currentProgression,
+      key: _currentKey,
+      genre: _genre,
+    );
+  }
+
+  /// Get shareable text with progression details
+  String getShareableText() {
+    return ShareService.getShareableText(
+      progression: _currentProgression,
+      key: _currentKey,
+      genre: _genre,
+      tempo: _tempo,
+    );
+  }
+
+  /// Load progression from share URL
+  bool loadFromShareUrl(String url) {
+    final sharedSet = ShareService.parseShareUrl(url);
+    if (sharedSet == null) return false;
+
+    _loadSharedChordSet(sharedSet);
+    return true;
+  }
+
+  /// Load progression from share code
+  bool loadFromShareCode(String code) {
+    final sharedSet = ShareService.parseShareCode(code);
+    if (sharedSet == null) return false;
+
+    _loadSharedChordSet(sharedSet);
+    return true;
+  }
+
+  /// Private helper to load a shared chord set
+  void _loadSharedChordSet(SharedChordSet sharedSet) {
+    // Save current to history first
+    if (_currentProgression.isNotEmpty) {
+      final historyEntry = HistoryEntry(
+        progression: List.from(_currentProgression),
+        key: _currentKey,
+        genre: _genre,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+      _progressionHistory.insert(0, historyEntry);
+      if (_progressionHistory.length > maxHistoryLength) {
+        _progressionHistory = _progressionHistory.sublist(0, maxHistoryLength);
+      }
+    }
+
+    var loadedProgression = List<Chord>.from(sharedSet.progression);
+
+    if (_useVoiceLeading) {
+      loadedProgression = applyVoiceLeading(loadedProgression);
+    }
+
+    _currentProgression = loadedProgression;
+    _currentKey = sharedSet.key;
+    _genre = sharedSet.genre;
+    _tempo = sharedSet.tempo;
+    _isMinorKey = sharedSet.key.name.contains('m') && sharedSet.key.name.length > 1;
+
+    // Regenerate melody and bass if enabled
+    if (_includeMelody) {
+      _currentMelody = _generateMelodyNotes(
+        _currentProgression, _genre, _rhythm, _currentKey);
+    }
+    if (_includeBass) {
+      _currentBassLine = generateBassLine(
+        _currentProgression, _bassStyle, _bassVariety, _rhythm);
+    }
+
     notifyListeners();
   }
 }

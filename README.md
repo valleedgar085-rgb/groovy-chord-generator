@@ -3,7 +3,7 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.5-purple)
-![Platform](https://img.shields.io/badge/platform-Android-green)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Web-green)
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-blue)
 
 **Create amazing chord progressions for any genre** — A mobile-optimized music creation tool built with Flutter.
@@ -21,6 +21,8 @@
 - 🎛️ **Groove Engine** — Apply rhythmic templates like Neo-Soul Swing, Funk Syncopation
 - 📜 **History** — Access your previous progressions
 - 🔒 **Chord Locking** — Lock specific chords while regenerating others
+- ❤️ **Favorites List** — Save and manage your favorite chord progressions
+- 🔗 **Share Chord Set** — Generate and share URLs for your chord selections
 
 ## 🚀 Getting Started
 
@@ -54,6 +56,12 @@
 flutter build apk --release
 ```
 
+### Build for Web
+
+```bash
+flutter build web --release
+```
+
 ## 📱 App Structure
 
 ```
@@ -78,14 +86,37 @@ lib/
 │   ├── preset_card.dart   # Preset selection card
 │   ├── control_dropdown.dart
 │   └── collapsible_section.dart
+├── services/
+│   ├── favorites_service.dart  # Favorites management
+│   └── share_service.dart      # URL sharing functionality
+├── utilities/
+│   ├── helpers.dart       # Utility helper functions
+│   └── validators.dart    # Input validation
 └── utils/
     ├── theme.dart         # App theming
     └── music_theory.dart  # Music theory functions
 ```
 
+## 🌐 Web Version Structure
+
+```
+web/
+├── index.html             # Web entry point
+├── assets/
+│   ├── images/            # Web images and icons
+│   └── styles/
+│       └── main.css       # Web-specific styles
+```
+
 ## 🎨 Theme
 
-The app features a beautiful dark theme with purple accent colors, optimized for music creation at any time of day.
+The app features a beautiful dark theme with purple accent colors, optimized for music creation at any time of day. Key theme features include:
+
+- **Modernized color palette** with improved contrast
+- **Responsive layout** adapting to mobile, tablet, and desktop screens
+- **Smooth animations** and transitions between chord selections
+- **Chord type color coding** for visual differentiation
+- **Glowing accents** on interactive elements
 
 ## 🎹 Supported Genres
 
@@ -104,10 +135,23 @@ The app features a beautiful dark theme with purple accent colors, optimized for
 | Country | Nashville style | 110 BPM |
 | Funk | Syncopated | 105 BPM |
 
-## 👨‍�� Author
+## 🆕 New Features (v2.5)
+
+### Favorites List
+Save your favorite chord progressions for quick access later. Simply tap the heart icon on any progression to save it. Access your favorites from the collapsible "Favorites" section on the generator tab.
+
+### Share Chord Set
+Share your chord progressions with others! Generate a shareable URL or text that includes:
+- The chord progression
+- Key and genre information
+- Tempo setting
+
+Copy and share via any messaging platform or social media.
+
+## 👨‍💻 Author
 
 **Edgar Valle**
 
-## 📄 License
+## �� License
 
 © 2024 All rights reserved.

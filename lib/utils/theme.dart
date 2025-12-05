@@ -5,22 +5,31 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Colors
-  static const Color bgPrimary = Color(0xFF0D0D1A);
-  static const Color bgSecondary = Color(0xFF1A1A2E);
-  static const Color bgTertiary = Color(0xFF252541);
-  static const Color bgElevated = Color(0xFF2D2D4A);
-  static const Color textPrimary = Color(0xFFFFFFFF);
+  // Colors - Modernized palette with better contrast
+  static const Color bgPrimary = Color(0xFF0A0A14);
+  static const Color bgSecondary = Color(0xFF14142B);
+  static const Color bgTertiary = Color(0xFF1F1F3D);
+  static const Color bgElevated = Color(0xFF2A2A4A);
+  static const Color textPrimary = Color(0xFFFAFAFC);
   static const Color textSecondary = Color(0xFFB8B8D0);
   static const Color textMuted = Color(0xFF6C6C8A);
-  static const Color accentPrimary = Color(0xFF7C3AED);
-  static const Color accentSecondary = Color(0xFFA855F7);
-  static const Color accentPink = Color(0xFFEC4899);
+  static const Color accentPrimary = Color(0xFF8B5CF6);
+  static const Color accentSecondary = Color(0xFFA78BFA);
+  static const Color accentPink = Color(0xFFF472B6);
+  static const Color accentCyan = Color(0xFF22D3EE);
   static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFF59E0B);
-  static const Color error = Color(0xFFEF4444);
+  static const Color warning = Color(0xFFFBBF24);
+  static const Color error = Color(0xFFF43F5E);
   static const Color borderColor = Color(0xFF3A3A5C);
   static const Color borderLight = Color(0xFF4A4A6C);
+
+  // Additional accent colors for chord types
+  static const Color chordMajor = Color(0xFF10B981);
+  static const Color chordMinor = Color(0xFF6366F1);
+  static const Color chordDim = Color(0xFFEF4444);
+  static const Color chordAug = Color(0xFFF59E0B);
+  static const Color chordDom = Color(0xFF8B5CF6);
+  static const Color chordSus = Color(0xFF06B6D4);
 
   // Gradients
   static const LinearGradient accentGradient = LinearGradient(
@@ -35,10 +44,23 @@ class AppTheme {
     colors: [Color(0xFFF97316), Color(0xFFEF4444)],
   );
 
+  static const LinearGradient successGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF10B981), Color(0xFF059669)],
+  );
+
+  static const LinearGradient cyanGradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [accentCyan, Color(0xFF0EA5E9)],
+  );
+
   // Border radius
   static const double borderRadius = 16.0;
   static const double borderRadiusSm = 10.0;
   static const double borderRadiusLg = 24.0;
+  static const double borderRadiusXl = 32.0;
 
   // Spacing
   static const double spacingXs = 4.0;
@@ -46,11 +68,22 @@ class AppTheme {
   static const double spacingMd = 16.0;
   static const double spacingLg = 24.0;
   static const double spacingXl = 32.0;
+  static const double spacingXxl = 48.0;
 
   // Sizes
   static const double headerHeight = 60.0;
   static const double navHeight = 70.0;
   static const double fabSize = 60.0;
+
+  // Responsive breakpoints
+  static const double mobileBreakpoint = 480.0;
+  static const double tabletBreakpoint = 768.0;
+  static const double desktopBreakpoint = 1024.0;
+
+  // Animation durations
+  static const Duration animationFast = Duration(milliseconds: 150);
+  static const Duration animationNormal = Duration(milliseconds: 300);
+  static const Duration animationSlow = Duration(milliseconds: 500);
 
   // Shadows
   static List<BoxShadow> get shadowSm => [
@@ -81,6 +114,14 @@ class AppTheme {
     BoxShadow(
       color: accentPrimary.withValues(alpha: 0.3),
       blurRadius: 20,
+      offset: const Offset(0, 4),
+    ),
+  ];
+
+  static List<BoxShadow> shadowColorGlow(Color color) => [
+    BoxShadow(
+      color: color.withValues(alpha: 0.4),
+      blurRadius: 16,
       offset: const Offset(0, 4),
     ),
   ];
@@ -157,6 +198,7 @@ class AppTheme {
       thumbColor: accentPrimary,
       overlayColor: accentPrimary.withValues(alpha: 0.2),
       thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 12),
+      trackHeight: 6,
     ),
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
@@ -178,16 +220,32 @@ class AppTheme {
       unselectedItemColor: textMuted,
       type: BottomNavigationBarType.fixed,
     ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: bgElevated,
+      contentTextStyle: const TextStyle(color: textPrimary),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadiusSm),
+      ),
+      behavior: SnackBarBehavior.floating,
+    ),
+    dialogTheme: DialogTheme(
+      backgroundColor: bgSecondary,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(borderRadius),
+      ),
+    ),
     textTheme: const TextTheme(
       headlineLarge: TextStyle(
         fontSize: 28,
         fontWeight: FontWeight.bold,
         color: textPrimary,
+        letterSpacing: -0.5,
       ),
       headlineMedium: TextStyle(
         fontSize: 24,
         fontWeight: FontWeight.bold,
         color: textPrimary,
+        letterSpacing: -0.5,
       ),
       titleLarge: TextStyle(
         fontSize: 20,
@@ -202,14 +260,17 @@ class AppTheme {
       bodyLarge: TextStyle(
         fontSize: 16,
         color: textPrimary,
+        height: 1.5,
       ),
       bodyMedium: TextStyle(
         fontSize: 14,
         color: textSecondary,
+        height: 1.5,
       ),
       bodySmall: TextStyle(
         fontSize: 12,
         color: textMuted,
+        height: 1.4,
       ),
       labelLarge: TextStyle(
         fontSize: 14,
