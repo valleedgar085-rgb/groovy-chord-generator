@@ -199,8 +199,9 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     name: 'Indie Rock',
     scale: ScaleName.major,
     progressions: [
-      ['I', 'IV', 'V', 'I'],     // Classic rock progression
-      ['vi', 'IV', 'I', 'V'],    // Modern indie sound
+      ['I', 'IV', 'V', 'I'],         // Classic rock progression
+      ['vi', 'IV', 'I', 'V'],        // Modern indie sound
+      ['I', 'V', 'vi', 'iii', 'IV'], // Extended progression for variety
       ['I', 'iii', 'IV', 'V'],
       ['I', 'IV', 'ii', 'V'],
     ],
