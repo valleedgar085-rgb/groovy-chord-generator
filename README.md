@@ -120,20 +120,33 @@ The app features a beautiful dark theme with purple accent colors, optimized for
 
 ## 🎹 Supported Genres
 
-| Genre | Style | Tempo |
-|-------|-------|-------|
-| Happy Pop | Major, uplifting | 120 BPM |
-| Chill Lo-Fi | Minor 7ths, jazzy | 85 BPM |
-| Energetic EDM | Anthemic | 128 BPM |
-| Soulful R&B | Smooth, 9th chords | 90 BPM |
-| Jazz Fusion | Complex harmony | 110 BPM |
-| Dark Trap | Harmonic minor | 140 BPM |
-| Cinematic | Epic, dramatic | 100 BPM |
-| Indie Rock | Dreamy | 115 BPM |
-| Reggae | Laid-back | 80 BPM |
-| Blues | 12-bar variations | 90 BPM |
-| Country | Nashville style | 110 BPM |
-| Funk | Syncopated | 105 BPM |
+| Genre | Style | Tempo | Common Progressions |
+|-------|-------|-------|---------------------|
+| Happy Upbeat Pop | Major, uplifting | 100-130 BPM | I–V–vi–IV, I–vi–IV–V |
+| Chill Lo-Fi | maj7/min7, jazzy | 60-90 BPM | ii–V–I, I–vi–ii–V |
+| Energetic EDM | Anthemic, powerful | 120-130 BPM | vi–IV–I–V |
+| Soulful R&B | Rich 7ths, 9ths | 70-100 BPM | Smooth progressions |
+| Jazz Fusion | Complex harmony | 120-180 BPM | ii-V-I variations |
+| Dark Deep Trap | Minor/Diminished | 140 BPM (half-time) | Dramatic movements |
+| Cinematic Epic | Dramatic, minor keys | Variable | i-VI progressions |
+| Indie Rock | Dreamy, guitar-driven | 80-120 BPM | I-IV-V, vi-IV-I-V |
+| Reggae | Laid-back | 80 BPM | Classic patterns |
+| Blues | 12-bar variations | 90 BPM | Traditional blues |
+| Country | Nashville style | 110 BPM | Country patterns |
+| Funk | Syncopated grooves | 105 BPM | Funk movements |
+
+## 🎼 Music Theory Behind the Genres
+
+The chord progressions in each genre are derived from analysis of top songs:
+
+- **Happy Upbeat Pop**: Uses the iconic I–V–vi–IV progression found in countless hits
+- **Chill Lo-Fi**: Jazz-influenced ii–V–I progressions with extended chords (maj7, min7)
+- **Energetic EDM**: The vi–IV–I–V progression provides the anthemic quality
+- **Soulful R&B**: Rich harmonies with 7th and 9th chords for smooth transitions
+- **Jazz Fusion**: Complex ii-V-I variations with advanced voice leading
+- **Dark Deep Trap**: Half-time feel at 140 BPM with minor and diminished chords
+- **Cinematic Epic**: Minor keys with i-VI progressions for dramatic tension
+- **Indie Rock**: Mix of classic I-IV-V and modern vi-IV-I-V progressions
 
 ## 🆕 New Features (v2.5)
 
@@ -152,6 +165,8 @@ Copy and share via any messaging platform or social media.
 
 **Edgar Valle**
 
-## �� License
+## 📝 License
 
-© 2024 All rights reserved.
+MIT License © 2025 Edgar Valle
+
+See [LICENSE](LICENSE) for details.
