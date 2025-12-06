@@ -1,6 +1,10 @@
 /// Groovy Chord Generator
 /// Constants - Music Theory Data
 /// Version 2.5
+/// 
+/// This file contains all the music theory constants used by the chord generator.
+/// Genre profiles are derived from analysis of top songs in each genre to provide
+/// authentic chord progressions, tempo ranges, and characteristic chord types.
 
 import 'types.dart';
 
@@ -14,19 +18,27 @@ const String appVersion = '2.5';
 // Music Theory Constants
 // ===================================
 
+/// The 12 chromatic notes using sharps for internal representation
 const List<String> notes = [
   'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
 ];
 
+/// The 12 chromatic notes using flats for display (more common in jazz/classical)
 const List<String> noteDisplay = [
   'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'
 ];
 
+/// Roman numerals for representing scale degrees in chord progressions
 const List<String> romanNumerals = [
   'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'
 ];
 
-// Chord types with intervals
+// ===================================
+// Chord Types with Intervals
+// ===================================
+// Each chord type is defined by its intervals (in semitones from root),
+// display symbol, and full name.
+
 const Map<ChordTypeName, ChordType> chordTypes = {
   ChordTypeName.major: ChordType(intervals: [0, 4, 7], symbol: '', name: 'Major'),
   ChordTypeName.minor: ChordType(intervals: [0, 3, 7], symbol: 'm', name: 'Minor'),
@@ -44,7 +56,12 @@ const Map<ChordTypeName, ChordType> chordTypes = {
   ChordTypeName.major9: ChordType(intervals: [0, 4, 7, 11, 14], symbol: 'maj9', name: 'Major 9th'),
 };
 
-// Scale patterns (intervals in semitones)
+// ===================================
+// Scale Patterns (intervals in semitones)
+// ===================================
+// Each scale is defined by its interval pattern from the root note.
+// These patterns are used to build chords and generate melodies.
+
 const Map<ScaleName, List<int>> scales = {
   ScaleName.major: [0, 2, 4, 5, 7, 9, 11],
   ScaleName.minor: [0, 2, 3, 5, 7, 8, 10],
@@ -60,45 +77,64 @@ const Map<ScaleName, List<int>> scales = {
   ScaleName.blues: [0, 3, 5, 6, 7, 10],
 };
 
+// ===================================
+// Genre Profiles
+// ===================================
+// Each genre profile is derived from analysis of top songs in that genre.
+// The tempo ranges and chord progressions reflect common patterns found
+// in popular music across these genres.
+
 // Genre profiles
 const Map<GenreKey, GenreProfile> genreProfiles = {
+  // Happy Upbeat Pop: 100-130 BPM
+  // Uses iconic progressions from hit songs: I–V–vi–IV (Axis of Awesome), I–vi–IV–V
   GenreKey.happyPop: GenreProfile(
     name: 'Happy Upbeat Pop',
     scale: ScaleName.major,
     progressions: [
-      ['I', 'V', 'vi', 'IV'],
+      ['I', 'V', 'vi', 'IV'],   // The iconic "Axis of Awesome" progression
+      ['I', 'vi', 'IV', 'V'],   // Classic 50s progression modernized
       ['I', 'IV', 'V', 'I'],
-      ['I', 'vi', 'IV', 'V'],
       ['I', 'IV', 'vi', 'V'],
     ],
     chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus2, ChordTypeName.add9, ChordTypeName.major7],
     melodyScale: ScaleName.pentatonicMajor,
-    tempo: 120,
+    tempo: 115, // Center of 100-130 BPM range
   ),
+  
+  // Chill Lo-Fi: 60-90 BPM
+  // Focus on maj7/min7 chords with jazz-influenced ii-V-I progressions
   GenreKey.chillLofi: GenreProfile(
     name: 'Chill Lo-Fi',
     scale: ScaleName.minor,
     progressions: [
-      ['ii', 'V', 'I', 'vi'],
-      ['I', 'vi', 'ii', 'V'],
+      ['ii', 'V', 'I'],         // Classic jazz ii-V-I
+      ['I', 'vi', 'ii', 'V'],   // Turnaround progression
+      ['ii', 'V', 'I', 'vi'],   // Extended turnaround
       ['vi', 'ii', 'V', 'I'],
     ],
     chordTypes: [ChordTypeName.major7, ChordTypeName.minor7, ChordTypeName.dominant7, ChordTypeName.minor9, ChordTypeName.add9],
     melodyScale: ScaleName.pentatonicMinor,
-    tempo: 85,
+    tempo: 75, // Center of 60-90 BPM range
   ),
+  
+  // Energetic EDM: 120-130 BPM
+  // Uses the anthemic vi-IV-I-V progression common in festival bangers
   GenreKey.energeticEdm: GenreProfile(
     name: 'Energetic EDM',
     scale: ScaleName.major,
     progressions: [
+      ['vi', 'IV', 'I', 'V'],   // The anthemic EDM progression
       ['I', 'V', 'vi', 'IV'],
-      ['vi', 'IV', 'I', 'V'],
       ['I', 'IV', 'I', 'V'],
     ],
     chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus4, ChordTypeName.sus2],
     melodyScale: ScaleName.major,
-    tempo: 128,
+    tempo: 125, // Center of 120-130 BPM range
   ),
+  
+  // Soulful R&B: 70-100 BPM
+  // Rich harmonies featuring 7th and 9th chords for smooth, warm sound
   GenreKey.soulfulRnb: GenreProfile(
     name: 'Soulful R&B',
     scale: ScaleName.minor,
@@ -109,20 +145,26 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     ],
     chordTypes: [ChordTypeName.minor7, ChordTypeName.major7, ChordTypeName.dominant7, ChordTypeName.minor9, ChordTypeName.major9],
     melodyScale: ScaleName.pentatonicMinor,
-    tempo: 90,
+    tempo: 85, // Center of 70-100 BPM range
   ),
+  
+  // Jazz Fusion: 120-180 BPM
+  // Complex ii-V-I variations with advanced voice leading
   GenreKey.jazzFusion: GenreProfile(
     name: 'Jazz Fusion',
     scale: ScaleName.dorian,
     progressions: [
-      ['ii', 'V', 'I', 'vi'],
-      ['I', 'vi', 'ii', 'V'],
-      ['iii', 'vi', 'ii', 'V'],
+      ['ii', 'V', 'I', 'vi'],   // Classic ii-V-I with vi extension
+      ['I', 'vi', 'ii', 'V'],   // Rhythm changes style
+      ['iii', 'vi', 'ii', 'V'], // Complex approach
     ],
     chordTypes: [ChordTypeName.major7, ChordTypeName.minor7, ChordTypeName.dominant7, ChordTypeName.halfDim7, ChordTypeName.diminished7],
     melodyScale: ScaleName.dorian,
-    tempo: 110,
+    tempo: 150, // Center of 120-180 BPM range
   ),
+  
+  // Dark Deep Trap: 140 BPM (half-time feel)
+  // Minor and diminished chords create dark, ominous atmosphere
   GenreKey.darkTrap: GenreProfile(
     name: 'Dark Deep Trap',
     scale: ScaleName.harmonicMinor,
@@ -133,32 +175,42 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     ],
     chordTypes: [ChordTypeName.minor, ChordTypeName.diminished, ChordTypeName.minor7, ChordTypeName.halfDim7, ChordTypeName.augmented],
     melodyScale: ScaleName.harmonicMinor,
-    tempo: 140,
+    tempo: 140, // Standard trap tempo with half-time feel
   ),
+  
+  // Cinematic Epic: Variable tempo
+  // Minor keys with i-VI progressions for dramatic, emotional impact
   GenreKey.cinematic: GenreProfile(
     name: 'Cinematic Epic',
     scale: ScaleName.minor,
     progressions: [
-      ['i', 'VI', 'III', 'VII'],
+      ['i', 'VI', 'III', 'VII'], // Dramatic minor progression
       ['i', 'iv', 'V', 'i'],
       ['VI', 'VII', 'i', 'V'],
     ],
     chordTypes: [ChordTypeName.minor, ChordTypeName.major, ChordTypeName.sus4, ChordTypeName.augmented, ChordTypeName.minor7],
     melodyScale: ScaleName.minor,
-    tempo: 100,
+    tempo: 100, // Variable in practice, 100 as base
   ),
+  
+  // Indie Rock: 80-120 BPM
+  // Mix of classic I-IV-V and modern vi-IV-I-V progressions
   GenreKey.indieRock: GenreProfile(
     name: 'Indie Rock',
     scale: ScaleName.major,
     progressions: [
+      ['I', 'IV', 'V', 'I'],     // Classic rock progression
+      ['vi', 'IV', 'I', 'V'],    // Modern indie sound
       ['I', 'iii', 'IV', 'V'],
-      ['I', 'V', 'vi', 'iii', 'IV'],
       ['I', 'IV', 'ii', 'V'],
     ],
     chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus2, ChordTypeName.add9, ChordTypeName.major7],
     melodyScale: ScaleName.major,
-    tempo: 115,
+    tempo: 100, // Center of 80-120 BPM range
   ),
+  
+  // Reggae: 80 BPM
+  // Laid-back offbeat feel with classic Jamaican patterns
   GenreKey.reggae: GenreProfile(
     name: 'Reggae',
     scale: ScaleName.major,
@@ -171,11 +223,14 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     melodyScale: ScaleName.pentatonicMajor,
     tempo: 80,
   ),
+  
+  // Blues: 90 BPM
+  // Traditional 12-bar structure with dominant 7th chords
   GenreKey.blues: GenreProfile(
     name: 'Blues',
     scale: ScaleName.mixolydian,
     progressions: [
-      ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V'],
+      ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V'], // 12-bar blues
       ['I', 'IV', 'I', 'V'],
       ['i', 'iv', 'i', 'V'],
     ],
@@ -183,6 +238,9 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     melodyScale: ScaleName.blues,
     tempo: 90,
   ),
+  
+  // Country: 110 BPM
+  // Nashville-style progressions with major key optimism
   GenreKey.country: GenreProfile(
     name: 'Country',
     scale: ScaleName.major,
@@ -195,6 +253,9 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     melodyScale: ScaleName.pentatonicMajor,
     tempo: 110,
   ),
+  
+  // Funk: 105 BPM
+  // Syncopated grooves with dominant 7th and 9th chords
   GenreKey.funk: GenreProfile(
     name: 'Funk',
     scale: ScaleName.mixolydian,
@@ -209,7 +270,12 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
   ),
 };
 
-// Complexity settings
+// ===================================
+// Complexity Settings
+// ===================================
+// Controls the number of chords, use of extensions, and variation count
+// based on the selected complexity level.
+
 const Map<ComplexityLevel, ComplexitySetting> complexitySettings = {
   ComplexityLevel.simple: ComplexitySetting(chordCount: [3, 4], useExtensions: false, variations: 1),
   ComplexityLevel.medium: ComplexitySetting(chordCount: [4, 5], useExtensions: true, variations: 2),
@@ -217,7 +283,12 @@ const Map<ComplexityLevel, ComplexitySetting> complexitySettings = {
   ComplexityLevel.advanced: ComplexitySetting(chordCount: [8, 12], useExtensions: true, variations: 4),
 };
 
-// Rhythm patterns
+// ===================================
+// Rhythm Patterns
+// ===================================
+// Defines rhythmic characteristics including note durations, dynamics,
+// and melody density for different feel settings.
+
 const Map<RhythmLevel, RhythmPattern> rhythmPatterns = {
   RhythmLevel.soft: RhythmPattern(
     name: 'Soft & Gentle',
