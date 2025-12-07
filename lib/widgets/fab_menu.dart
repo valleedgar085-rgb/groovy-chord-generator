@@ -23,11 +23,11 @@ class _FabMenuState extends State<FabMenu> with SingleTickerProviderStateMixin {
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
     _rotationAnimation = Tween<double>(begin: 0, end: 0.125).animate(
-      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutCubic),
     );
   }
 
@@ -147,13 +147,17 @@ class _FabMenuState extends State<FabMenu> with SingleTickerProviderStateMixin {
   }) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
       builder: (context, value, child) {
         return Opacity(
           opacity: value,
-          child: Transform.translate(
-            offset: Offset(0, 10 * (1 - value)),
-            child: child,
+          child: Transform.scale(
+            scale: 0.8 + (0.2 * value),
+            child: Transform.translate(
+              offset: Offset(0, 10 * (1 - value)),
+              child: child,
+            ),
           ),
         );
       },

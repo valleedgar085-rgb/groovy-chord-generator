@@ -1,37 +1,61 @@
 /// Groovy Chord Generator
 /// App Theme
 /// Version 2.5
+/// 
+/// Centralized theme configuration with:
+/// - Dark color palette optimized for music creation
+/// - Purple accent colors for modern UI
+/// - Chord type-specific colors for visual differentiation
+/// - Consistent spacing, sizing, and animation durations
+/// - Material Design 3 components
 
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Colors - Modernized palette with better contrast
-  static const Color bgPrimary = Color(0xFF0A0A14);
-  static const Color bgSecondary = Color(0xFF14142B);
-  static const Color bgTertiary = Color(0xFF1F1F3D);
-  static const Color bgElevated = Color(0xFF2A2A4A);
-  static const Color textPrimary = Color(0xFFFAFAFC);
-  static const Color textSecondary = Color(0xFFB8B8D0);
-  static const Color textMuted = Color(0xFF6C6C8A);
-  static const Color accentPrimary = Color(0xFF8B5CF6);
-  static const Color accentSecondary = Color(0xFFA78BFA);
-  static const Color accentPink = Color(0xFFF472B6);
-  static const Color accentCyan = Color(0xFF22D3EE);
-  static const Color success = Color(0xFF10B981);
-  static const Color warning = Color(0xFFFBBF24);
-  static const Color error = Color(0xFFF43F5E);
-  static const Color borderColor = Color(0xFF3A3A5C);
-  static const Color borderLight = Color(0xFF4A4A6C);
+  // ============================================================================
+  // PRIMARY COLOR PALETTE
+  // ============================================================================
+  // Dark background colors with increasing elevation
+  static const Color bgPrimary = Color(0xFF0A0A14);      // Darkest - main background
+  static const Color bgSecondary = Color(0xFF14142B);    // Cards and panels
+  static const Color bgTertiary = Color(0xFF1F1F3D);     // Input fields and controls
+  static const Color bgElevated = Color(0xFF2A2A4A);     // Elevated elements
+  
+  // Text colors with semantic hierarchy
+  static const Color textPrimary = Color(0xFFFAFAFC);    // Main text
+  static const Color textSecondary = Color(0xFFB8B8D0);  // Secondary text
+  static const Color textMuted = Color(0xFF6C6C8A);      // Subtle text
+  
+  // Accent colors - purple theme
+  static const Color accentPrimary = Color(0xFF8B5CF6);    // Main accent
+  static const Color accentSecondary = Color(0xFFA78BFA);  // Secondary accent
+  static const Color accentPink = Color(0xFFF472B6);       // Complementary accent
+  static const Color accentCyan = Color(0xFF22D3EE);       // Alternative accent
+  
+  // Semantic colors
+  static const Color success = Color(0xFF10B981);  // Success states, confirmations
+  static const Color warning = Color(0xFFFBBF24);  // Warnings, cautions
+  static const Color error = Color(0xFFF43F5E);    // Errors, destructive actions
+  
+  // Borders
+  static const Color borderColor = Color(0xFF3A3A5C);   // Default borders
+  static const Color borderLight = Color(0xFF4A4A6C);   // Lighter borders
 
-  // Additional accent colors for chord types
-  static const Color chordMajor = Color(0xFF10B981);
-  static const Color chordMinor = Color(0xFF6366F1);
-  static const Color chordDim = Color(0xFFEF4444);
-  static const Color chordAug = Color(0xFFF59E0B);
-  static const Color chordDom = Color(0xFF8B5CF6);
-  static const Color chordSus = Color(0xFF06B6D4);
+  // ============================================================================
+  // CHORD TYPE COLORS
+  // ============================================================================
+  // Visual differentiation for different chord types
+  static const Color chordMajor = Color(0xFF10B981);  // Major - bright, positive
+  static const Color chordMinor = Color(0xFF6366F1);  // Minor - calm, introspective
+  static const Color chordDim = Color(0xFFEF4444);    // Diminished - tense
+  static const Color chordAug = Color(0xFFF59E0B);    // Augmented - bright, unusual
+  static const Color chordDom = Color(0xFF8B5CF6);    // Dominant - leading
+  static const Color chordSus = Color(0xFF06B6D4);    // Suspended - floating
 
-  // Gradients
+  // ============================================================================
+  // GRADIENTS
+  // ============================================================================
+  // Pre-defined gradients for consistent visual effects
   static const LinearGradient accentGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
@@ -56,36 +80,49 @@ class AppTheme {
     colors: [accentCyan, Color(0xFF0EA5E9)],
   );
 
-  // Border radius
-  static const double borderRadius = 16.0;
-  static const double borderRadiusSm = 10.0;
-  static const double borderRadiusLg = 24.0;
-  static const double borderRadiusXl = 32.0;
+  // ============================================================================
+  // DIMENSIONS
+  // ============================================================================
+  // Border radius values
+  static const double borderRadius = 16.0;      // Standard radius
+  static const double borderRadiusSm = 10.0;    // Small elements
+  static const double borderRadiusLg = 24.0;    // Large elements
+  static const double borderRadiusXl = 32.0;    // Extra large elements
 
-  // Spacing
-  static const double spacingXs = 4.0;
-  static const double spacingSm = 8.0;
-  static const double spacingMd = 16.0;
-  static const double spacingLg = 24.0;
-  static const double spacingXl = 32.0;
-  static const double spacingXxl = 48.0;
+  // Spacing scale - use these for consistent padding/margins
+  static const double spacingXs = 4.0;   // Extra small spacing
+  static const double spacingSm = 8.0;   // Small spacing
+  static const double spacingMd = 16.0;  // Medium spacing (most common)
+  static const double spacingLg = 24.0;  // Large spacing
+  static const double spacingXl = 32.0;  // Extra large spacing
+  static const double spacingXxl = 48.0; // Extra extra large spacing
 
-  // Sizes
-  static const double headerHeight = 60.0;
-  static const double navHeight = 70.0;
-  static const double fabSize = 60.0;
+  // Component sizes
+  static const double headerHeight = 60.0;  // App header height
+  static const double navHeight = 70.0;     // Bottom navigation height
+  static const double fabSize = 60.0;       // Floating action button size
 
-  // Responsive breakpoints
-  static const double mobileBreakpoint = 480.0;
-  static const double tabletBreakpoint = 768.0;
-  static const double desktopBreakpoint = 1024.0;
+  // ============================================================================
+  // RESPONSIVE BREAKPOINTS
+  // ============================================================================
+  static const double mobileBreakpoint = 480.0;   // Small mobile devices
+  static const double tabletBreakpoint = 768.0;   // Tablets
+  static const double desktopBreakpoint = 1024.0; // Desktop screens
 
-  // Animation durations
-  static const Duration animationFast = Duration(milliseconds: 150);
-  static const Duration animationNormal = Duration(milliseconds: 300);
-  static const Duration animationSlow = Duration(milliseconds: 500);
+  // ============================================================================
+  // ANIMATION DURATIONS
+  // ============================================================================
+  // Optimized for smooth, snappy animations
+  static const Duration animationFast = Duration(milliseconds: 150);    // Quick transitions
+  static const Duration animationNormal = Duration(milliseconds: 300);  // Standard
+  static const Duration animationSlow = Duration(milliseconds: 500);    // Slow reveals
 
-  // Shadows
+  // ============================================================================
+  // SHADOWS
+  // ============================================================================
+  // Pre-configured shadow effects for elevation hierarchy
+  
+  /// Small shadow for subtle elevation (e.g., buttons, cards)
   static List<BoxShadow> get shadowSm => [
     BoxShadow(
       color: Colors.black.withValues(alpha: 0.3),
@@ -94,6 +131,7 @@ class AppTheme {
     ),
   ];
 
+  /// Medium shadow for moderate elevation (e.g., dialogs, menus)
   static List<BoxShadow> get shadowMd => [
     BoxShadow(
       color: Colors.black.withValues(alpha: 0.4),
@@ -102,6 +140,7 @@ class AppTheme {
     ),
   ];
 
+  /// Large shadow for high elevation (e.g., modals, FAB)
   static List<BoxShadow> get shadowLg => [
     BoxShadow(
       color: Colors.black.withValues(alpha: 0.5),
@@ -110,6 +149,7 @@ class AppTheme {
     ),
   ];
 
+  /// Glowing shadow with accent color (e.g., focused elements)
   static List<BoxShadow> get shadowGlow => [
     BoxShadow(
       color: accentPrimary.withValues(alpha: 0.3),
@@ -118,6 +158,7 @@ class AppTheme {
     ),
   ];
 
+  /// Create a colored glow shadow with any color
   static List<BoxShadow> shadowColorGlow(Color color) => [
     BoxShadow(
       color: color.withValues(alpha: 0.4),
@@ -126,7 +167,10 @@ class AppTheme {
     ),
   ];
 
-  // Theme data
+  // ============================================================================
+  // THEME DATA
+  // ============================================================================
+  /// Main dark theme with Material Design 3 components
   static ThemeData get darkTheme => ThemeData(
     useMaterial3: true,
     brightness: Brightness.dark,

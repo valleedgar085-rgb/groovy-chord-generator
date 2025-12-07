@@ -33,11 +33,13 @@ class _CollapsibleSectionState extends State<CollapsibleSection>
     super.initState();
     _isExpanded = widget.initiallyExpanded;
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 300),
+      duration: const Duration(milliseconds: 250),
       vsync: this,
     );
-    _heightFactor = _controller.drive(CurveTween(curve: Curves.easeInOut));
-    _iconRotation = Tween<double>(begin: 0, end: 0.5).animate(_controller);
+    _heightFactor = _controller.drive(CurveTween(curve: Curves.easeOutCubic));
+    _iconRotation = Tween<double>(begin: 0, end: 0.5).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
+    );
     
     if (_isExpanded) {
       _controller.value = 1.0;
