@@ -79,7 +79,8 @@ class AppBottomNavigation extends StatelessWidget {
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOutCubic,
         padding: const EdgeInsets.symmetric(
           horizontal: AppTheme.spacingMd,
           vertical: AppTheme.spacingSm,
@@ -93,7 +94,8 @@ class AppBottomNavigation extends StatelessWidget {
           children: [
             AnimatedScale(
               scale: isActive ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOutCubic,
               child: Icon(
                 icon,
                 size: 24,

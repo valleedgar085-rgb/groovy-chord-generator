@@ -10,6 +10,41 @@
 
 </div>
 
+## 📸 Preview
+
+<div align="center">
+
+### Main Chord Generator
+![Main Generator](screenshots/01-main-generator.png)
+
+### Piano Roll Editor
+<img src="screenshots/02-piano-editor.png" alt="Piano Editor" width="45%"/> <img src="screenshots/03-smart-presets.png" alt="Smart Presets" width="45%"/>
+
+### Bass Line Generator
+![Bass Generator](screenshots/04-bass-generator.png)
+
+</div>
+
+## 🎬 Quick Demo
+
+The Groovy Chord Generator helps you create professional chord progressions instantly:
+
+1. **Select your key and genre** - Choose from 12+ musical genres
+2. **Generate progression** - Get music-theory-based chord progressions with one tap
+3. **Customize and refine** - Use smart presets, lock specific chords, or add variations
+4. **Edit in piano roll** - Fine-tune your progression with the built-in editor
+5. **Generate bass lines** - Add complementary bass lines with multiple styles
+6. **Save and share** - Keep your favorites and share via URL
+
+### Why Groovy Chord Generator?
+
+✨ **Smart & Intuitive** - Genre-specific presets with optimized settings  
+🎓 **Music Theory Powered** - Based on analysis of top songs in each genre  
+🎨 **Beautiful Dark Theme** - Modern UI with smooth animations  
+🔒 **Chord Locking** - Lock specific chords while regenerating others  
+❤️ **Favorites System** - Save and manage your best progressions  
+🔗 **Easy Sharing** - Share your chord progressions via URL
+
 ## ✨ Features
 
 - 🎹 **Generate chord progressions** for 12+ genres (Pop, Lo-Fi, EDM, R&B, Jazz, Trap, and more)
