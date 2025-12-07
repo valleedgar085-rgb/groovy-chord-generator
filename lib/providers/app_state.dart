@@ -7,7 +7,7 @@ import 'package:flutter/foundation.dart';
 import '../models/types.dart';
 import '../models/constants.dart';
 import '../utils/music_theory.dart';
-import '../services/favorites_service.dart';
+import '../services/firebase_favorites_service.dart';
 import '../services/share_service.dart';
 
 class AppState extends ChangeNotifier {
