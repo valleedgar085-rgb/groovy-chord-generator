@@ -3,10 +3,11 @@
 <div align="center">
 
 ![Version](https://img.shields.io/badge/version-2.5-purple)
-![Platform](https://img.shields.io/badge/platform-Android%20%7C%20Web-green)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Web-green)
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-blue)
+![Firebase](https://img.shields.io/badge/Firebase-Enabled-orange)
 
-**Create amazing chord progressions for any genre** — A mobile-optimized music creation tool built with Flutter.
+**Create amazing chord progressions for any genre** — A cloud-enabled music creation tool built with Flutter and Firebase.
 
 </div>
 
@@ -76,13 +77,26 @@ Experience the power of intelligent chord progression generation with our beauti
 - ❤️ **Favorites List** — Save and manage your favorite chord progressions
 - 🔗 **Share Chord Set** — Generate and share URLs for your chord selections
 
+### 🔥 New: Firebase Cloud Features
+
+- ☁️ **Cloud Storage** — Your favorites sync across all devices
+- 👤 **Anonymous Auth** — Start creating immediately, no login required
+- 📱 **Cross-Device Sync** — Access your progressions anywhere
+- 💾 **Offline Support** — Works offline, syncs when online
+- 🔄 **Real-time Updates** — Changes appear instantly across devices
+
 ## 🚀 Getting Started
+
+### Quick Start (Recommended)
+
+See **[QUICKSTART.md](QUICKSTART.md)** for a complete 5-step guide to get running in 15 minutes!
 
 ### Prerequisites
 
 - Flutter SDK 3.0 or higher
 - Android Studio / VS Code with Flutter extensions
-- Android SDK
+- Google account (for Firebase)
+- Android SDK / Xcode (platform-specific)
 
 ### Installation
 
@@ -97,7 +111,23 @@ Experience the power of intelligent chord progression generation with our beauti
    flutter pub get
    ```
 
-3. Run the app:
+3. Set up Firebase:
+   ```bash
+   # Install FlutterFire CLI
+   dart pub global activate flutterfire_cli
+   
+   # Configure Firebase
+   flutterfire configure
+   ```
+   
+   See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** for detailed Firebase configuration.
+
+4. Enable Firebase services:
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Enable **Firestore Database** (test mode)
+   - Enable **Anonymous Authentication**
+
+5. Run the app:
    ```bash
    flutter run
    ```
@@ -116,36 +146,42 @@ flutter build web --release
 
 ## 📱 App Structure
 
+For detailed project structure and architecture, see **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)**.
+
 ```
 lib/
-├── main.dart              # App entry point
+├── main.dart                          # App entry point + Firebase init
 ├── models/
-│   ├── types.dart         # Type definitions
-│   └── constants.dart     # Music theory constants
+│   ├── types.dart                     # Type definitions
+│   └── constants.dart                 # Music theory constants
 ├── providers/
-│   └── app_state.dart     # State management
+│   └── app_state.dart                 # State management with Provider
 ├── screens/
-│   ├── home_screen.dart   # Main screen
-│   ├── generator_tab.dart # Chord generator
-│   ├── editor_tab.dart    # Piano roll editor
-│   ├── bass_tab.dart      # Bass line generator
-│   └── settings_tab.dart  # Settings
+│   ├── home_screen.dart               # Main screen
+│   ├── generator_tab.dart             # Chord generator
+│   ├── editor_tab.dart                # Piano roll editor
+│   ├── bass_tab.dart                  # Bass line generator
+│   └── settings_tab.dart              # Settings
 ├── widgets/
-│   ├── header.dart        # App header
-│   ├── bottom_navigation.dart
-│   ├── fab_menu.dart      # Floating action button
-│   ├── chord_card.dart    # Chord display card
-│   ├── preset_card.dart   # Preset selection card
-│   ├── control_dropdown.dart
-│   └── collapsible_section.dart
+│   ├── header.dart                    # App header
+│   ├── bottom_navigation.dart         # Bottom nav
+│   ├── fab_menu.dart                  # Floating action button
+│   ├── chord_card.dart                # Chord display card
+│   ├── preset_card.dart               # Preset selection card
+│   ├── control_dropdown.dart          # Dropdown controls
+│   └── collapsible_section.dart       # Collapsible sections
 ├── services/
-│   ├── favorites_service.dart  # Favorites management
-│   └── share_service.dart      # URL sharing functionality
+│   ├── firebase_service.dart          # Firebase initialization
+│   ├── auth_service.dart              # Firebase Authentication
+│   ├── firestore_service.dart         # Cloud Firestore operations
+│   ├── firebase_favorites_service.dart # Cloud-enabled favorites
+│   ├── favorites_service.dart         # Local favorites (legacy)
+│   └── share_service.dart             # URL sharing functionality
 ├── utilities/
-│   ├── helpers.dart       # Utility helper functions
-│   └── validators.dart    # Input validation
+│   ├── helpers.dart                   # Utility helper functions
+│   └── validators.dart                # Input validation
 └── utils/
-    ├── theme.dart         # App theming
+    ├── theme.dart                     # App theming
     └── music_theory.dart  # Music theory functions
 ```
 
@@ -205,6 +241,8 @@ The chord progressions in each genre are derived from analysis of top songs:
 ### Favorites List
 Save your favorite chord progressions for quick access later. Simply tap the heart icon on any progression to save it. Access your favorites from the collapsible "Favorites" section on the generator tab.
 
+**New**: Favorites now sync to the cloud via Firebase! Access your saved progressions on any device.
+
 ### Share Chord Set
 Share your chord progressions with others! Generate a shareable URL or text that includes:
 - The chord progression
@@ -212,6 +250,30 @@ Share your chord progressions with others! Generate a shareable URL or text that
 - Tempo setting
 
 Copy and share via any messaging platform or social media.
+
+## 📚 Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 15 minutes
+- **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** - Detailed Firebase configuration guide
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete project architecture and structure
+- **[README.md](README.md)** - This file (app overview and features)
+
+## 🏗️ Architecture & Tech Stack
+
+- **Framework**: Flutter 3.x
+- **State Management**: Provider
+- **Backend**: Firebase (Cloud Firestore, Authentication)
+- **Storage**: Cloud Firestore + Local SharedPreferences (offline support)
+- **Authentication**: Firebase Anonymous Auth + Email/Password
+- **Platforms**: Android, iOS, Web
+
+## 🔒 Security & Privacy
+
+- User data is stored securely in Firebase with proper security rules
+- Anonymous authentication for instant access
+- Optional email/password upgrade for permanent accounts
+- Offline support ensures data is never lost
+- All data is user-specific and private by default
 
 ## 👨‍💻 Author
 
