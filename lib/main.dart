@@ -8,9 +8,22 @@ import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
 import 'utils/theme.dart';
 import 'screens/home_screen.dart';
+import 'services/firebase_service.dart';
+import 'services/auth_service.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize Firebase
+  try {
+    await FirebaseService.initialize();
+    // Sign in anonymously for immediate access
+    await AuthService.signInAnonymously();
+  } catch (e) {
+    debugPrint('Firebase initialization error: $e');
+    // Continue without Firebase if initialization fails
+  }
+  
   runApp(const GroovyChordGeneratorApp());
 }
 
