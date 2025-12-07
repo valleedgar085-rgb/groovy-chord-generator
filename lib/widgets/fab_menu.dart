@@ -150,14 +150,17 @@ class _FabMenuState extends State<FabMenu> with SingleTickerProviderStateMixin {
       duration: const Duration(milliseconds: 180),
       curve: Curves.easeOutCubic,
       builder: (context, value, child) {
+        // Combine scale and translate into a single transform for better performance
+        final scale = 0.8 + (0.2 * value);
+        final translateY = 10 * (1 - value);
         return Opacity(
           opacity: value,
-          child: Transform.scale(
-            scale: 0.8 + (0.2 * value),
-            child: Transform.translate(
-              offset: Offset(0, 10 * (1 - value)),
-              child: child,
-            ),
+          child: Transform(
+            transform: Matrix4.identity()
+              ..scale(scale, scale, 1.0)
+              ..translate(0.0, translateY, 0.0),
+            alignment: Alignment.center,
+            child: child,
           ),
         );
       },
