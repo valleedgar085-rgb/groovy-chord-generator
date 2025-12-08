@@ -17,14 +17,11 @@ void main() async {
   // Initialize Firebase with web-specific handling
   try {
     await FirebaseService.initialize();
-    // Sign in anonymously for immediate access
     await AuthService.signInAnonymously();
     debugPrint('Firebase initialized successfully');
   } catch (e) {
     debugPrint('Firebase initialization error: $e');
-    debugPrint('Continuing without Firebase - app will use local storage only');
-    // Continue without Firebase if initialization fails
-    // The app will work in offline mode with local storage
+    debugPrint('App will use local storage only');
   }
   
   runApp(const GroovyChordGeneratorApp());
