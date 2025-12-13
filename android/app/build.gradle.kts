@@ -38,13 +38,6 @@ android {
             )
         }
     }
-    
-    // Performance optimizations for lower-end devices
-    packagingOptions {
-        jniLibs {
-            useLegacyPackaging = false
-        }
-    }
 }
 
 flutter {

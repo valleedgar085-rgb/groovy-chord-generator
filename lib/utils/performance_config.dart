@@ -6,17 +6,22 @@
 class PerformanceConfig {
   // List caching and rendering optimization
   static const double listCacheExtent = 100.0;
+  // Grid caching (currently unified with listCacheExtent via getCacheExtent())
   static const double gridCacheExtent = 100.0;
   
-  // Maximum items to keep in memory
+  // Maximum items to keep in memory (for future implementation)
+  // TODO: Implement history trimming when count exceeds maxHistoryItems
   static const int maxHistoryItems = 20;
+  // TODO: Implement pagination when favorites exceed maxFavoritesDisplayed
   static const int maxFavoritesDisplayed = 50;
   
-  // Animation optimization
+  // Animation optimization flags (for future conditional rendering)
+  // TODO: Use these flags to conditionally enable/disable heavy animations
   static const bool enableHeavyAnimations = true; // Set to false on very low-end devices
   static const bool enableShadows = true; // Set to false to reduce GPU load
   
-  // Memory optimization
+  // Memory optimization flags (currently applied unconditionally)
+  // These flags document the optimization strategy for reference
   static const bool enableRepaintBoundaries = true;
   static const bool enableCacheExtent = true;
   
