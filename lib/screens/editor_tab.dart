@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../utils/theme.dart';
+import '../utils/performance_config.dart';
 
 class EditorTab extends StatelessWidget {
   const EditorTab({super.key});
@@ -167,7 +168,7 @@ class EditorTab extends StatelessWidget {
             child: ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               // Add cache extent for better performance on lower-end devices
-              cacheExtent: 50,
+              cacheExtent: PerformanceConfig.getCacheExtent(),
               itemCount: 12,
               itemBuilder: (context, index) {
                 final isBlackKey = [1, 3, 6, 8, 10].contains(index);

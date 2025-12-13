@@ -9,6 +9,7 @@ import '../models/constants.dart';
 import '../providers/app_state.dart';
 import '../utils/theme.dart';
 import '../utils/music_theory.dart';
+import '../utils/performance_config.dart';
 import '../services/favorites_service.dart';
 import '../widgets/chord_card.dart';
 import '../widgets/preset_card.dart';
@@ -89,7 +90,7 @@ class GeneratorTab extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       // Add cache extent for better scrolling performance on lower-end devices
-      cacheExtent: 100,
+      cacheExtent: PerformanceConfig.listCacheExtent,
       itemCount: appState.favorites.length,
       itemBuilder: (context, index) {
         final favorite = appState.favorites[index];
@@ -511,7 +512,7 @@ class GeneratorTab extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       // Add cache extent for better scrolling performance on lower-end devices
-      cacheExtent: 100,
+      cacheExtent: PerformanceConfig.gridCacheExtent,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppTheme.spacingSm,
@@ -686,7 +687,7 @@ class GeneratorTab extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       // Add cache extent for better scrolling performance on lower-end devices
-      cacheExtent: 100,
+      cacheExtent: PerformanceConfig.listCacheExtent,
       itemCount: appState.progressionHistory.length,
       itemBuilder: (context, index) {
         final entry = appState.progressionHistory[index];
