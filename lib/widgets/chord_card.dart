@@ -30,26 +30,28 @@ class ChordCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final chordColor = ColorHelper.getChordTypeColor(chord.type);
     
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 150 + (index * 40)),
-      curve: Curves.easeOutCubic,
-      builder: (context, value, child) {
-        // Combine scale and translate into a single transform for better performance
-        final scale = 0.9 + (0.1 * value);
-        final translateY = 8 * (1 - value);
-        return Opacity(
-          opacity: value,
-          child: Transform(
-            transform: Matrix4.identity()
-              ..scale(scale, scale, 1.0)
-              ..translate(0.0, translateY, 0.0),
-            alignment: Alignment.center,
-            child: child,
-          ),
-        );
-      },
-      child: GestureDetector(
+    // Wrap in RepaintBoundary to isolate repaints for better performance on lower-end devices
+    return RepaintBoundary(
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: 1),
+        duration: Duration(milliseconds: 150 + (index * 40)),
+        curve: Curves.easeOutCubic,
+        builder: (context, value, child) {
+          // Combine scale and translate into a single transform for better performance
+          final scale = 0.9 + (0.1 * value);
+          final translateY = 8 * (1 - value);
+          return Opacity(
+            opacity: value,
+            child: Transform(
+              transform: Matrix4.identity()
+                ..scale(scale, scale, 1.0)
+                ..translate(0.0, translateY, 0.0),
+              alignment: Alignment.center,
+              child: child,
+            ),
+          );
+        },
+        child: GestureDetector(
         onTap: onTap ?? () {
           // Play chord sound
         },
@@ -256,6 +258,7 @@ class ChordCard extends StatelessWidget {
           ),
         ),
       ),
+    ),
     );
   }
 

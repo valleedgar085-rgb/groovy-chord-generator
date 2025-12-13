@@ -9,6 +9,7 @@ import '../models/constants.dart';
 import '../providers/app_state.dart';
 import '../utils/theme.dart';
 import '../utils/music_theory.dart';
+import '../utils/performance_config.dart';
 import '../services/favorites_service.dart';
 import '../widgets/chord_card.dart';
 import '../widgets/preset_card.dart';
@@ -88,10 +89,14 @@ class GeneratorTab extends StatelessWidget {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Add cache extent for better scrolling performance on lower-end devices
+      cacheExtent: PerformanceConfig.getCacheExtent(),
       itemCount: appState.favorites.length,
       itemBuilder: (context, index) {
         final favorite = appState.favorites[index];
-        return Dismissible(
+        // Wrap each item in RepaintBoundary for isolated repaints
+        return RepaintBoundary(
+          child: Dismissible(
           key: Key(favorite.id),
           direction: DismissDirection.endToStart,
           background: Container(
@@ -178,6 +183,7 @@ class GeneratorTab extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           ),
         );
       },
@@ -505,6 +511,8 @@ class GeneratorTab extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Add cache extent for better scrolling performance on lower-end devices
+      cacheExtent: PerformanceConfig.getCacheExtent(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppTheme.spacingSm,
@@ -678,10 +686,14 @@ class GeneratorTab extends StatelessWidget {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Add cache extent for better scrolling performance on lower-end devices
+      cacheExtent: PerformanceConfig.getCacheExtent(),
       itemCount: appState.progressionHistory.length,
       itemBuilder: (context, index) {
         final entry = appState.progressionHistory[index];
-        return GestureDetector(
+        // Wrap each item in RepaintBoundary for isolated repaints
+        return RepaintBoundary(
+          child: GestureDetector(
           onTap: () => appState.restoreFromHistory(index),
           child: Container(
             margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
@@ -742,6 +754,7 @@ class GeneratorTab extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

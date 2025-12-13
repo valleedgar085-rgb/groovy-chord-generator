@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/app_state.dart';
 import '../utils/theme.dart';
+import '../utils/performance_config.dart';
 
 class EditorTab extends StatelessWidget {
   const EditorTab({super.key});
@@ -166,10 +167,14 @@ class EditorTab extends StatelessWidget {
             ),
             child: ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
+              // Add cache extent for better performance on lower-end devices
+              cacheExtent: PerformanceConfig.getCacheExtent(),
               itemCount: 12,
               itemBuilder: (context, index) {
                 final isBlackKey = [1, 3, 6, 8, 10].contains(index);
-                return Container(
+                // Wrap each item in RepaintBoundary for isolated repaints
+                return RepaintBoundary(
+                  child: Container(
                   height: 25,
                   decoration: BoxDecoration(
                     gradient: isBlackKey
@@ -193,6 +198,7 @@ class EditorTab extends StatelessWidget {
                       fontSize: 10,
                       color: isBlackKey ? const Color(0xFFAAAAAA) : const Color(0xFF333333),
                     ),
+                  ),
                   ),
                 );
               },
