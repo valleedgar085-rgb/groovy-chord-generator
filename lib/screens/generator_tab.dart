@@ -90,7 +90,7 @@ class GeneratorTab extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       // Add cache extent for better scrolling performance on lower-end devices
-      cacheExtent: PerformanceConfig.listCacheExtent,
+      cacheExtent: PerformanceConfig.getCacheExtent(),
       itemCount: appState.favorites.length,
       itemBuilder: (context, index) {
         final favorite = appState.favorites[index];
@@ -512,7 +512,7 @@ class GeneratorTab extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       // Add cache extent for better scrolling performance on lower-end devices
-      cacheExtent: PerformanceConfig.gridCacheExtent,
+      cacheExtent: PerformanceConfig.getCacheExtent(),
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppTheme.spacingSm,
@@ -687,7 +687,7 @@ class GeneratorTab extends StatelessWidget {
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       // Add cache extent for better scrolling performance on lower-end devices
-      cacheExtent: PerformanceConfig.listCacheExtent,
+      cacheExtent: PerformanceConfig.getCacheExtent(),
       itemCount: appState.progressionHistory.length,
       itemBuilder: (context, index) {
         final entry = appState.progressionHistory[index];
