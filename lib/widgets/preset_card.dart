@@ -22,9 +22,11 @@ class PresetCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onSelect(presetKey),
-      child: AnimatedContainer(
+    // Wrap in RepaintBoundary for better performance on lower-end devices
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: () => onSelect(presetKey),
+        child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         curve: Curves.easeOutCubic,
         padding: const EdgeInsets.all(AppTheme.spacingMd),
@@ -71,6 +73,7 @@ class PresetCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

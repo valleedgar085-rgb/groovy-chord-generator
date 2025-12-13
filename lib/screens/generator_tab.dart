@@ -88,10 +88,14 @@ class GeneratorTab extends StatelessWidget {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Add cache extent for better scrolling performance on lower-end devices
+      cacheExtent: 100,
       itemCount: appState.favorites.length,
       itemBuilder: (context, index) {
         final favorite = appState.favorites[index];
-        return Dismissible(
+        // Wrap each item in RepaintBoundary for isolated repaints
+        return RepaintBoundary(
+          child: Dismissible(
           key: Key(favorite.id),
           direction: DismissDirection.endToStart,
           background: Container(
@@ -178,6 +182,7 @@ class GeneratorTab extends StatelessWidget {
                 ],
               ),
             ),
+          ),
           ),
         );
       },
@@ -505,6 +510,8 @@ class GeneratorTab extends StatelessWidget {
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Add cache extent for better scrolling performance on lower-end devices
+      cacheExtent: 100,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: AppTheme.spacingSm,
@@ -678,10 +685,14 @@ class GeneratorTab extends StatelessWidget {
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      // Add cache extent for better scrolling performance on lower-end devices
+      cacheExtent: 100,
       itemCount: appState.progressionHistory.length,
       itemBuilder: (context, index) {
         final entry = appState.progressionHistory[index];
-        return GestureDetector(
+        // Wrap each item in RepaintBoundary for isolated repaints
+        return RepaintBoundary(
+          child: GestureDetector(
           onTap: () => appState.restoreFromHistory(index),
           child: Container(
             margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
@@ -742,6 +753,7 @@ class GeneratorTab extends StatelessWidget {
                 ),
               ],
             ),
+          ),
           ),
         );
       },

@@ -102,23 +102,25 @@ class _CollapsibleSectionState extends State<CollapsibleSection>
             ),
           ),
           
-          // Content
-          ClipRect(
-            child: AnimatedBuilder(
-              animation: _heightFactor,
-              builder: (context, child) {
-                return Align(
-                  heightFactor: _heightFactor.value,
-                  child: child,
-                );
-              },
-              child: Padding(
-                padding: const EdgeInsets.only(
-                  left: AppTheme.spacingMd,
-                  right: AppTheme.spacingMd,
-                  bottom: AppTheme.spacingMd,
+          // Content - wrap in RepaintBoundary for better performance
+          RepaintBoundary(
+            child: ClipRect(
+              child: AnimatedBuilder(
+                animation: _heightFactor,
+                builder: (context, child) {
+                  return Align(
+                    heightFactor: _heightFactor.value,
+                    child: child,
+                  );
+                },
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppTheme.spacingMd,
+                    right: AppTheme.spacingMd,
+                    bottom: AppTheme.spacingMd,
+                  ),
+                  child: widget.child,
                 ),
-                child: widget.child,
               ),
             ),
           ),
