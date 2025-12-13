@@ -256,6 +256,7 @@ Copy and share via any messaging platform or social media.
 - **[QUICKSTART.md](QUICKSTART.md)** - Get started in 15 minutes
 - **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** - Detailed Firebase configuration guide
 - **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete project architecture and structure
+- **[MOTOROLA_OPTIMIZATION.md](MOTOROLA_OPTIMIZATION.md)** - Performance optimizations for Motorola devices
 - **[README.md](README.md)** - This file (app overview and features)
 
 ## 🏗️ Architecture & Tech Stack
@@ -266,6 +267,7 @@ Copy and share via any messaging platform or social media.
 - **Storage**: Cloud Firestore + Local SharedPreferences (offline support)
 - **Authentication**: Firebase Anonymous Auth + Email/Password
 - **Platforms**: Android, iOS, Web
+- **Performance**: Optimized for Motorola and lower-end devices
 
 ## 🔒 Security & Privacy
 
