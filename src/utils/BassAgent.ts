@@ -159,8 +159,9 @@ function generateApproachNote(
   const nextChord = progression[(chordIndex + 1) % progression.length];
   const nextRoot = nextChord.root;
   
-  // Choose semitone above or below the next root
-  const direction = Math.random() > 0.5 ? 1 : 11; // 1 = semitone above, 11 = semitone below
+  // Choose semitone above (1) or semitone below (12 - 1 = 11) the next root.
+  // In modulo-12 arithmetic, transposing up by 11 semitones is equivalent to transposing down by 1 semitone.
+  const direction = Math.random() > 0.5 ? 1 : (12 - 1);
   return transposeNote(nextRoot, direction);
 }
 
