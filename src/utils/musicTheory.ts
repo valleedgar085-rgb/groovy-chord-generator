@@ -591,8 +591,11 @@ export function generateChordFromFunction(
     return true;
   });
   
+  // Use key-filtered chords if available, otherwise fall back to all functional chords
+  const chordsToConsider = keyFilteredChords.length > 0 ? keyFilteredChords : functionalChords;
+  
   // Filter by tension range
-  const validChords = (keyFilteredChords.length > 0 ? keyFilteredChords : functionalChords).filter(
+  const validChords = chordsToConsider.filter(
     fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
   );
   
