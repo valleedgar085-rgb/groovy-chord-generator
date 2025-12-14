@@ -26,6 +26,8 @@ import {
   CHORD_TYPES,
   SCALES,
   ROMAN_NUMERALS,
+  DEGREE_TO_SEMITONES,
+  DEGREE_TO_SCALE_INDEX,
   SHELL_VOICINGS,
   OPEN_VOICINGS,
   MODAL_INTERCHANGE,
@@ -76,18 +78,8 @@ export function getChordFromDegree(
   isMinorKey: boolean,
   scale: ScaleName
 ): Chord {
-  const degreeMap: Record<string, number> = {
-    I: 0, i: 0,
-    II: 1, ii: 1,
-    III: 2, iii: 2,
-    IV: 3, iv: 3,
-    V: 4, v: 4,
-    VI: 5, vi: 5,
-    VII: 6, vii: 6,
-  };
-
   const scaleNotes = getScaleNotes(root, scale);
-  const degreeIndex = degreeMap[degree];
+  const degreeIndex = DEGREE_TO_SCALE_INDEX[degree] ?? 0;
   const chordRoot = scaleNotes[degreeIndex];
 
   // Determine chord quality based on degree and key
@@ -596,33 +588,12 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
-  };
-  
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
-  
-  const interval = degreeMap[chosenChord.degree] || 0;
+  // Calculate chord root using chromatic semitone intervals
+  const interval = DEGREE_TO_SEMITONES[chosenChord.degree] ?? 0;
   const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  
+  // Get scale degree index for roman numeral display
+  const degreeIndex = DEGREE_TO_SCALE_INDEX[chosenChord.degree] ?? 0;
   
   return {
     root: chordRoot,
