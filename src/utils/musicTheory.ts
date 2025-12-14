@@ -596,8 +596,10 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
+  // Map degree symbols to semitone intervals from the root note.
+  // This is used with transposeNote() to calculate the actual chord root.
+  // Example: 'V' (dominant) = 7 semitones above root
+  const degreeToSemitones: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 2, 'ii': 2,
     'III': 4, 'iii': 4,
@@ -608,7 +610,9 @@ export function generateChordFromFunction(
     'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
+  // Map degree symbols to scale degree indices (0-6) for looking up roman numerals.
+  // This is separate from semitone mapping because it represents position in the diatonic scale.
+  // Example: 'V' (dominant) = index 4 in the scale (I=0, II=1, III=2, IV=3, V=4)
   const degreeToIndex: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 1, 'ii': 1,
@@ -620,7 +624,7 @@ export function generateChordFromFunction(
     'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
   };
   
-  const interval = degreeMap[chosenChord.degree] || 0;
+  const interval = degreeToSemitones[chosenChord.degree] || 0;
   const chordRoot = transposeNote(root, interval);
   const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
   
