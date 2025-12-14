@@ -369,7 +369,7 @@ flutter clean
 flutter pub get
 
 # Generate icons
-flutter pub run flutter_launcher_icons
+flutter pub run flutter_launcher_icons:main
 
 # Build release APK
 flutter build apk --release

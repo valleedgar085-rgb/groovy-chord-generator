@@ -54,7 +54,7 @@ REM Step 3: Generate launcher icons (if configured)
 findstr /C:"flutter_launcher_icons" pubspec.yaml >nul 2>nul
 if %errorlevel% equ 0 (
     echo Step 3/5: Generating launcher icons...
-    call flutter pub run flutter_launcher_icons
+    call flutter pub run flutter_launcher_icons:main
     echo.
 ) else (
     echo Step 3/5: Skipping launcher icons (not configured)
