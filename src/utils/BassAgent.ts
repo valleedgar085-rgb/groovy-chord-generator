@@ -207,6 +207,7 @@ export function generateWalkingBassLine(
 ): BassNote[] {
   const bassLine: BassNote[] = [];
   const rhythmPattern = RHYTHM_PATTERNS[rhythm];
+  const varietyFactor = variety / 100;
   
   progression.forEach((chord, chordIndex) => {
     const root = chord.root;
@@ -215,7 +216,7 @@ export function generateWalkingBassLine(
     
     // Variety influences the choice of notes and chromatic approaches
     // Higher variety = more chromatic approaches and wider scale note selection
-    const chromaticProbability = variety * 0.5; // 0 to 0.5 based on variety (0-1)
+    const chromaticProbability = varietyFactor * 0.5; // 0 to 0.5 based on varietyFactor
     const useChromatic = Math.random() < chromaticProbability;
     
     // 4 notes per chord for walking bass
@@ -223,7 +224,7 @@ export function generateWalkingBassLine(
       root,
       randomChoice(scaleNotes),
       useChromatic 
-        ? transposeNote(root, Math.floor(Math.random() * 7) + 1) // chromatic passing tone
+        ? transposeNote(root, Math.random() > 0.5 ? 1 : 11) // chromatic passing tone (semitone up or down)
         : randomChoice(scaleNotes),
       transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : 11), // approach note
     ];
