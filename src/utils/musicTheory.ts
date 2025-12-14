@@ -573,7 +573,7 @@ export function generateFunctionalProgression(
  */
 export function generateChordFromFunction(
   root: string,
-  _isMinorKey: boolean,
+  isMinorKey: boolean,
   func: HarmonyFunction,
   _scale: ScaleName,
   allowedTypes: ChordTypeName[],
@@ -581,14 +581,30 @@ export function generateChordFromFunction(
 ): Chord {
   const functionalChords = FUNCTIONAL_HARMONY[func];
   
+  // Filter by key context and tension range
+  // Prefer chords that match the key (lowercase degrees for minor, uppercase for major)
+  const keyFilteredChords = functionalChords.filter(fc => {
+    const degree = fc.degree;
+    // Special handling for altered chords (b and # prefixes)
+    if (degree.startsWith('b') || degree.startsWith('#')) {
+      return true; // Allow all altered chords regardless of key
+    }
+    // For natural degrees, prefer those matching the key context
+    const isLowerCase = degree[0] === degree[0].toLowerCase();
+    return isMinorKey ? isLowerCase : !isLowerCase;
+  });
+  
+  // Use key-filtered chords if available, otherwise fall back to all chords
+  const chordsToConsider = keyFilteredChords.length > 0 ? keyFilteredChords : functionalChords;
+  
   // Filter by tension range
-  const validChords = functionalChords.filter(
+  const validChords = chordsToConsider.filter(
     fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
   );
   
   const chosenChord = validChords.length > 0
     ? randomChoice(validChords)
-    : randomChoice(functionalChords);
+    : randomChoice(chordsToConsider);
   
   // Determine chord type
   const validTypes = chosenChord.chordTypes.filter(t => allowedTypes.includes(t));
