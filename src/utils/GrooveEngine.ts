@@ -211,7 +211,7 @@ export function analyzeGroove(template: GrooveTemplate): {
   
   // Calculate complexity based on pattern variation
   const uniqueValues = new Set(groove.beatPattern).size;
-  const complexity = uniqueValues / groove.beatPattern.length;
+  const complexity = groove.beatPattern.length === 0 ? 0 : uniqueValues / groove.beatPattern.length;
   
   // Calculate energy based on average beat intensity
   const energy = groove.beatPattern.reduce((a, b) => a + b, 0) / groove.beatPattern.length;
