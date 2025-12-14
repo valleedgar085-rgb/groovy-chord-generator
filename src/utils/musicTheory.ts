@@ -55,7 +55,11 @@ const DEGREE_SEMITONES: Record<string, number> = {
   'V': 7, 'v': 7,
   'VI': 9, 'vi': 9,
   'VII': 11, 'vii': 11,
-  'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+  'bII': 1,
+  'bIII': 3,
+  'bVI': 8,
+  'bVII': 10,
+  '#iv': 6,
 };
 
 /**
@@ -71,7 +75,11 @@ const DEGREE_SCALE_INDEX: Record<string, number> = {
   'V': 4, 'v': 4,
   'VI': 5, 'vi': 5,
   'VII': 6, 'vii': 6,
-  'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
+  'bII': 1,
+  'bIII': 2,
+  'bVI': 5,
+  'bVII': 6,
+  '#iv': 3,
 };
 
 // ===================================
