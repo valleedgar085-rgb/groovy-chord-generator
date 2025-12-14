@@ -584,15 +584,22 @@ export function generateChordFromFunction(
   // Filter by key type: prefer chords appropriate for major or minor keys
   const keyFilteredChords = functionalChords.filter(fc => {
     const degree = fc.degree;
+    // Find first alphabetic character to check case
+    const firstLetter = degree.match(/[a-z]/i)?.[0];
+    
+    // Common borrowed chords used in minor keys
+    const minorBorrowedChords = ['bVII', 'bVI', 'bIII'];
+    
     // In minor keys, prefer lowercase roman numerals (i, iv, v) and certain borrowed chords
     // In major keys, prefer uppercase roman numerals (I, IV, V) and diatonic chords
     if (isMinorKey) {
       // Minor key: prefer lowercase degrees and common borrowed chords
-      return degree === degree.toLowerCase() || 
-             ['bVII', 'bVI', 'bIII', '#iv'].includes(degree);
+      return (firstLetter && firstLetter === firstLetter.toLowerCase()) || 
+             minorBorrowedChords.includes(degree);
     } else {
       // Major key: prefer uppercase degrees and diatonic secondary chords
-      return degree[0] === degree[0].toUpperCase() || 
+      // Exclude minor-specific borrowed chords
+      return (firstLetter && firstLetter === firstLetter.toUpperCase() && !minorBorrowedChords.includes(degree)) || 
              ['vi', 'iii', 'ii'].includes(degree);
     }
   });
