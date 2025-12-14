@@ -224,9 +224,9 @@ export function generateWalkingBassLine(
       root,
       randomChoice(scaleNotes),
       useChromatic 
-        ? transposeNote(root, Math.random() > 0.5 ? 1 : 11) // chromatic passing tone (semitone up or down)
+        ? transposeNote(randomChoice(scaleNotes), Math.random() > 0.5 ? 1 : (12 - 1)) // chromatic passing tone (semitone up or down)
         : randomChoice(scaleNotes),
-      transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : 11), // approach note
+      transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : (12 - 1)), // approach note
     ];
     
     notes.forEach((note, i) => {
