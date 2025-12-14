@@ -27,11 +27,13 @@ android {
         multiDexEnabled = true
     }
 
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val hasKeystoreConfig = keystorePropertiesFile.exists()
+
     signingConfigs {
         create("release") {
-            // Load keystore properties from file
-            val keystorePropertiesFile = rootProject.file("key.properties")
-            if (keystorePropertiesFile.exists()) {
+            // Load keystore properties from file if it exists
+            if (hasKeystoreConfig) {
                 val keystoreProperties = java.util.Properties()
                 keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
                 
@@ -46,8 +48,7 @@ android {
     buildTypes {
         release {
             // Use release signing config if key.properties exists, otherwise use debug
-            val keystorePropertiesFile = rootProject.file("key.properties")
-            signingConfig = if (keystorePropertiesFile.exists()) {
+            signingConfig = if (hasKeystoreConfig) {
                 signingConfigs.getByName("release")
             } else {
                 signingConfigs.getByName("debug")

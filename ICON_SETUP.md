@@ -65,7 +65,7 @@ Once you have your icon at `assets/icon/app_icon.png`, generate the launcher ico
 flutter pub get
 
 # Generate icons
-flutter pub run flutter_launcher_icons
+flutter pub run flutter_launcher_icons:main
 ```
 
 This will automatically create:

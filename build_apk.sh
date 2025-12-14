@@ -59,7 +59,7 @@ echo ""
 # Step 3: Generate launcher icons (if configured)
 if grep -q "flutter_launcher_icons" pubspec.yaml; then
     echo "Step 3/5: Generating launcher icons..."
-    flutter pub run flutter_launcher_icons || echo -e "${YELLOW}⚠${NC} Icon generation skipped (optional)"
+    flutter pub run flutter_launcher_icons:main || echo -e "${YELLOW}⚠${NC} Icon generation skipped (optional)"
     echo ""
 else
     echo "Step 3/5: Skipping launcher icons (not configured)"

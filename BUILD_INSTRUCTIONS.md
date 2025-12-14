@@ -109,7 +109,7 @@ This installs all packages defined in `pubspec.yaml`.
 If you've configured custom app icons:
 
 ```bash
-flutter pub run flutter_launcher_icons
+flutter pub run flutter_launcher_icons:main
 ```
 
 This generates Android launcher icons from `assets/icon/app_icon.png`.
