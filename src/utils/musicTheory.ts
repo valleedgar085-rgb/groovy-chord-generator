@@ -575,7 +575,7 @@ export function generateChordFromFunction(
   root: string,
   _isMinorKey: boolean,
   func: HarmonyFunction,
-  _scale: ScaleName,
+  scale: ScaleName,
   allowedTypes: ChordTypeName[],
   tensionRange: [number, number]
 ): Chord {
@@ -596,39 +596,62 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+  // Map degree symbols to their properties
+  // This consolidates the previous degreeMap (semitone intervals) and degreeToIndex (array indices)
+  // - scaleIndex: Index (0-6) in the scale for diatonic degrees
+  // - semitones: Chromatic interval for altered degrees
+  const degreeInfo: Record<string, { semitones?: number; scaleIndex?: number }> = {
+    // Diatonic degrees (calculated from the scale)
+    'I': { scaleIndex: 0 },
+    'i': { scaleIndex: 0 },
+    'II': { scaleIndex: 1 },
+    'ii': { scaleIndex: 1 },
+    'III': { scaleIndex: 2 },
+    'iii': { scaleIndex: 2 },
+    'IV': { scaleIndex: 3 },
+    'iv': { scaleIndex: 3 },
+    'V': { scaleIndex: 4 },
+    'v': { scaleIndex: 4 },
+    'VI': { scaleIndex: 5 },
+    'vi': { scaleIndex: 5 },
+    'VII': { scaleIndex: 6 },
+    'vii': { scaleIndex: 6 },
+    // Altered degrees (chromatic alterations, use fixed semitone intervals)
+    'bII': { semitones: 1 },
+    'bIII': { semitones: 3 },
+    '#iv': { semitones: 6 },
+    'bVI': { semitones: 8 },
+    'bVII': { semitones: 10 },
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
+  // Diatonic degrees are the standard I-VII without chromatic alterations
+  const diatonicDegrees = new Set(['I', 'i', 'II', 'ii', 'III', 'iii', 'IV', 'iv', 'V', 'v', 'VI', 'vi', 'VII', 'vii']);
+  const isAlteredDegree = !diatonicDegrees.has(chosenChord.degree);
   
-  const interval = degreeMap[chosenChord.degree] || 0;
-  const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  const info = degreeInfo[chosenChord.degree];
+  
+  // For diatonic degrees (I-VII without alterations), use scale-based calculation
+  // For altered degrees (bII, bIII, etc.), use semitone transposition
+  let chordRoot: NoteName;
+  if (isAlteredDegree) {
+    chordRoot = transposeNote(root, info?.semitones ?? 0);
+  } else {
+    const scaleNotes = getScaleNotes(root, scale);
+    const index = info?.scaleIndex ?? 0;
+    // Ensure index is within bounds of the scale (handles pentatonic and other shorter scales)
+    chordRoot = scaleNotes[index % scaleNotes.length] || transposeNote(root, 0);
+  }
+  
+  // For diatonic degrees, map to standard roman numerals; for altered degrees, use the degree symbol as-is
+  const numeral = (info?.scaleIndex !== undefined && ROMAN_NUMERALS[info.scaleIndex]) 
+    ? ROMAN_NUMERALS[info.scaleIndex]
+    : chosenChord.degree;
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    numeral,
     harmonyFunction: func,
   };
 }
