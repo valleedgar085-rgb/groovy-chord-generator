@@ -573,7 +573,7 @@ export function generateFunctionalProgression(
  */
 export function generateChordFromFunction(
   root: string,
-  _isMinorKey: boolean,
+  isMinorKey: boolean,
   func: HarmonyFunction,
   _scale: ScaleName,
   allowedTypes: ChordTypeName[],
@@ -581,10 +581,43 @@ export function generateChordFromFunction(
 ): Chord {
   const functionalChords = FUNCTIONAL_HARMONY[func];
   
-  // Filter by tension range
-  const validChords = functionalChords.filter(
-    fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
+  // Helper to check if a degree is appropriate for the key type
+  const isDegreeAppropriateForKey = (degree: string): boolean => {
+    // In minor keys, prefer lowercase (minor) degrees and borrowed chords
+    // In major keys, prefer uppercase (major) degrees
+    
+    // Special handling for common degrees in both keys
+    switch (degree) {
+      case 'I': return !isMinorKey; // Major tonic only in major keys
+      case 'i': return isMinorKey;  // Minor tonic only in minor keys
+      case 'V': return true;         // Dominant V works in both keys
+      case 'v': return isMinorKey;  // Minor v more common in minor keys
+      case 'IV': return !isMinorKey; // Major IV in major keys
+      case 'iv': return isMinorKey;  // Minor iv in minor keys
+      case 'ii': return !isMinorKey; // ii is natural in major keys
+      case 'vi': return !isMinorKey; // vi is natural in major keys
+      case 'iii': return !isMinorKey; // iii is natural in major keys
+      case 'III': return isMinorKey; // Major III in minor keys (relative major)
+      case 'VI': return isMinorKey;  // Major VI in minor keys
+      case 'VII': return isMinorKey; // Major VII in minor keys
+      case 'vii': return !isMinorKey; // Leading tone in major keys
+      // Passing/borrowed chords work in both contexts
+      default: return true;
+    }
+  };
+  
+  // Filter by key appropriateness first, then by tension range
+  let validChords = functionalChords.filter(
+    fc => isDegreeAppropriateForKey(fc.degree) && 
+          fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
   );
+  
+  // If no appropriate chords found, fall back to all chords in tension range
+  if (validChords.length === 0) {
+    validChords = functionalChords.filter(
+      fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
+    );
+  }
   
   const chosenChord = validChords.length > 0
     ? randomChoice(validChords)
