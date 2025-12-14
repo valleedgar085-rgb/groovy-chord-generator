@@ -643,13 +643,19 @@ export function generateChordFromFunction(
   const degree = chosenChord.degree;
   const interval = DEGREE_SEMITONES[degree] ?? 0;
   const chordRoot = transposeNote(root, interval);
-  const degreeIndex = DEGREE_SCALE_INDEX[degree] ?? 0;
+  
+  // For altered degrees (containing 'b' or '#'), use the degree itself as the numeral
+  // to preserve the alteration. For natural degrees, use the ROMAN_NUMERALS lookup.
+  const isAlteredDegree = degree.includes('b') || degree.includes('#');
+  const numeral = isAlteredDegree 
+    ? degree 
+    : ROMAN_NUMERALS[DEGREE_SCALE_INDEX[degree] ?? 0] || degree;
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    numeral: numeral,
     harmonyFunction: func,
   };
 }
