@@ -596,19 +596,24 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
+  // Two distinct mappings are needed for different purposes:
+  
+  // 1. degreeMap: Maps degree symbols to SEMITONE INTERVALS from the tonic
+  //    Used to calculate the actual root note of the chord (e.g., II = 2 semitones above tonic)
   const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+    'I': 0, 'i': 0,        // Tonic (0 semitones)
+    'II': 2, 'ii': 2,      // Supertonic (2 semitones)
+    'III': 4, 'iii': 4,    // Mediant (4 semitones)
+    'IV': 5, 'iv': 5,      // Subdominant (5 semitones)
+    'V': 7, 'v': 7,        // Dominant (7 semitones)
+    'VI': 9, 'vi': 9,      // Submediant (9 semitones)
+    'VII': 11, 'vii': 11,  // Leading tone (11 semitones)
+    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,  // Altered degrees
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
+  // 2. degreeToIndex: Maps degree symbols to ARRAY INDICES (0-6)
+  //    Used to look up the roman numeral string from ROMAN_NUMERALS array
+  //    Note: II maps to index 1 (not 2), III to index 2 (not 4), etc.
   const degreeToIndex: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 1, 'ii': 1,
