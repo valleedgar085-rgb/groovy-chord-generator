@@ -825,7 +825,7 @@ export const SPICE_CONFIGS: Record<SpiceLevel, SpiceConfig> = {
     level: 'medium',
     allowExtensions: true,
     allowAlterations: false,
-    maxExtension: 9,
+    maxExtension: 7,
   },
   hot: {
     level: 'hot',
