@@ -679,28 +679,33 @@ export function applySpiceToChord(chord: Chord, level: SpiceLevel): Chord {
   
   // Medium and above: Allow 7ths
   if (config.maxExtension >= 7) {
-    if (chord.type === 'major' && Math.random() > 0.5) {
+    const prob7th = SPICE_PROBABILITY_THRESHOLDS[level]?.['7th'] ?? 0.5;
+    if (chord.type === 'major' && Math.random() < prob7th) {
       spicedChord.type = 'major7';
-    } else if (chord.type === 'minor' && Math.random() > 0.5) {
+    } else if (chord.type === 'minor' && Math.random() < prob7th) {
       spicedChord.type = 'minor7';
     }
   }
   
   // Hot and above: Allow 9ths and alterations
   if (config.maxExtension >= 9 && config.allowAlterations) {
-    if (spicedChord.type === 'major7' && Math.random() > 0.6) {
+    const prob9th = SPICE_PROBABILITY_THRESHOLDS[level]?.['9th'] ?? 0.4;
+    const probAdd9 = SPICE_PROBABILITY_THRESHOLDS[level]?.['add9'] ?? 0.3;
+    if (spicedChord.type === 'major7' && Math.random() < prob9th) {
       spicedChord.type = 'major9';
-    } else if (spicedChord.type === 'minor7' && Math.random() > 0.6) {
+    } else if (spicedChord.type === 'minor7' && Math.random() < prob9th) {
       spicedChord.type = 'minor9';
-    } else if (spicedChord.type === 'major' && Math.random() > 0.7) {
+    } else if (spicedChord.type === 'major' && Math.random() < probAdd9) {
       spicedChord.type = 'add9';
     }
   }
   
   // Fire level: Maximum complexity
-  if (level === 'fire' && Math.random() > 0.5) {
+  const probSus = SPICE_PROBABILITY_THRESHOLDS[level]?.['sus'] ?? 0.5;
+  if (level === 'fire' && Math.random() < probSus) {
     // Add sus variations
-    if (Math.random() > 0.7) {
+    const probSusType = SPICE_PROBABILITY_THRESHOLDS[level]?.['susType'] ?? 0.3;
+    if (Math.random() < probSusType) {
       if (spicedChord.type === 'major') {
         spicedChord.type = Math.random() > 0.5 ? 'sus4' : 'sus2';
       }
