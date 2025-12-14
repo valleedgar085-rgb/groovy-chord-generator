@@ -569,6 +569,32 @@ export function generateFunctionalProgression(
 }
 
 /**
+ * Helper to check if a degree is appropriate for the key type
+ * In minor keys, prefer lowercase (minor) degrees and borrowed chords
+ * In major keys, prefer uppercase (major) degrees
+ */
+function isDegreeAppropriateForKey(degree: string, isMinorKey: boolean): boolean {
+  // Special handling for common degrees in both keys
+  switch (degree) {
+    case 'I': return !isMinorKey; // Major tonic only in major keys
+    case 'i': return isMinorKey;  // Minor tonic only in minor keys
+    case 'V': return true;         // Dominant V works in both keys
+    case 'v': return isMinorKey;  // Minor v more common in minor keys
+    case 'IV': return !isMinorKey; // Major IV in major keys
+    case 'iv': return isMinorKey;  // Minor iv in minor keys
+    case 'ii': return !isMinorKey; // ii is natural in major keys
+    case 'vi': return !isMinorKey; // vi is natural in major keys
+    case 'iii': return !isMinorKey; // iii is natural in major keys
+    case 'III': return isMinorKey; // Major III in minor keys (relative major)
+    case 'VI': return isMinorKey;  // Major VI in minor keys
+    case 'VII': return isMinorKey; // Major VII in minor keys
+    case 'vii': return !isMinorKey; // Leading tone in major keys
+    // Passing/borrowed chords work in both contexts
+    default: return true;
+  }
+}
+
+/**
  * Generate a chord from a harmonic function
  */
 export function generateChordFromFunction(
@@ -581,34 +607,9 @@ export function generateChordFromFunction(
 ): Chord {
   const functionalChords = FUNCTIONAL_HARMONY[func];
   
-  // Helper to check if a degree is appropriate for the key type
-  const isDegreeAppropriateForKey = (degree: string): boolean => {
-    // In minor keys, prefer lowercase (minor) degrees and borrowed chords
-    // In major keys, prefer uppercase (major) degrees
-    
-    // Special handling for common degrees in both keys
-    switch (degree) {
-      case 'I': return !isMinorKey; // Major tonic only in major keys
-      case 'i': return isMinorKey;  // Minor tonic only in minor keys
-      case 'V': return true;         // Dominant V works in both keys
-      case 'v': return isMinorKey;  // Minor v more common in minor keys
-      case 'IV': return !isMinorKey; // Major IV in major keys
-      case 'iv': return isMinorKey;  // Minor iv in minor keys
-      case 'ii': return !isMinorKey; // ii is natural in major keys
-      case 'vi': return !isMinorKey; // vi is natural in major keys
-      case 'iii': return !isMinorKey; // iii is natural in major keys
-      case 'III': return isMinorKey; // Major III in minor keys (relative major)
-      case 'VI': return isMinorKey;  // Major VI in minor keys
-      case 'VII': return isMinorKey; // Major VII in minor keys
-      case 'vii': return !isMinorKey; // Leading tone in major keys
-      // Passing/borrowed chords work in both contexts
-      default: return true;
-    }
-  };
-  
   // Filter by key appropriateness first, then by tension range
   let validChords = functionalChords.filter(
-    fc => isDegreeAppropriateForKey(fc.degree) && 
+    fc => isDegreeAppropriateForKey(fc.degree, isMinorKey) && 
           fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
   );
   
