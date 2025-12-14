@@ -596,39 +596,31 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+  // Calculate the root note by transposing based on the degree's semitone interval
+  // Maps each scale degree to its interval in semitones from the root
+  const degreeToSemitones: Record<string, number> = {
+    'I': 0, 'i': 0,      // Tonic
+    'II': 2, 'ii': 2,    // Supertonic (whole step)
+    'III': 4, 'iii': 4,  // Mediant (major third)
+    'IV': 5, 'iv': 5,    // Subdominant (perfect fourth)
+    'V': 7, 'v': 7,      // Dominant (perfect fifth)
+    'VI': 9, 'vi': 9,    // Submediant (major sixth)
+    'VII': 11, 'vii': 11, // Leading tone (major seventh)
+    'bII': 1,            // Flat supertonic (Neapolitan)
+    'bIII': 3,           // Flat mediant (minor third)
+    'bVI': 8,            // Flat submediant (minor sixth)
+    'bVII': 10,          // Flat subtonic (minor seventh)
+    '#iv': 6,            // Sharp subdominant (tritone)
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
-  
-  const interval = degreeMap[chosenChord.degree] || 0;
+  const interval = degreeToSemitones[chosenChord.degree] || 0;
   const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    numeral: chosenChord.degree, // Use the degree directly as the numeral (e.g., 'I', 'bVII', etc.)
     harmonyFunction: func,
   };
 }
