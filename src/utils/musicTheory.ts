@@ -616,7 +616,11 @@ export function generateChordFromFunction(
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: chosenChord.degree, // Use degree directly to preserve case and alterations
+    // Preserve the degree symbol directly to maintain musical meaning:
+    // - Uppercase (I, II, etc.) = major chords
+    // - Lowercase (i, ii, etc.) = minor/diminished chords  
+    // - Alterations (bII, #iv, etc.) = chromatic chords
+    numeral: chosenChord.degree,
     harmonyFunction: func,
   };
 }
