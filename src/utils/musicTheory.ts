@@ -76,6 +76,8 @@ export function getChordFromDegree(
   isMinorKey: boolean,
   scale: ScaleName
 ): Chord {
+  // Map degree symbols to scale degree indices (0-6) for diatonic scale lookup
+  // Used to index into the scale notes array from getScaleNotes()
   const degreeMap: Record<string, number> = {
     I: 0, i: 0,
     II: 1, ii: 1,
@@ -596,8 +598,9 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
+  // Map degree symbols to semitone intervals from the root (for chromatic transposition)
+  // e.g., 'II' = 2 semitones (major second), 'V' = 7 semitones (perfect fifth)
+  const degreeToSemitone: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 2, 'ii': 2,
     'III': 4, 'iii': 4,
@@ -608,7 +611,8 @@ export function generateChordFromFunction(
     'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
+  // Map degree symbols to scale degree indices (0-6) for ROMAN_NUMERALS array lookup
+  // e.g., 'II' = index 1 (second position in the array), 'V' = index 4 (fifth position)
   const degreeToIndex: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 1, 'ii': 1,
@@ -620,8 +624,11 @@ export function generateChordFromFunction(
     'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
   };
   
-  const interval = degreeMap[chosenChord.degree] || 0;
+  // Calculate chord root using semitone transposition
+  const interval = degreeToSemitone[chosenChord.degree] || 0;
   const chordRoot = transposeNote(root, interval);
+  
+  // Get index for roman numeral display
   const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
   
   return {
