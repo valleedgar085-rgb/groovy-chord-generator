@@ -573,7 +573,7 @@ export function generateFunctionalProgression(
  */
 export function generateChordFromFunction(
   root: string,
-  _isMinorKey: boolean,
+  isMinorKey: boolean,
   func: HarmonyFunction,
   _scale: ScaleName,
   allowedTypes: ChordTypeName[],
@@ -581,8 +581,33 @@ export function generateChordFromFunction(
 ): Chord {
   const functionalChords = FUNCTIONAL_HARMONY[func];
   
+  // Filter by key context (major vs minor)
+  const keyFilteredChords = functionalChords.filter(fc => {
+    const degree = fc.degree;
+    
+    // For tonic, subdominant, and dominant functions, prefer chords appropriate to the key
+    if (func === 'tonic' || func === 'subdominant' || func === 'dominant') {
+      if (isMinorKey) {
+        // Minor key: prefer i, ii, iv, v, VI, VII, and allow V (harmonic minor dominant)
+        // Exclude I (major tonic), iii (doesn't fit natural minor), IV (major subdominant typically)
+        const minorKeyDegrees = ['i', 'ii', 'iv', 'v', 'V', 'VI', 'VII', 'vii'];
+        return minorKeyDegrees.includes(degree) || degree.startsWith('b') || degree.startsWith('#');
+      } else {
+        // Major key: prefer I, ii, iii, IV, V, vi, vii
+        // Exclude i (minor tonic), iv (minor subdominant), v (minor dominant)
+        const majorKeyDegrees = ['I', 'ii', 'iii', 'IV', 'V', 'vi', 'vii', 'II', 'VII'];
+        return majorKeyDegrees.includes(degree) || degree.startsWith('b') || degree.startsWith('#');
+      }
+    }
+    // Passing chords are less strict about key context
+    return true;
+  });
+  
+  // Use key-filtered chords if available, otherwise fall back to all functional chords
+  const chordsToUse = keyFilteredChords.length > 0 ? keyFilteredChords : functionalChords;
+  
   // Filter by tension range
-  const validChords = functionalChords.filter(
+  const validChords = chordsToUse.filter(
     fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
   );
   
