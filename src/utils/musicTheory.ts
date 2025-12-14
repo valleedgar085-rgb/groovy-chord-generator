@@ -111,18 +111,8 @@ export function getChordFromDegree(
   isMinorKey: boolean,
   scale: ScaleName
 ): Chord {
-  const degreeMap: Record<string, number> = {
-    I: 0, i: 0,
-    II: 1, ii: 1,
-    III: 2, iii: 2,
-    IV: 3, iv: 3,
-    V: 4, v: 4,
-    VI: 5, vi: 5,
-    VII: 6, vii: 6,
-  };
-
   const scaleNotes = getScaleNotes(root, scale);
-  const degreeIndex = degreeMap[degree];
+  const degreeIndex = DIATONIC_DEGREE_TO_INDEX[degree];
   const chordRoot = scaleNotes[degreeIndex];
 
   // Determine chord quality based on degree and key
@@ -636,7 +626,7 @@ export function generateChordFromFunction(
   const chordRoot = transposeNote(root, interval);
   
   // For standard degrees, use ROMAN_NUMERALS lookup; for altered degrees, use the degree symbol directly
-  const numeral = DIATONIC_DEGREE_TO_INDEX[chosenChord.degree] !== undefined
+  const numeral = chosenChord.degree in DIATONIC_DEGREE_TO_INDEX
     ? ROMAN_NUMERALS[DIATONIC_DEGREE_TO_INDEX[chosenChord.degree]]
     : chosenChord.degree;
   
