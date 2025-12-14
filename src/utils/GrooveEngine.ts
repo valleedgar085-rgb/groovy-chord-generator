@@ -137,7 +137,7 @@ export function generateGroovyBassLine(
       if (i === offbeatCount && varietyFactor > 0.3) {
         // Approach note to next chord (chromatic)
         const nextChord = progression[(chordIndex + 1) % progression.length];
-        const approachDirection = Math.random() > 0.5 ? 1 : 11; // semitone above or below
+        const approachDirection = Math.random() > 0.5 ? 1 : 12 - 1; // semitone above or below (12 - 1 = 11, a semitone below)
         note = transposeNote(nextChord.root, approachDirection);
       } else if (random < 0.3 * varietyFactor) {
         // Fifth approach
