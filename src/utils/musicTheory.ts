@@ -573,7 +573,7 @@ export function generateFunctionalProgression(
  */
 export function generateChordFromFunction(
   root: string,
-  _isMinorKey: boolean,
+  isMinorKey: boolean,
   func: HarmonyFunction,
   _scale: ScaleName,
   allowedTypes: ChordTypeName[],
@@ -581,8 +581,21 @@ export function generateChordFromFunction(
 ): Chord {
   const functionalChords = FUNCTIONAL_HARMONY[func];
   
+  // Filter by key type (prefer major degrees in major keys, minor degrees in minor keys)
+  const keyFilteredChords = functionalChords.filter(fc => {
+    const isMinorDegree = fc.degree === fc.degree.toLowerCase();
+    // For tonic function, prefer matching key type; for others, allow more flexibility
+    if (func === 'tonic') {
+      return isMinorDegree === isMinorKey;
+    }
+    return true;
+  });
+  
+  // Use key-filtered chords if available, otherwise fall back to all functional chords
+  const chordsToConsider = keyFilteredChords.length > 0 ? keyFilteredChords : functionalChords;
+  
   // Filter by tension range
-  const validChords = functionalChords.filter(
+  const validChords = chordsToConsider.filter(
     fc => fc.tension >= tensionRange[0] && fc.tension <= tensionRange[1]
   );
   
