@@ -634,7 +634,7 @@ export function generateChordFromFunction(
     'bVII': 6,            // Treated as 7th degree for display
   };
   
-  const interval = degreeToChromaticInterval[chosenChord.degree] || 0;
+  const interval = degreeToChromaticInterval[chosenChord.degree] ?? 0;
   const chordRoot = transposeNote(root, interval);
   const degreeIndex = degreeToScalePosition[chosenChord.degree] ?? 0;
   
