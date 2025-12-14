@@ -47,6 +47,39 @@ export const NOTE_DISPLAY: NoteDisplayName[] = ['C', 'Db', 'D', 'Eb', 'E', 'F', 
 // Roman numerals for chord degrees
 export const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
+/**
+ * Maps degree symbols to chromatic semitone intervals from the root note.
+ * Used for calculating the actual pitch of a chord root when using chromatic alterations.
+ * Example: In C major, 'II' → 2 semitones → D, 'bII' → 1 semitone → Db
+ */
+export const DEGREE_TO_SEMITONES: Record<string, number> = {
+  'I': 0, 'i': 0,
+  'II': 2, 'ii': 2,
+  'III': 4, 'iii': 4,
+  'IV': 5, 'iv': 5,
+  'V': 7, 'v': 7,
+  'VI': 9, 'vi': 9,
+  'VII': 11, 'vii': 11,
+  'bII': 1, 'bIII': 3, '#iv': 6, 'bVI': 8, 'bVII': 10,
+};
+
+/**
+ * Maps degree symbols to diatonic scale degree indices (0-6).
+ * Used for indexing into scale note arrays and accessing the ROMAN_NUMERALS array.
+ * Example: 'I' → 0 (1st scale degree), 'II' → 1 (2nd scale degree), etc.
+ * Borrowed/altered chords map to their closest diatonic degree for display purposes.
+ */
+export const DEGREE_TO_SCALE_INDEX: Record<string, number> = {
+  'I': 0, 'i': 0,
+  'II': 1, 'ii': 1,
+  'III': 2, 'iii': 2,
+  'IV': 3, 'iv': 3,
+  'V': 4, 'v': 4,
+  'VI': 5, 'vi': 5,
+  'VII': 6, 'vii': 6,
+  'bII': 1, 'bIII': 2, '#iv': 3, 'bVI': 5, 'bVII': 6,
+};
+
 // Chord types with intervals (semitones from root)
 export const CHORD_TYPES: Record<ChordTypeName, ChordType> = {
   major: { intervals: [0, 4, 7], symbol: '', name: 'Major' },
