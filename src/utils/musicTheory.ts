@@ -596,8 +596,11 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
+  // Map degree symbols to semitone intervals from the root note.
+  // This is used to calculate the actual chord root by transposing from the key root.
+  // Standard diatonic degrees (I-VII) use major scale intervals.
+  // Altered degrees (bII, bVII, etc.) use chromatic intervals for modal interchange.
+  const DEGREE_TO_SEMITONES: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 2, 'ii': 2,
     'III': 4, 'iii': 4,
@@ -608,8 +611,9 @@ export function generateChordFromFunction(
     'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
+  // Map standard diatonic degrees to scale indices (0-6) for ROMAN_NUMERALS lookup.
+  // Only used for standard I-VII degrees. Altered degrees use their symbol directly.
+  const DIATONIC_DEGREE_TO_INDEX: Record<string, number> = {
     'I': 0, 'i': 0,
     'II': 1, 'ii': 1,
     'III': 2, 'iii': 2,
@@ -617,18 +621,21 @@ export function generateChordFromFunction(
     'V': 4, 'v': 4,
     'VI': 5, 'vi': 5,
     'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
   };
   
-  const interval = degreeMap[chosenChord.degree] || 0;
+  const interval = DEGREE_TO_SEMITONES[chosenChord.degree] ?? 0;
   const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  
+  // For standard degrees, use ROMAN_NUMERALS lookup; for altered degrees, use the degree symbol directly
+  const numeral = DIATONIC_DEGREE_TO_INDEX[chosenChord.degree] !== undefined
+    ? ROMAN_NUMERALS[DIATONIC_DEGREE_TO_INDEX[chosenChord.degree]]
+    : chosenChord.degree;
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    numeral: numeral,
     harmonyFunction: func,
   };
 }
