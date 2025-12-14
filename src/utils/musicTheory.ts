@@ -112,7 +112,7 @@ export function getChordFromDegree(
   scale: ScaleName
 ): Chord {
   const scaleNotes = getScaleNotes(root, scale);
-  const degreeIndex = DIATONIC_DEGREE_TO_INDEX[degree];
+  const degreeIndex = DIATONIC_DEGREE_TO_INDEX[degree] ?? 0;
   const chordRoot = scaleNotes[degreeIndex];
 
   // Determine chord quality based on degree and key
