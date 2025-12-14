@@ -596,39 +596,27 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Map each degree symbol to its semitone interval and display numeral
-  // Note: semitoneInterval is used to calculate the chord root note,
-  // while displayNumeral is used for UI display (falls back to the degree symbol itself)
-  const degreeInfo: Record<string, { semitoneInterval: number; displayNumeral: string }> = {
-    'I': { semitoneInterval: 0, displayNumeral: 'I' },
-    'i': { semitoneInterval: 0, displayNumeral: 'I' },
-    'II': { semitoneInterval: 2, displayNumeral: 'II' },
-    'ii': { semitoneInterval: 2, displayNumeral: 'II' },
-    'III': { semitoneInterval: 4, displayNumeral: 'III' },
-    'iii': { semitoneInterval: 4, displayNumeral: 'III' },
-    'IV': { semitoneInterval: 5, displayNumeral: 'IV' },
-    'iv': { semitoneInterval: 5, displayNumeral: 'IV' },
-    'V': { semitoneInterval: 7, displayNumeral: 'V' },
-    'v': { semitoneInterval: 7, displayNumeral: 'V' },
-    'VI': { semitoneInterval: 9, displayNumeral: 'VI' },
-    'vi': { semitoneInterval: 9, displayNumeral: 'VI' },
-    'VII': { semitoneInterval: 11, displayNumeral: 'VII' },
-    'vii': { semitoneInterval: 11, displayNumeral: 'VII' },
-    'bII': { semitoneInterval: 1, displayNumeral: 'bII' },
-    'bVII': { semitoneInterval: 10, displayNumeral: 'bVII' },
-    'bVI': { semitoneInterval: 8, displayNumeral: 'bVI' },
-    'bIII': { semitoneInterval: 3, displayNumeral: 'bIII' },
-    '#iv': { semitoneInterval: 6, displayNumeral: '#iv' },
+  // Map each degree symbol to its semitone interval for transposition
+  // Note: semitoneInterval is used to calculate the chord root note from the key root
+  const degreeToSemitones: Record<string, number> = {
+    'I': 0, 'i': 0,
+    'II': 2, 'ii': 2,
+    'III': 4, 'iii': 4,
+    'IV': 5, 'iv': 5,
+    'V': 7, 'v': 7,
+    'VI': 9, 'vi': 9,
+    'VII': 11, 'vii': 11,
+    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
   };
   
-  const info = degreeInfo[chosenChord.degree] || { semitoneInterval: 0, displayNumeral: chosenChord.degree };
-  const chordRoot = transposeNote(root, info.semitoneInterval);
+  const semitoneInterval = degreeToSemitones[chosenChord.degree] ?? 0;
+  const chordRoot = transposeNote(root, semitoneInterval);
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: info.displayNumeral,
+    numeral: chosenChord.degree, // Use degree directly to preserve case and alterations
     harmonyFunction: func,
   };
 }
