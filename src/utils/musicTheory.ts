@@ -637,13 +637,15 @@ export function generateChordFromFunction(
     : getScaleNotes(root, scale)[info?.scaleIndex ?? 0];
   
   // For diatonic degrees, map to standard roman numerals; for altered degrees, use the degree symbol as-is
-  const numeral = info?.scaleIndex !== undefined ? ROMAN_NUMERALS[info.scaleIndex] : chosenChord.degree;
+  const numeral = (info?.scaleIndex !== undefined && ROMAN_NUMERALS[info.scaleIndex]) 
+    ? ROMAN_NUMERALS[info.scaleIndex]
+    : chosenChord.degree;
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: numeral,
+    numeral,
     harmonyFunction: func,
   };
 }
