@@ -153,7 +153,6 @@ function generateChordBassNotes(
  * Generate a chromatic approach note to the next chord
  */
 function generateApproachNote(
-  _currentChord: Chord,
   chordIndex: number,
   progression: Chord[]
 ): NoteName {
