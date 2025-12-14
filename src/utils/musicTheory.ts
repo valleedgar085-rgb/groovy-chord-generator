@@ -632,9 +632,15 @@ export function generateChordFromFunction(
   
   // For diatonic degrees (I-VII without alterations), use scale-based calculation
   // For altered degrees (bII, bIII, etc.), use semitone transposition
-  const chordRoot = isAlteredDegree
-    ? transposeNote(root, info?.semitones ?? 0)
-    : getScaleNotes(root, scale)[info?.scaleIndex ?? 0];
+  let chordRoot: NoteName;
+  if (isAlteredDegree) {
+    chordRoot = transposeNote(root, info?.semitones ?? 0);
+  } else {
+    const scaleNotes = getScaleNotes(root, scale);
+    const index = info?.scaleIndex ?? 0;
+    // Ensure index is within bounds of the scale (handles pentatonic and other shorter scales)
+    chordRoot = scaleNotes[index % scaleNotes.length] || transposeNote(root, 0);
+  }
   
   // For diatonic degrees, map to standard roman numerals; for altered degrees, use the degree symbol as-is
   const numeral = (info?.scaleIndex !== undefined && ROMAN_NUMERALS[info.scaleIndex]) 
