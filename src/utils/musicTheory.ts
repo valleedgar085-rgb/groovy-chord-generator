@@ -39,6 +39,42 @@ import {
 } from '../constants';
 
 // ===================================
+// Degree Mapping Constants
+// ===================================
+
+/**
+ * Maps degree symbols to semitone intervals from the root note
+ * Based on major scale intervals (e.g., 'II' = 2 semitones, 'IV' = 5 semitones)
+ * Used to calculate the actual pitch of chord roots when transposing from the key root
+ */
+const DEGREE_SEMITONES: Record<string, number> = {
+  'I': 0, 'i': 0,
+  'II': 2, 'ii': 2,
+  'III': 4, 'iii': 4,
+  'IV': 5, 'iv': 5,
+  'V': 7, 'v': 7,
+  'VI': 9, 'vi': 9,
+  'VII': 11, 'vii': 11,
+  'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+};
+
+/**
+ * Maps degree symbols to their position in the diatonic scale (0-6)
+ * (e.g., 'II' = index 1, representing the 2nd scale degree)
+ * Used to look up the appropriate roman numeral display from ROMAN_NUMERALS array
+ */
+const DEGREE_SCALE_INDEX: Record<string, number> = {
+  'I': 0, 'i': 0,
+  'II': 1, 'ii': 1,
+  'III': 2, 'iii': 2,
+  'IV': 3, 'iv': 3,
+  'V': 4, 'v': 4,
+  'VI': 5, 'vi': 5,
+  'VII': 6, 'vii': 6,
+  'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
+};
+
+// ===================================
 // Note Manipulation Functions
 // ===================================
 
@@ -596,33 +632,18 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
-  };
-  
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
-  
-  const interval = degreeMap[chosenChord.degree] || 0;
+  // Calculate root note and roman numeral from degree
+  // Note: These mappings serve two distinct purposes:
+  // 1. DEGREE_SEMITONES: Maps degree symbols to semitone intervals from the root
+  //    (e.g., 'II' -> 2 semitones, based on major scale intervals)
+  //    Used to calculate the actual pitch of the chord root
+  // 2. DEGREE_SCALE_INDEX: Maps degree symbols to their position in the diatonic scale (0-6)
+  //    (e.g., 'II' -> 1, representing the 2nd scale degree at index 1)
+  //    Used to look up the appropriate roman numeral from ROMAN_NUMERALS array
+  const degree = chosenChord.degree;
+  const interval = DEGREE_SEMITONES[degree] ?? 0;
   const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  const degreeIndex = DEGREE_SCALE_INDEX[degree] ?? 0;
   
   return {
     root: chordRoot,
