@@ -218,7 +218,9 @@ export function analyzeGroove(template: GrooveTemplate): {
   
   // Calculate syncopation based on off-beat accents
   const offbeatAccents = groove.accentBeats.filter(b => b % 4 !== 0).length;
-  const syncopation = offbeatAccents / groove.accentBeats.length;
+  const syncopation = groove.accentBeats.length === 0
+    ? 0
+    : offbeatAccents / groove.accentBeats.length;
   
   return { complexity, energy, syncopation };
 }
