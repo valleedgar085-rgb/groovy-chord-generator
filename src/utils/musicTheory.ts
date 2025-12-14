@@ -596,39 +596,39 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
+  // Map each degree symbol to its semitone interval and display numeral
+  // Note: semitoneInterval is used to calculate the chord root note,
+  // while displayNumeral is used for UI display (falls back to the degree symbol itself)
+  const degreeInfo: Record<string, { semitoneInterval: number; displayNumeral: string }> = {
+    'I': { semitoneInterval: 0, displayNumeral: 'I' },
+    'i': { semitoneInterval: 0, displayNumeral: 'I' },
+    'II': { semitoneInterval: 2, displayNumeral: 'II' },
+    'ii': { semitoneInterval: 2, displayNumeral: 'II' },
+    'III': { semitoneInterval: 4, displayNumeral: 'III' },
+    'iii': { semitoneInterval: 4, displayNumeral: 'III' },
+    'IV': { semitoneInterval: 5, displayNumeral: 'IV' },
+    'iv': { semitoneInterval: 5, displayNumeral: 'IV' },
+    'V': { semitoneInterval: 7, displayNumeral: 'V' },
+    'v': { semitoneInterval: 7, displayNumeral: 'V' },
+    'VI': { semitoneInterval: 9, displayNumeral: 'VI' },
+    'vi': { semitoneInterval: 9, displayNumeral: 'VI' },
+    'VII': { semitoneInterval: 11, displayNumeral: 'VII' },
+    'vii': { semitoneInterval: 11, displayNumeral: 'VII' },
+    'bII': { semitoneInterval: 1, displayNumeral: 'bII' },
+    'bVII': { semitoneInterval: 10, displayNumeral: 'bVII' },
+    'bVI': { semitoneInterval: 8, displayNumeral: 'bVI' },
+    'bIII': { semitoneInterval: 3, displayNumeral: 'bIII' },
+    '#iv': { semitoneInterval: 6, displayNumeral: '#iv' },
   };
   
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
-  
-  const interval = degreeMap[chosenChord.degree] || 0;
-  const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  const info = degreeInfo[chosenChord.degree] || { semitoneInterval: 0, displayNumeral: chosenChord.degree };
+  const chordRoot = transposeNote(root, info.semitoneInterval);
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    numeral: info.displayNumeral,
     harmonyFunction: func,
   };
 }
