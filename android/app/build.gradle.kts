@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.edgarvalle.chordgenerator"
-    compileSdk = flutter.compileSdkVersion
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -20,15 +20,40 @@ android {
 
     defaultConfig {
         applicationId = "com.edgarvalle.chordgenerator"
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 21
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        multiDexEnabled = true
+    }
+
+    val keystorePropertiesFile = rootProject.file("key.properties")
+    val hasKeystoreConfig = keystorePropertiesFile.exists()
+
+    signingConfigs {
+        create("release") {
+            // Load keystore properties from file if it exists
+            if (hasKeystoreConfig) {
+                val keystoreProperties = java.util.Properties()
+                keystoreProperties.load(java.io.FileInputStream(keystorePropertiesFile))
+                
+                storeFile = file(keystoreProperties["storeFile"] as String)
+                storePassword = keystoreProperties["storePassword"] as String
+                keyAlias = keystoreProperties["keyAlias"] as String
+                keyPassword = keystoreProperties["keyPassword"] as String
+            }
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            // Use release signing config if key.properties exists, otherwise use debug
+            signingConfig = if (hasKeystoreConfig) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            
             // Enable code shrinking and obfuscation for better performance
             isMinifyEnabled = true
             isShrinkResources = true

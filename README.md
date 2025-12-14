@@ -134,9 +134,25 @@ See **[QUICKSTART.md](QUICKSTART.md)** for a complete 5-step guide to get runnin
 
 ### Build APK
 
+For detailed build instructions, see **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)**.
+
+**Quick Build:**
 ```bash
+# Linux/macOS
+./build_apk.sh
+
+# Windows
+build_apk.bat
+
+# Manual
 flutter build apk --release
 ```
+
+**Setup Release Signing:**
+See **[KEYSTORE_SETUP.md](KEYSTORE_SETUP.md)** for production release signing configuration.
+
+**Generate App Icons:**
+See **[ICON_SETUP.md](ICON_SETUP.md)** for customizing the app icon.
 
 ### Build for Web
 
