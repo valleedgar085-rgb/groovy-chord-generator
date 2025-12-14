@@ -42,6 +42,48 @@ import {
 // Note Manipulation Functions
 // ===================================
 
+/**
+ * Maps degree symbols to semitone intervals from the root note.
+ * Used for calculating chord root notes via chromatic transposition.
+ * For example, 'II' = 2 semitones (a whole step), 'V' = 7 semitones (a perfect fifth).
+ * Supports both diatonic degrees (I-VII) and chromatic alterations (bII, bIII, etc.)
+ */
+const DEGREE_TO_CHROMATIC_INTERVAL: Record<string, number> = {
+  'I': 0, 'i': 0,       // Root
+  'II': 2, 'ii': 2,     // Major 2nd
+  'III': 4, 'iii': 4,   // Major 3rd
+  'IV': 5, 'iv': 5,     // Perfect 4th
+  'V': 7, 'v': 7,       // Perfect 5th
+  'VI': 9, 'vi': 9,     // Major 6th
+  'VII': 11, 'vii': 11, // Major 7th
+  'bII': 1,             // Minor 2nd (Neapolitan)
+  'bIII': 3,            // Minor 3rd
+  '#iv': 6,             // Augmented 4th / Diminished 5th
+  'bVI': 8,             // Minor 6th
+  'bVII': 10,           // Minor 7th (Subtonic)
+};
+
+/**
+ * Maps degree symbols to scale degree positions (0-6) for display purposes.
+ * Used to look up the correct roman numeral representation (I-VII).
+ * For example, 'II' = index 1 (second scale degree), 'V' = index 4 (fifth scale degree).
+ * Altered degrees map to their closest diatonic degree position.
+ */
+const DEGREE_TO_SCALE_POSITION: Record<string, number> = {
+  'I': 0, 'i': 0,       // 1st degree
+  'II': 1, 'ii': 1,     // 2nd degree
+  'III': 2, 'iii': 2,   // 3rd degree
+  'IV': 3, 'iv': 3,     // 4th degree
+  'V': 4, 'v': 4,       // 5th degree
+  'VI': 5, 'vi': 5,     // 6th degree
+  'VII': 6, 'vii': 6,   // 7th degree
+  'bII': 1,             // Treated as 2nd degree for display
+  'bIII': 2,            // Treated as 3rd degree for display
+  '#iv': 3,             // Treated as 4th degree for display
+  'bVI': 5,             // Treated as 6th degree for display
+  'bVII': 6,            // Treated as 7th degree for display
+};
+
 export function getNoteIndex(note: string): number {
   const cleanNote = note.replace('m', '');
   const notesIndex = NOTES.indexOf(cleanNote as NoteName);
@@ -596,33 +638,10 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
-  };
-  
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
-  
-  const interval = degreeMap[chosenChord.degree] || 0;
+  // Calculate the chord root note and display numeral using the degree mappings
+  const interval = DEGREE_TO_CHROMATIC_INTERVAL[chosenChord.degree] ?? 0;
   const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  const degreeIndex = DEGREE_TO_SCALE_POSITION[chosenChord.degree] ?? 0;
   
   return {
     root: chordRoot,
