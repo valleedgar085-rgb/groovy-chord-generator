@@ -655,7 +655,7 @@ export function generateChordFromFunction(
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: numeral,
+    numeral,
     harmonyFunction: func,
   };
 }
