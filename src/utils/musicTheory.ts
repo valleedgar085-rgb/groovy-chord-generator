@@ -57,8 +57,7 @@ export function isValidDegree(degree: string): degree is DegreeSymbol {
 /**
  * Gets the semitone interval for a scale degree.
  * @param degree - The scale degree symbol
- * @returns The semitone interval from the root (0-11)
- * @throws Error if the degree is invalid
+ * @returns The semitone interval from the root (0-11), or 0 if invalid
  */
 export function getDegreeInterval(degree: string): number {
   if (!isValidDegree(degree)) {
@@ -71,8 +70,7 @@ export function getDegreeInterval(degree: string): number {
 /**
  * Gets the scale index for a scale degree.
  * @param degree - The scale degree symbol
- * @returns The scale index (0-6) for diatonic position
- * @throws Error if the degree is invalid
+ * @returns The scale index (0-6) for diatonic position, or 0 if invalid
  */
 export function getDegreeScaleIndex(degree: string): number {
   if (!isValidDegree(degree)) {
@@ -82,7 +80,6 @@ export function getDegreeScaleIndex(degree: string): number {
   return DEGREE_TO_SCALE_INDEX[degree];
 }
 
-/**
 /**
  * Gets the roman numeral display for a scale degree.
  * @param degree - The scale degree symbol
