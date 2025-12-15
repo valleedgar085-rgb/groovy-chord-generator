@@ -18,6 +18,7 @@ import type {
   HarmonyFunction,
   MoodType,
   SpiceLevel,
+  DegreeSymbol,
 } from '../types';
 
 import {
@@ -36,54 +37,61 @@ import {
   FUNCTIONAL_PROGRESSIONS,
   MOOD_PROFILES,
   SPICE_CONFIGS,
+  DEGREE_TO_SEMITONES,
+  DEGREE_TO_SCALE_INDEX,
 } from '../constants';
 
 // ===================================
-// Music Theory Mappings
+// Degree Helper Functions
 // ===================================
 
 /**
- * Maps scale degree symbols to semitone intervals from the root note.
- * Used for transposing notes to calculate the actual root of a chord.
- * 
- * Examples:
- * - 'I' (tonic) = 0 semitones (same as root)
- * - 'V' (dominant) = 7 semitones (perfect fifth)
- * - 'IV' (subdominant) = 5 semitones (perfect fourth)
- * - 'bII' (flat 2) = 1 semitone (minor second)
+ * Validates if a string is a valid degree symbol.
+ * @param degree - The degree string to validate
+ * @returns true if the degree is valid, false otherwise
  */
-const DEGREE_TO_SEMITONES: Record<string, number> = {
-  'I': 0, 'i': 0,
-  'II': 2, 'ii': 2,
-  'III': 4, 'iii': 4,
-  'IV': 5, 'iv': 5,
-  'V': 7, 'v': 7,
-  'VI': 9, 'vi': 9,
-  'VII': 11, 'vii': 11,
-  'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
-};
+export function isValidDegree(degree: string): degree is DegreeSymbol {
+  return degree in DEGREE_TO_SEMITONES;
+}
 
 /**
- * Maps scale degree symbols to scale degree indices (0-6).
- * Used for looking up roman numeral display names in ROMAN_NUMERALS array.
- * 
- * Examples:
- * - 'I' (first degree) = 0 (maps to 'I' in ROMAN_NUMERALS)
- * - 'V' (fifth degree) = 4 (maps to 'V' in ROMAN_NUMERALS)
- * - 'II' (second degree) = 1 (maps to 'II' in ROMAN_NUMERALS)
- * 
- * Note: Altered degrees (bII, bVII, etc.) map to their nearest diatonic degree.
+ * Gets the semitone interval for a scale degree.
+ * @param degree - The scale degree symbol
+ * @returns The semitone interval from the root (0-11)
+ * @throws Error if the degree is invalid
  */
-const DEGREE_TO_SCALE_INDEX: Record<string, number> = {
-  'I': 0, 'i': 0,
-  'II': 1, 'ii': 1,
-  'III': 2, 'iii': 2,
-  'IV': 3, 'iv': 3,
-  'V': 4, 'v': 4,
-  'VI': 5, 'vi': 5,
-  'VII': 6, 'vii': 6,
-  'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-};
+export function getDegreeInterval(degree: string): number {
+  if (!isValidDegree(degree)) {
+    console.warn(`Invalid degree symbol: ${degree}, defaulting to 0`);
+    return 0;
+  }
+  return DEGREE_TO_SEMITONES[degree];
+}
+
+/**
+ * Gets the scale index for a scale degree.
+ * @param degree - The scale degree symbol
+ * @returns The scale index (0-6) for diatonic position
+ * @throws Error if the degree is invalid
+ */
+export function getDegreeScaleIndex(degree: string): number {
+  if (!isValidDegree(degree)) {
+    console.warn(`Invalid degree symbol: ${degree}, defaulting to 0`);
+    return 0;
+  }
+  return DEGREE_TO_SCALE_INDEX[degree];
+}
+
+/**
+/**
+ * Gets the roman numeral display for a scale degree.
+ * @param degree - The scale degree symbol
+ * @returns The roman numeral string (e.g., 'I', 'V', 'VII')
+ */
+export function getDegreeNumeral(degree: string): string {
+  const scaleIndex = getDegreeScaleIndex(degree);
+  return ROMAN_NUMERALS[scaleIndex] || degree;
+}
 
 // ===================================
 // Note Manipulation Functions
@@ -124,7 +132,7 @@ export function getChordFromDegree(
   scale: ScaleName
 ): Chord {
   const scaleNotes = getScaleNotes(root, scale);
-  const scaleIndex = DEGREE_TO_SCALE_INDEX[degree] ?? 0;
+  const scaleIndex = getDegreeScaleIndex(degree);
   const chordRoot = scaleNotes[scaleIndex];
 
   // Determine chord quality based on degree and key
@@ -143,7 +151,7 @@ export function getChordFromDegree(
     root: chordRoot,
     type: chordType,
     degree: degree,
-    numeral: ROMAN_NUMERALS[scaleIndex],
+    numeral: getDegreeNumeral(degree),
   };
 }
 
@@ -606,7 +614,8 @@ export function generateFunctionalProgression(
 }
 
 /**
- * Generate a chord from a harmonic function
+ * Generate a chord from a harmonic function.
+ * Uses functional harmony principles to select appropriate chords.
  */
 export function generateChordFromFunction(
   root: string,
@@ -633,18 +642,15 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Calculate chord root by transposing from the key root
-  const semitoneInterval = DEGREE_TO_SEMITONES[chosenChord.degree] || 0;
+  // Calculate chord root using semitone transposition
+  const semitoneInterval = getDegreeInterval(chosenChord.degree);
   const chordRoot = transposeNote(root, semitoneInterval);
-  
-  // Get scale degree index for roman numeral display
-  const scaleIndex = DEGREE_TO_SCALE_INDEX[chosenChord.degree] ?? 0;
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[scaleIndex] || chosenChord.degree,
+    numeral: getDegreeNumeral(chosenChord.degree),
     harmonyFunction: func,
   };
 }

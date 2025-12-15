@@ -62,6 +62,22 @@ export type RhythmLevel = 'soft' | 'moderate' | 'strong' | 'intense';
 
 export type SoundType = 'sine' | 'triangle' | 'square' | 'sawtooth';
 
+/**
+ * Scale degree symbols used in music theory.
+ * Uppercase = major quality, lowercase = minor quality
+ * Prefixes: b = flat, # = sharp
+ */
+export type DegreeSymbol = 
+  | 'I' | 'i'
+  | 'II' | 'ii'
+  | 'III' | 'iii'
+  | 'IV' | 'iv'
+  | 'V' | 'v'
+  | 'VI' | 'vi'
+  | 'VII' | 'vii'
+  | 'bII' | 'bIII' | 'bVI' | 'bVII'
+  | '#iv';
+
 // Phase 1: Functional Harmony Types
 export type HarmonyFunction = 'tonic' | 'subdominant' | 'dominant' | 'passing';
 
