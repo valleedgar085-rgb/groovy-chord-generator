@@ -114,7 +114,7 @@ function generateChordBassNotes(
       }
     } else if (isLastNote && config.chromaticApproach) {
       // Last note: chromatic approach to next chord
-      note = generateApproachNote(chord, chordIndex, progression);
+      note = generateApproachNote(chordIndex, progression);
       style = 'walking';
     } else if (config.octaveJumps && Math.random() < 0.3 * varietyFactor) {
       // Octave jump
