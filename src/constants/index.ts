@@ -47,6 +47,68 @@ export const NOTE_DISPLAY: NoteDisplayName[] = ['C', 'Db', 'D', 'Eb', 'E', 'F', 
 // Roman numerals for chord degrees
 export const ROMAN_NUMERALS = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
+/**
+ * Maps scale degree symbols to semitone intervals from the root note.
+ * Used for calculating the actual pitch of a chord root via chromatic transposition.
+ * 
+ * Theory:
+ * - Intervals represent chromatic distance (12 semitones = octave)
+ * - Major scale pattern: W-W-H-W-W-W-H (2-2-1-2-2-2-1 semitones)
+ * 
+ * Examples:
+ * - 'I' (tonic) = 0 semitones → same as root
+ * - 'V' (dominant) = 7 semitones → perfect fifth
+ * - 'IV' (subdominant) = 5 semitones → perfect fourth
+ * - 'bII' (Neapolitan) = 1 semitone → minor second
+ * - 'bVII' (subtonic) = 10 semitones → minor seventh
+ */
+export const DEGREE_TO_SEMITONES: Record<string, number> = {
+  'I': 0, 'i': 0,       // Tonic
+  'II': 2, 'ii': 2,     // Supertonic
+  'III': 4, 'iii': 4,   // Mediant
+  'IV': 5, 'iv': 5,     // Subdominant
+  'V': 7, 'v': 7,       // Dominant
+  'VI': 9, 'vi': 9,     // Submediant
+  'VII': 11, 'vii': 11, // Leading tone
+  // Altered degrees (modal interchange, chromatic harmony)
+  'bII': 1,   // Neapolitan sixth
+  'bIII': 3,  // Minor mediant (borrowed from parallel minor)
+  '#iv': 6,   // Lydian augmented fourth
+  'bVI': 8,   // Minor submediant (borrowed from parallel minor)
+  'bVII': 10, // Subtonic (borrowed from parallel minor/mixolydian)
+} as const;
+
+/**
+ * Maps scale degree symbols to diatonic scale indices (0-6).
+ * Used for looking up position in arrays like ROMAN_NUMERALS or scale-based chord qualities.
+ * 
+ * Theory:
+ * - Indices represent position within a 7-note diatonic scale
+ * - Altered degrees map to their nearest diatonic equivalent
+ * 
+ * Examples:
+ * - 'I' (first degree) = 0 → ROMAN_NUMERALS[0] = 'I'
+ * - 'V' (fifth degree) = 4 → ROMAN_NUMERALS[4] = 'V'
+ * - 'II' (second degree) = 1 → ROMAN_NUMERALS[1] = 'II'
+ * - 'bII' → 1 (resolves to II for display)
+ * - 'bVII' → 6 (resolves to VII for display)
+ */
+export const DEGREE_TO_SCALE_INDEX: Record<string, number> = {
+  'I': 0, 'i': 0,
+  'II': 1, 'ii': 1,
+  'III': 2, 'iii': 2,
+  'IV': 3, 'iv': 3,
+  'V': 4, 'v': 4,
+  'VI': 5, 'vi': 5,
+  'VII': 6, 'vii': 6,
+  // Altered degrees map to nearest diatonic position
+  'bII': 1,
+  'bIII': 2,
+  '#iv': 3,
+  'bVI': 5,
+  'bVII': 6,
+} as const;
+
 // Chord types with intervals (semitones from root)
 export const CHORD_TYPES: Record<ChordTypeName, ChordType> = {
   major: { intervals: [0, 4, 7], symbol: '', name: 'Major' },
