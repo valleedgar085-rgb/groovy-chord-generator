@@ -18,6 +18,7 @@ import type {
   HarmonyFunction,
   MoodType,
   SpiceLevel,
+  DegreeSymbol,
 } from '../types';
 
 import {
@@ -36,7 +37,58 @@ import {
   FUNCTIONAL_PROGRESSIONS,
   MOOD_PROFILES,
   SPICE_CONFIGS,
+  DEGREE_TO_SEMITONES,
+  DEGREE_TO_SCALE_INDEX,
 } from '../constants';
+
+// ===================================
+// Degree Helper Functions
+// ===================================
+
+/**
+ * Validates if a string is a valid degree symbol.
+ * @param degree - The degree string to validate
+ * @returns true if the degree is valid, false otherwise
+ */
+export function isValidDegree(degree: string): degree is DegreeSymbol {
+  return degree in DEGREE_TO_SEMITONES;
+}
+
+/**
+ * Gets the semitone interval for a scale degree.
+ * @param degree - The scale degree symbol
+ * @returns The semitone interval from the root (0-11), or 0 if invalid
+ */
+export function getDegreeInterval(degree: string): number {
+  if (!isValidDegree(degree)) {
+    console.warn(`Invalid degree symbol: ${degree}, defaulting to 0`);
+    return 0;
+  }
+  return DEGREE_TO_SEMITONES[degree];
+}
+
+/**
+ * Gets the scale index for a scale degree.
+ * @param degree - The scale degree symbol
+ * @returns The scale index (0-6) for diatonic position, or 0 if invalid
+ */
+export function getDegreeScaleIndex(degree: string): number {
+  if (!isValidDegree(degree)) {
+    console.warn(`Invalid degree symbol: ${degree}, defaulting to 0`);
+    return 0;
+  }
+  return DEGREE_TO_SCALE_INDEX[degree];
+}
+
+/**
+ * Gets the roman numeral display for a scale degree.
+ * @param degree - The scale degree symbol
+ * @returns The roman numeral string (e.g., 'I', 'V', 'VII')
+ */
+export function getDegreeNumeral(degree: string): string {
+  const scaleIndex = getDegreeScaleIndex(degree);
+  return ROMAN_NUMERALS[scaleIndex] || degree;
+}
 
 // ===================================
 // Note Manipulation Functions
@@ -76,19 +128,9 @@ export function getChordFromDegree(
   isMinorKey: boolean,
   scale: ScaleName
 ): Chord {
-  const degreeMap: Record<string, number> = {
-    I: 0, i: 0,
-    II: 1, ii: 1,
-    III: 2, iii: 2,
-    IV: 3, iv: 3,
-    V: 4, v: 4,
-    VI: 5, vi: 5,
-    VII: 6, vii: 6,
-  };
-
   const scaleNotes = getScaleNotes(root, scale);
-  const degreeIndex = degreeMap[degree];
-  const chordRoot = scaleNotes[degreeIndex];
+  const scaleIndex = getDegreeScaleIndex(degree);
+  const chordRoot = scaleNotes[scaleIndex];
 
   // Determine chord quality based on degree and key
   const isUpperCase = degree === degree.toUpperCase();
@@ -96,17 +138,17 @@ export function getChordFromDegree(
 
   if (isMinorKey) {
     const minorKeyQualities: ChordTypeName[] = ['minor', 'diminished', 'major', 'minor', 'minor', 'major', 'major'];
-    chordType = isUpperCase ? 'major' : minorKeyQualities[degreeIndex];
+    chordType = isUpperCase ? 'major' : minorKeyQualities[scaleIndex];
   } else {
     const majorKeyQualities: ChordTypeName[] = ['major', 'minor', 'minor', 'major', 'major', 'minor', 'diminished'];
-    chordType = isUpperCase ? 'major' : majorKeyQualities[degreeIndex];
+    chordType = isUpperCase ? 'major' : majorKeyQualities[scaleIndex];
   }
 
   return {
     root: chordRoot,
     type: chordType,
     degree: degree,
-    numeral: ROMAN_NUMERALS[degreeIndex],
+    numeral: getDegreeNumeral(degree),
   };
 }
 
@@ -569,33 +611,8 @@ export function generateFunctionalProgression(
 }
 
 /**
- * Helper to check if a degree is appropriate for the key type
- * In minor keys, prefer lowercase (minor) degrees and borrowed chords
- * In major keys, prefer uppercase (major) degrees
- */
-function isDegreeAppropriateForKey(degree: string, isMinorKey: boolean): boolean {
-  // Special handling for common degrees in both keys
-  switch (degree) {
-    case 'I': return !isMinorKey; // Major tonic only in major keys
-    case 'i': return isMinorKey;  // Minor tonic only in minor keys
-    case 'V': return true;         // Dominant V works in both keys
-    case 'v': return isMinorKey;  // Minor v more common in minor keys
-    case 'IV': return !isMinorKey; // Major IV in major keys
-    case 'iv': return isMinorKey;  // Minor iv in minor keys
-    case 'ii': return !isMinorKey; // ii is natural in major keys
-    case 'vi': return !isMinorKey; // vi is natural in major keys
-    case 'iii': return !isMinorKey; // iii is natural in major keys
-    case 'III': return isMinorKey; // Major III in minor keys (relative major)
-    case 'VI': return isMinorKey;  // Major VI in minor keys
-    case 'VII': return isMinorKey; // Major VII in minor keys
-    case 'vii': return !isMinorKey; // Leading tone in major keys
-    // Passing/borrowed chords work in both contexts
-    default: return true;
-  }
-}
-
-/**
- * Generate a chord from a harmonic function
+ * Generate a chord from a harmonic function.
+ * Uses functional harmony principles to select appropriate chords.
  */
 export function generateChordFromFunction(
   root: string,
@@ -630,39 +647,15 @@ export function generateChordFromFunction(
     ? randomChoice(validTypes)
     : randomChoice(chosenChord.chordTypes);
   
-  // Get the degree index and calculate root note
-  const degreeMap: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3, '#iv': 6,
-  };
-  
-  // Map degree symbols to roman numeral indices (0-6)
-  const degreeToIndex: Record<string, number> = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2, '#iv': 3,
-  };
-  
-  const interval = degreeMap[chosenChord.degree] || 0;
-  const chordRoot = transposeNote(root, interval);
-  const degreeIndex = degreeToIndex[chosenChord.degree] ?? 0;
+  // Calculate chord root using semitone transposition
+  const semitoneInterval = getDegreeInterval(chosenChord.degree);
+  const chordRoot = transposeNote(root, semitoneInterval);
   
   return {
     root: chordRoot,
     type: chordType,
     degree: chosenChord.degree,
-    numeral: ROMAN_NUMERALS[degreeIndex] || chosenChord.degree,
+    numeral: getDegreeNumeral(chosenChord.degree),
     harmonyFunction: func,
   };
 }
@@ -713,28 +706,33 @@ export function applySpiceToChord(chord: Chord, level: SpiceLevel): Chord {
   
   // Medium and above: Allow 7ths
   if (config.maxExtension >= 7) {
-    if (chord.type === 'major' && Math.random() > 0.5) {
+    const prob7th = SPICE_PROBABILITY_THRESHOLDS[level]?.['7th'] ?? 0.5;
+    if (chord.type === 'major' && Math.random() < prob7th) {
       spicedChord.type = 'major7';
-    } else if (chord.type === 'minor' && Math.random() > 0.5) {
+    } else if (chord.type === 'minor' && Math.random() < prob7th) {
       spicedChord.type = 'minor7';
     }
   }
   
   // Hot and above: Allow 9ths and alterations
   if (config.maxExtension >= 9 && config.allowAlterations) {
-    if (spicedChord.type === 'major7' && Math.random() > 0.6) {
+    const prob9th = SPICE_PROBABILITY_THRESHOLDS[level]?.['9th'] ?? 0.4;
+    const probAdd9 = SPICE_PROBABILITY_THRESHOLDS[level]?.['add9'] ?? 0.3;
+    if (spicedChord.type === 'major7' && Math.random() < prob9th) {
       spicedChord.type = 'major9';
-    } else if (spicedChord.type === 'minor7' && Math.random() > 0.6) {
+    } else if (spicedChord.type === 'minor7' && Math.random() < prob9th) {
       spicedChord.type = 'minor9';
-    } else if (spicedChord.type === 'major' && Math.random() > 0.7) {
+    } else if (spicedChord.type === 'major' && Math.random() < probAdd9) {
       spicedChord.type = 'add9';
     }
   }
   
   // Fire level: Maximum complexity
-  if (level === 'fire' && Math.random() > 0.5) {
+  const probSus = SPICE_PROBABILITY_THRESHOLDS[level]?.['sus'] ?? 0.5;
+  if (level === 'fire' && Math.random() < probSus) {
     // Add sus variations
-    if (Math.random() > 0.7) {
+    const probSusType = SPICE_PROBABILITY_THRESHOLDS[level]?.['susType'] ?? 0.3;
+    if (Math.random() < probSusType) {
       if (spicedChord.type === 'major') {
         spicedChord.type = Math.random() > 0.5 ? 'sus4' : 'sus2';
       }

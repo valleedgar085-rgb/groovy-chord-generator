@@ -202,23 +202,31 @@ function applySyncopationToBass(
  */
 export function generateWalkingBassLine(
   progression: Chord[],
-  _variety: number,
+  variety: number,
   rhythm: RhythmLevel
 ): BassNote[] {
   const bassLine: BassNote[] = [];
   const rhythmPattern = RHYTHM_PATTERNS[rhythm];
+  const varietyFactor = variety / 100;
   
   progression.forEach((chord, chordIndex) => {
     const root = chord.root;
     const scaleNotes = getScaleNotes(root, 'major');
     const nextChord = progression[(chordIndex + 1) % progression.length];
     
+    // Variety influences the choice of notes and chromatic approaches
+    // Higher variety = more chromatic approaches and wider scale note selection
+    const chromaticProbability = varietyFactor * 0.5; // 0 to 0.5 based on varietyFactor
+    const useChromatic = Math.random() < chromaticProbability;
+    
     // 4 notes per chord for walking bass
     const notes: NoteName[] = [
       root,
       randomChoice(scaleNotes),
-      randomChoice(scaleNotes),
-      transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : 11), // approach note
+      useChromatic 
+        ? transposeNote(randomChoice(scaleNotes), Math.random() > 0.5 ? 1 : (12 - 1)) // chromatic passing tone (semitone up or down)
+        : randomChoice(scaleNotes),
+      transposeNote(nextChord.root, Math.random() > 0.5 ? 1 : (12 - 1)), // approach note
     ];
     
     notes.forEach((note, i) => {
