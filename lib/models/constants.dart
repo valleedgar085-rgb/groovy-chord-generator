@@ -311,7 +311,7 @@ const Map<RhythmLevel, RhythmPattern> rhythmPatterns = {
   ),
   RhythmLevel.intense: RhythmPattern(
     name: 'Intense & Driving',
-    durations: [0.5, 0.5, 1, 0.5, 0.5],
+    durations: [0.8, 0.8, 0.8, 0.8, 0.8], // quintuplet subdivision (5 notes over 4 beats)
     dynamics: [1, 0.8, 0.95, 0.85, 0.9],
     melodyDensity: 0.9,
   ),

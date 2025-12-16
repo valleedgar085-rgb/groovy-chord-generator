@@ -50,6 +50,7 @@ class AppState extends ChangeNotifier {
   // Favorites state
   List<FavoriteProgression> _favorites = [];
   bool _favoritesLoading = false;
+  final Random _melodyRandom = Random();
 
   // Getters
   List<Chord> get currentProgression => _currentProgression;
@@ -395,8 +396,8 @@ class AppState extends ChangeNotifier {
       ).toList();
 
       for (var i = 0; i < notesPerChord; i++) {
-        final useChordTone = Random().nextDouble() > 0.3;
-        final sourcePool = useChordTone ? chordTones : scaleNotes;
+        final shouldUseChordTone = _melodyRandom.nextDouble() > 0.3;
+        final sourcePool = shouldUseChordTone ? chordTones : scaleNotes;
 
         final note = randomChoice(sourcePool);
         final duration = randomChoice(rhythmPattern.durations);
