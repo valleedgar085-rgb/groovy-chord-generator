@@ -717,14 +717,19 @@ List<String> addPassingChords(List<String> progression, int variety) {
     'V': ['vi', 'IV', 'I'],       // Dominant
     'vi': ['ii', 'IV', 'iii'],    // Submediant
     'VII': ['V', 'iii', 'I'],     // Leading tone
+    'i': ['III', 'VI', 'V'],      // Minor tonic
+    'III': ['VI', 'iv', 'VII'],   // Minor mediant
+    'iv': ['VII', 'V', 'VI'],     // Minor subdominant
+    'VI': ['VII', 'iv', 'III'],   // Minor submediant
   };
   
   for (var i = 0; i < numInsertions && result.length < 12; i++) {
     if (result.length < 2) break;
     
     final insertAfter = _random.nextInt(result.length - 1);
-    final currentChord = result[insertAfter].toUpperCase();
-    final baseChord = currentChord.replaceAll(RegExp(r'[^IViv]'), '');
+    final currentChord = result[insertAfter];
+    // Extract base Roman numeral (remove any added symbols like 7, 9, etc.)
+    final baseChord = currentChord.replaceAll(RegExp(r'[^IViv]+'), '');
     
     if (passingChords.containsKey(baseChord)) {
       final options = passingChords[baseChord]!;
@@ -791,6 +796,8 @@ List<String> applyIntelligentSubstitutions(List<String> progression, int variety
 List<Chord> smoothChordTransitions(List<Chord> progression) {
   if (progression.length < 2) return progression;
   
+  const passingChordThreshold = 0.3; // 30% chance of adding passing chord
+  
   final result = <Chord>[];
   result.add(progression[0]);
   
@@ -804,7 +811,7 @@ List<Chord> smoothChordTransitions(List<Chord> progression) {
     final interval = (currIndex - prevIndex).abs();
     
     // If large jump and variety allows, consider adding a passing chord
-    if (interval > 5 && interval < 7 && _random.nextDouble() > 0.7) {
+    if (interval > 5 && interval < 7 && _random.nextDouble() < passingChordThreshold) {
       // Add a passing chord between large jumps
       final midpoint = (prevIndex + ((currIndex - prevIndex) / 2).round()) % 12;
       final passingRoot = notes[midpoint];
@@ -883,9 +890,13 @@ List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
   
   final result = List<String>.from(progression);
   
+  // Constants for tension analysis
+  const highTensionThreshold = 0.6;
+  const resolutionProbability = 0.7;
+  
   // Tension values for each chord degree (0.0 = stable, 1.0 = high tension)
   final majorTension = {
-    'I': 0.0, 'ii': 0.4, 'iii': 0.5, 'IV': 0.3, 'V': 0.8, 'vi': 0.4, 'vii': 0.9,
+    'I': 0.0, 'ii': 0.4, 'iii': 0.5, 'IV': 0.3, 'V': 0.8, 'vi': 0.4, 'vii': 0.9, 'VII': 0.7,
   };
   
   final minorTension = {
@@ -897,16 +908,19 @@ List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
   
   // Ensure good tension curve - avoid too many high-tension chords in a row
   for (var i = 1; i < result.length - 1; i++) {
-    final prev = result[i - 1].replaceAll(RegExp(r'[^IViv]'), '');
-    final curr = result[i].replaceAll(RegExp(r'[^IViv]'), '');
-    final next = result[i + 1].replaceAll(RegExp(r'[^IViv]'), '');
+    // Extract base Roman numeral (remove any added symbols)
+    final prev = result[i - 1].replaceAll(RegExp(r'[^IViv]+'), '');
+    final curr = result[i].replaceAll(RegExp(r'[^IViv]+'), '');
+    final next = result[i + 1].replaceAll(RegExp(r'[^IViv]+'), '');
     
     final prevTension = tensionMap[prev] ?? 0.5;
     final currTension = tensionMap[curr] ?? 0.5;
     final nextTension = tensionMap[next] ?? 0.5;
     
     // If we have three high-tension chords in a row, substitute the middle one
-    if (prevTension > 0.6 && currTension > 0.6 && nextTension > 0.6) {
+    if (prevTension > highTensionThreshold && 
+        currTension > highTensionThreshold && 
+        nextTension > highTensionThreshold) {
       // Replace with a lower tension chord
       final lowTensionChords = tensionMap.entries
           .where((e) => e.value < 0.4)
@@ -920,11 +934,12 @@ List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
   
   // Ensure resolution at the end (prefer tonic or subdominant)
   if (result.isNotEmpty) {
-    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IViv]'), '');
+    // Extract base Roman numeral
+    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IViv]+'), '');
     final lastTension = tensionMap[lastChord] ?? 0.5;
     
     // If last chord is high tension, consider resolving
-    if (lastTension > 0.6 && _random.nextDouble() > 0.3) {
+    if (lastTension > highTensionThreshold && _random.nextDouble() > (1 - resolutionProbability)) {
       result[result.length - 1] = isMinor ? 'i' : 'I';
     }
   }

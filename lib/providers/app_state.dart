@@ -415,8 +415,11 @@ class AppState extends ChangeNotifier {
       enhanced = optimizeTensionFlow(enhanced, _isMinorKey);
       
       // Trim to target length if needed
-      while (enhanced.length > targetLength) {
-        final removeIndex = randomInt(1, enhanced.length - 2); // Keep first and last
+      while (enhanced.length > targetLength && enhanced.length > 3) {
+        // Only remove from middle if we have enough chords
+        final removeIndex = enhanced.length > 3 
+            ? randomInt(1, enhanced.length - 2) 
+            : enhanced.length - 1;
         enhanced.removeAt(removeIndex);
       }
       
