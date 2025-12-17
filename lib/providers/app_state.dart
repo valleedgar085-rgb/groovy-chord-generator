@@ -300,7 +300,9 @@ class AppState extends ChangeNotifier {
       final degreeSequence = _buildDegreeSequence(baseProgression, complexityConfig);
       final scale = isMinor ? ScaleName.minor : profile.scale;
 
-      chords = degreeSequence.map((degree) {
+      chords = degreeSequence.asMap().entries.map((entry) {
+        final index = entry.key;
+        final degree = entry.value;
         var chord = getChordFromDegree(root, degree, isMinor, scale);
         
         // Smart chord type selection based on variety and complexity
@@ -331,16 +333,19 @@ class AppState extends ChangeNotifier {
               final totalWeight = weights.values.fold(0.0, (sum, w) => sum + w);
               var randomValue = Random().nextDouble() * totalWeight;
               
-              for (final entry in weights.entries) {
-                randomValue -= entry.value;
+              for (final weightEntry in weights.entries) {
+                randomValue -= weightEntry.value;
                 if (randomValue <= 0) {
-                  chord = chord.copyWith(type: entry.key);
+                  chord = chord.copyWith(type: weightEntry.key);
                   break;
                 }
               }
             }
           }
         }
+        
+        // Apply strategic extensions based on position
+        chord = addStrategicExtensions(chord, index, degreeSequence.length, _chordVariety);
         
         return applyGenreVoicing(chord, _genre);
       }).toList();
@@ -405,6 +410,9 @@ class AppState extends ChangeNotifier {
       
       // Apply intelligent substitutions
       enhanced = applyIntelligentSubstitutions(enhanced, _chordVariety, _isMinorKey);
+      
+      // Optimize tension/resolution flow
+      enhanced = optimizeTensionFlow(enhanced, _isMinorKey);
       
       // Trim to target length if needed
       while (enhanced.length > targetLength) {

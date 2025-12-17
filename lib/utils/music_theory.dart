@@ -877,6 +877,89 @@ List<String> generateWeightedProgression(int length, bool isMinor, int variety) 
   return progression;
 }
 
+/// Analyze and optimize tension/resolution flow in progression
+List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
+  if (progression.length < 3) return progression;
+  
+  final result = List<String>.from(progression);
+  
+  // Tension values for each chord degree (0.0 = stable, 1.0 = high tension)
+  final majorTension = {
+    'I': 0.0, 'ii': 0.4, 'iii': 0.5, 'IV': 0.3, 'V': 0.8, 'vi': 0.4, 'vii': 0.9,
+  };
+  
+  final minorTension = {
+    'i': 0.0, 'ii': 0.5, 'III': 0.3, 'iv': 0.4, 'v': 0.6, 'V': 0.8, 
+    'VI': 0.3, 'VII': 0.7, 'vii': 0.9,
+  };
+  
+  final tensionMap = isMinor ? minorTension : majorTension;
+  
+  // Ensure good tension curve - avoid too many high-tension chords in a row
+  for (var i = 1; i < result.length - 1; i++) {
+    final prev = result[i - 1].replaceAll(RegExp(r'[^IViv]'), '');
+    final curr = result[i].replaceAll(RegExp(r'[^IViv]'), '');
+    final next = result[i + 1].replaceAll(RegExp(r'[^IViv]'), '');
+    
+    final prevTension = tensionMap[prev] ?? 0.5;
+    final currTension = tensionMap[curr] ?? 0.5;
+    final nextTension = tensionMap[next] ?? 0.5;
+    
+    // If we have three high-tension chords in a row, substitute the middle one
+    if (prevTension > 0.6 && currTension > 0.6 && nextTension > 0.6) {
+      // Replace with a lower tension chord
+      final lowTensionChords = tensionMap.entries
+          .where((e) => e.value < 0.4)
+          .map((e) => e.key)
+          .toList();
+      if (lowTensionChords.isNotEmpty) {
+        result[i] = randomChoice(lowTensionChords);
+      }
+    }
+  }
+  
+  // Ensure resolution at the end (prefer tonic or subdominant)
+  if (result.isNotEmpty) {
+    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IViv]'), '');
+    final lastTension = tensionMap[lastChord] ?? 0.5;
+    
+    // If last chord is high tension, consider resolving
+    if (lastTension > 0.6 && _random.nextDouble() > 0.3) {
+      result[result.length - 1] = isMinor ? 'i' : 'I';
+    }
+  }
+  
+  return result;
+}
+
+/// Add color tones and extensions strategically based on position in progression
+Chord addStrategicExtensions(Chord chord, int position, int totalLength, int variety) {
+  if (variety < 30) return chord;
+  
+  final varietyFactor = variety / 100.0;
+  final progressPosition = position / totalLength;
+  
+  // Add more extensions in the middle of the progression
+  final extensionChance = varietyFactor * (0.4 + (0.4 * (1 - (progressPosition - 0.5).abs() * 2)));
+  
+  if (_random.nextDouble() < extensionChance) {
+    // Choose extensions based on chord type and variety
+    if (chord.type == ChordTypeName.major) {
+      final options = [ChordTypeName.major7, ChordTypeName.add9];
+      if (variety > 60) options.add(ChordTypeName.major9);
+      return chord.copyWith(type: randomChoice(options));
+    } else if (chord.type == ChordTypeName.minor) {
+      final options = [ChordTypeName.minor7, ChordTypeName.minor9];
+      return chord.copyWith(type: randomChoice(options));
+    } else if (chord.type == ChordTypeName.dominant7 && variety > 70) {
+      // Keep dominant 7 as is for strong resolution
+      return chord;
+    }
+  }
+  
+  return chord;
+}
+
 // ===================================
 // Helper Functions
 // ===================================
