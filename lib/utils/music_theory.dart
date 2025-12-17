@@ -729,7 +729,7 @@ List<String> addPassingChords(List<String> progression, int variety) {
     final insertAfter = _random.nextInt(result.length - 1);
     final currentChord = result[insertAfter];
     // Extract base Roman numeral (remove any added symbols like 7, 9, etc.)
-    final baseChord = currentChord.replaceAll(RegExp(r'[^IViv]+'), '');
+    final baseChord = currentChord.replaceAll(RegExp(r'[^IVXivx]+'), '');
     
     if (passingChords.containsKey(baseChord)) {
       final options = passingChords[baseChord]!;
@@ -909,9 +909,9 @@ List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
   // Ensure good tension curve - avoid too many high-tension chords in a row
   for (var i = 1; i < result.length - 1; i++) {
     // Extract base Roman numeral (remove any added symbols)
-    final prev = result[i - 1].replaceAll(RegExp(r'[^IViv]+'), '');
-    final curr = result[i].replaceAll(RegExp(r'[^IViv]+'), '');
-    final next = result[i + 1].replaceAll(RegExp(r'[^IViv]+'), '');
+    final prev = result[i - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    final curr = result[i].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    final next = result[i + 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
     
     final prevTension = tensionMap[prev] ?? 0.5;
     final currTension = tensionMap[curr] ?? 0.5;
@@ -935,11 +935,11 @@ List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
   // Ensure resolution at the end (prefer tonic or subdominant)
   if (result.isNotEmpty) {
     // Extract base Roman numeral
-    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IViv]+'), '');
+    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
     final lastTension = tensionMap[lastChord] ?? 0.5;
     
     // If last chord is high tension, consider resolving
-    if (lastTension > highTensionThreshold && _random.nextDouble() > (1 - resolutionProbability)) {
+    if (lastTension > highTensionThreshold && _random.nextDouble() < resolutionProbability) {
       result[result.length - 1] = isMinor ? 'i' : 'I';
     }
   }

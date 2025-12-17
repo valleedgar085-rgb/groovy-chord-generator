@@ -417,7 +417,8 @@ class AppState extends ChangeNotifier {
       // Trim to target length if needed
       while (enhanced.length > targetLength && enhanced.length > 3) {
         // Only remove from middle if we have enough chords
-        final removeIndex = enhanced.length > 3 
+        final canRemoveFromMiddle = enhanced.length > 3;
+        final removeIndex = canRemoveFromMiddle 
             ? randomInt(1, enhanced.length - 2) 
             : enhanced.length - 1;
         enhanced.removeAt(removeIndex);
