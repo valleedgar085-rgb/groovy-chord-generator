@@ -697,6 +697,285 @@ List<Chord> applyGrooveToProgression(List<Chord> progression, GrooveTemplate tem
 }
 
 // ===================================
+// Smart Chord Variation Functions
+// ===================================
+
+/// Intelligently insert passing chords based on harmonic context
+List<String> addPassingChords(List<String> progression, int variety) {
+  if (variety < 30 || progression.length >= 12) return progression;
+  
+  final result = List<String>.from(progression);
+  final varietyFactor = variety / 100.0;
+  final numInsertions = (varietyFactor * 3).round();
+  
+  // Passing chord options based on harmonic function
+  const passingChords = {
+    'I': ['iii', 'vi', 'V'],      // From tonic
+    'ii': ['iii', 'V', 'IV'],     // From subdominant
+    'iii': ['IV', 'vi', 'ii'],    // Mediant
+    'IV': ['ii', 'V', 'vi'],      // Subdominant
+    'V': ['vi', 'IV', 'I'],       // Dominant
+    'vi': ['ii', 'IV', 'iii'],    // Submediant
+    'VII': ['V', 'iii', 'I'],     // Leading tone
+    'i': ['III', 'VI', 'V'],      // Minor tonic
+    'III': ['VI', 'iv', 'VII'],   // Minor mediant
+    'iv': ['VII', 'V', 'VI'],     // Minor subdominant
+    'VI': ['VII', 'iv', 'III'],   // Minor submediant
+  };
+  
+  for (var i = 0; i < numInsertions && result.length < 12; i++) {
+    if (result.length < 2) break;
+    
+    final insertAfter = _random.nextInt(result.length - 1);
+    final currentChord = result[insertAfter];
+    // Extract base Roman numeral (remove any added symbols like 7, 9, etc.)
+    final baseChord = currentChord.replaceAll(RegExp(r'[^IVXivx]+'), '');
+    
+    if (passingChords.containsKey(baseChord)) {
+      final options = passingChords[baseChord]!;
+      final passingChord = randomChoice(options);
+      result.insert(insertAfter + 1, passingChord);
+    }
+  }
+  
+  return result;
+}
+
+/// Add approach chords (chromatic or diatonic approaches to target chords)
+List<String> addApproachChords(List<String> progression, int variety) {
+  if (variety < 50) return progression;
+  
+  final result = List<String>.from(progression);
+  
+  // Add chromatic approach to dominant (V) chords
+  for (var i = 0; i < result.length - 1; i++) {
+    if ((result[i + 1] == 'V' || result[i + 1] == 'v') && _random.nextDouble() < 0.3) {
+      // Insert diminished chord or secondary dominant
+      if (_random.nextBool()) {
+        result.insert(i + 1, 'vii');  // Leading tone diminished
+      } else {
+        result.insert(i + 1, 'V/V');  // Secondary dominant
+      }
+      i++; // Skip the inserted chord
+    }
+  }
+  
+  return result;
+}
+
+/// Intelligently substitute chords with related harmony
+List<String> applyIntelligentSubstitutions(List<String> progression, int variety, bool isMinor) {
+  if (variety < 40) return progression;
+  
+  final result = <String>[];
+  final substitutionChance = (variety / 100.0) * 0.4; // Max 40% chance
+  
+  // Substitution rules
+  final substitutions = {
+    'I': ['iii', 'vi'],           // Tonic substitutes
+    'i': ['III', 'VI'],           // Minor tonic substitutes
+    'IV': ['ii', 'vi'],           // Subdominant substitutes
+    'iv': ['ii', 'VI'],           // Minor subdominant
+    'V': ['vii', 'iii'],          // Dominant substitutes
+    'vi': ['I', 'IV'],            // Submediant substitutes
+  };
+  
+  for (final chord in progression) {
+    if (_random.nextDouble() < substitutionChance && substitutions.containsKey(chord)) {
+      final options = substitutions[chord]!;
+      result.add(randomChoice(options));
+    } else {
+      result.add(chord);
+    }
+  }
+  
+  return result;
+}
+
+/// Create smooth chord transitions by analyzing intervals
+List<Chord> smoothChordTransitions(List<Chord> progression) {
+  if (progression.length < 2) return progression;
+  
+  const passingChordThreshold = 0.3; // 30% chance of adding passing chord
+  
+  final result = <Chord>[];
+  result.add(progression[0]);
+  
+  for (var i = 1; i < progression.length; i++) {
+    final current = progression[i];
+    final previous = result[result.length - 1];
+    
+    // Check if there's a large root movement (more than 5 semitones)
+    final prevIndex = getNoteIndex(previous.root);
+    final currIndex = getNoteIndex(current.root);
+    final interval = (currIndex - prevIndex).abs();
+    
+    // If large jump and variety allows, consider adding a passing chord
+    if (interval > 5 && interval < 7 && _random.nextDouble() < passingChordThreshold) {
+      // Add a passing chord between large jumps
+      final midpoint = (prevIndex + ((currIndex - prevIndex) / 2).round()) % 12;
+      final passingRoot = notes[midpoint];
+      final passingType = _random.nextBool() ? ChordTypeName.minor : ChordTypeName.major;
+      
+      result.add(Chord(
+        root: passingRoot,
+        type: passingType,
+        degree: 'passing',
+        numeral: 'passing',
+      ));
+    }
+    
+    result.add(current);
+  }
+  
+  return result;
+}
+
+/// Generate weighted random progression based on harmonic tendencies
+List<String> generateWeightedProgression(int length, bool isMinor, int variety) {
+  final progression = <String>[];
+  
+  // Harmonic tendency weights (probability of following chord)
+  final majorTendencies = {
+    'I': {'IV': 0.3, 'V': 0.25, 'vi': 0.2, 'ii': 0.15, 'iii': 0.1},
+    'ii': {'V': 0.5, 'IV': 0.2, 'vi': 0.15, 'I': 0.15},
+    'iii': {'vi': 0.35, 'IV': 0.25, 'ii': 0.2, 'V': 0.2},
+    'IV': {'V': 0.4, 'I': 0.25, 'ii': 0.2, 'vi': 0.15},
+    'V': {'I': 0.45, 'vi': 0.25, 'IV': 0.2, 'iii': 0.1},
+    'vi': {'ii': 0.3, 'IV': 0.25, 'V': 0.25, 'iii': 0.2},
+  };
+  
+  final minorTendencies = {
+    'i': {'iv': 0.3, 'V': 0.25, 'VI': 0.2, 'III': 0.15, 'VII': 0.1},
+    'ii': {'V': 0.5, 'iv': 0.2, 'VII': 0.15, 'i': 0.15},
+    'III': {'VI': 0.35, 'iv': 0.25, 'VII': 0.2, 'V': 0.2},
+    'iv': {'V': 0.4, 'i': 0.25, 'VI': 0.2, 'VII': 0.15},
+    'V': {'i': 0.45, 'VI': 0.25, 'iv': 0.2, 'III': 0.1},
+    'VI': {'VII': 0.3, 'iv': 0.25, 'V': 0.25, 'III': 0.2},
+    'VII': {'i': 0.35, 'III': 0.25, 'VI': 0.2, 'V': 0.2},
+  };
+  
+  final tendencies = isMinor ? minorTendencies : majorTendencies;
+  String current = isMinor ? 'i' : 'I';
+  progression.add(current);
+  
+  for (var i = 1; i < length; i++) {
+    if (!tendencies.containsKey(current)) {
+      current = isMinor ? 'i' : 'I';
+      progression.add(current);
+      continue;
+    }
+    
+    final weights = tendencies[current]!;
+    final randomValue = _random.nextDouble();
+    var cumulative = 0.0;
+    
+    for (final entry in weights.entries) {
+      cumulative += entry.value;
+      if (randomValue <= cumulative) {
+        current = entry.key;
+        break;
+      }
+    }
+    
+    progression.add(current);
+  }
+  
+  return progression;
+}
+
+/// Analyze and optimize tension/resolution flow in progression
+List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
+  if (progression.length < 3) return progression;
+  
+  final result = List<String>.from(progression);
+  
+  // Constants for tension analysis
+  const highTensionThreshold = 0.6;
+  const resolutionProbability = 0.7;
+  
+  // Tension values for each chord degree (0.0 = stable, 1.0 = high tension)
+  final majorTension = {
+    'I': 0.0, 'ii': 0.4, 'iii': 0.5, 'IV': 0.3, 'V': 0.8, 'vi': 0.4, 'vii': 0.9, 'VII': 0.7,
+  };
+  
+  final minorTension = {
+    'i': 0.0, 'ii': 0.5, 'III': 0.3, 'iv': 0.4, 'v': 0.6, 'V': 0.8, 
+    'VI': 0.3, 'VII': 0.7, 'vii': 0.9,
+  };
+  
+  final tensionMap = isMinor ? minorTension : majorTension;
+  
+  // Ensure good tension curve - avoid too many high-tension chords in a row
+  for (var i = 1; i < result.length - 1; i++) {
+    // Extract base Roman numeral (remove any added symbols)
+    final prev = result[i - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    final curr = result[i].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    final next = result[i + 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    
+    final prevTension = tensionMap[prev] ?? 0.5;
+    final currTension = tensionMap[curr] ?? 0.5;
+    final nextTension = tensionMap[next] ?? 0.5;
+    
+    // If we have three high-tension chords in a row, substitute the middle one
+    if (prevTension > highTensionThreshold && 
+        currTension > highTensionThreshold && 
+        nextTension > highTensionThreshold) {
+      // Replace with a lower tension chord
+      final lowTensionChords = tensionMap.entries
+          .where((e) => e.value < 0.4)
+          .map((e) => e.key)
+          .toList();
+      if (lowTensionChords.isNotEmpty) {
+        result[i] = randomChoice(lowTensionChords);
+      }
+    }
+  }
+  
+  // Ensure resolution at the end (prefer tonic or subdominant)
+  if (result.isNotEmpty) {
+    // Extract base Roman numeral
+    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    final lastTension = tensionMap[lastChord] ?? 0.5;
+    
+    // If last chord is high tension, consider resolving
+    if (lastTension > highTensionThreshold && _random.nextDouble() < resolutionProbability) {
+      result[result.length - 1] = isMinor ? 'i' : 'I';
+    }
+  }
+  
+  return result;
+}
+
+/// Add color tones and extensions strategically based on position in progression
+Chord addStrategicExtensions(Chord chord, int position, int totalLength, int variety) {
+  if (variety < 30) return chord;
+  
+  final varietyFactor = variety / 100.0;
+  final progressPosition = position / totalLength;
+  
+  // Add more extensions in the middle of the progression
+  final extensionChance = varietyFactor * (0.4 + (0.4 * (1 - (progressPosition - 0.5).abs() * 2)));
+  
+  if (_random.nextDouble() < extensionChance) {
+    // Choose extensions based on chord type and variety
+    if (chord.type == ChordTypeName.major) {
+      final options = [ChordTypeName.major7, ChordTypeName.add9];
+      if (variety > 60) options.add(ChordTypeName.major9);
+      return chord.copyWith(type: randomChoice(options));
+    } else if (chord.type == ChordTypeName.minor) {
+      final options = [ChordTypeName.minor7, ChordTypeName.minor9];
+      return chord.copyWith(type: randomChoice(options));
+    } else if (chord.type == ChordTypeName.dominant7 && variety > 70) {
+      // Keep dominant 7 as is for strong resolution
+      return chord;
+    }
+  }
+  
+  return chord;
+}
+
+// ===================================
 // Helper Functions
 // ===================================
 

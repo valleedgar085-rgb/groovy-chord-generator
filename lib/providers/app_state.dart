@@ -300,17 +300,53 @@ class AppState extends ChangeNotifier {
       final degreeSequence = _buildDegreeSequence(baseProgression, complexityConfig);
       final scale = isMinor ? ScaleName.minor : profile.scale;
 
-      chords = degreeSequence.map((degree) {
+      chords = degreeSequence.asMap().entries.map((entry) {
+        final index = entry.key;
+        final degree = entry.value;
         var chord = getChordFromDegree(root, degree, isMinor, scale);
-        if (complexityConfig.useExtensions && Random().nextDouble() > 0.5) {
-          final extensions = profile.chordTypes.where((t) =>
-            t.name.contains('7') || t.name.contains('9') ||
-            t.name.contains('sus') || t.name.contains('add')
-          ).toList();
-          if (extensions.isNotEmpty && Random().nextDouble() > 0.6) {
-            chord = chord.copyWith(type: randomChoice(extensions));
+        
+        // Smart chord type selection based on variety and complexity
+        if (complexityConfig.useExtensions) {
+          final varietyFactor = _chordVariety / 100.0;
+          final extensionChance = 0.3 + (varietyFactor * 0.4); // 30-70% chance
+          
+          if (Random().nextDouble() < extensionChance) {
+            final extensions = profile.chordTypes.where((t) =>
+              t.name.contains('7') || t.name.contains('9') ||
+              t.name.contains('sus') || t.name.contains('add')
+            ).toList();
+            
+            if (extensions.isNotEmpty) {
+              // Weight selection towards 7th chords for smoother sound
+              final weights = <ChordTypeName, double>{};
+              for (final ext in extensions) {
+                if (ext.name.contains('7') && !ext.name.contains('9')) {
+                  weights[ext] = 0.5; // Higher weight for 7th chords
+                } else if (ext.name.contains('9')) {
+                  weights[ext] = 0.25; // Medium weight for 9th chords
+                } else {
+                  weights[ext] = 0.25; // Lower weight for sus/add
+                }
+              }
+              
+              // Weighted random selection
+              final totalWeight = weights.values.fold(0.0, (sum, w) => sum + w);
+              var randomValue = Random().nextDouble() * totalWeight;
+              
+              for (final weightEntry in weights.entries) {
+                randomValue -= weightEntry.value;
+                if (randomValue <= 0) {
+                  chord = chord.copyWith(type: weightEntry.key);
+                  break;
+                }
+              }
+            }
           }
         }
+        
+        // Apply strategic extensions based on position
+        chord = addStrategicExtensions(chord, index, degreeSequence.length, _chordVariety);
+        
         return applyGenreVoicing(chord, _genre);
       }).toList();
     }
@@ -364,9 +400,39 @@ class AppState extends ChangeNotifier {
     final progression = List<String>.from(baseProgression);
     final targetLength = randomInt(config.chordCount[0], config.chordCount[1]);
 
+    // Use intelligent variation based on chord variety setting
+    if (_chordVariety > 0) {
+      // Apply smart passing chords
+      var enhanced = addPassingChords(progression, _chordVariety);
+      
+      // Apply approach chords for higher variety
+      enhanced = addApproachChords(enhanced, _chordVariety);
+      
+      // Apply intelligent substitutions
+      enhanced = applyIntelligentSubstitutions(enhanced, _chordVariety, _isMinorKey);
+      
+      // Optimize tension/resolution flow
+      enhanced = optimizeTensionFlow(enhanced, _isMinorKey);
+      
+      // Trim to target length if needed
+      while (enhanced.length > targetLength && enhanced.length > 3) {
+        // Only remove from middle if we have enough chords
+        final canRemoveFromMiddle = enhanced.length > 3;
+        final removeIndex = canRemoveFromMiddle 
+            ? randomInt(1, enhanced.length - 2) 
+            : enhanced.length - 1;
+        enhanced.removeAt(removeIndex);
+      }
+      
+      return enhanced;
+    }
+
+    // Fallback to simple extension if needed
     while (progression.length < targetLength) {
       final insertIndex = randomInt(0, progression.length);
-      final newChord = randomChoice(['ii', 'IV', 'V', 'vi', 'iii']);
+      final newChord = randomChoice(_isMinorKey 
+        ? ['ii', 'iv', 'V', 'VI', 'III', 'VII']
+        : ['ii', 'IV', 'V', 'vi', 'iii']);
       progression.insert(insertIndex, newChord);
     }
 
