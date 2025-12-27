@@ -1,0 +1,11 @@
+{
+    "name": "Groovy Chord Generator",
+    "short_name": "Groovy Chord",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#0d1117",
+    "theme_color": "#7C3AED",
+    "description": "Create amazing chord progressions for any genre",
+    "orientation": "portrait-primary",
+    "prefer_related_applications": false
+}

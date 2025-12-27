@@ -1,7 +1,13 @@
+<<<<<<< HEAD
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
     <string name="app_name">Groovy Chord Generator</string>
     <string name="title_activity_main">Groovy Chord Generator</string>
     <string name="package_name">com.edgarvalle.groovychordgenerator</string>
     <string name="custom_url_scheme">com.edgarvalle.groovychordgenerator</string>
+=======
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Groovy Chord Generator</string>
+>>>>>>> ca49d278b2e4ae9b502e55d500969999ab9151d1
 </resources>

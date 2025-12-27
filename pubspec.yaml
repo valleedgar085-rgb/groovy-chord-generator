@@ -1,0 +1,43 @@
+name: groovy_chord_generator
+description: Create amazing chord progressions for any genre - A mobile-optimized music creation tool
+publish_to: 'none'
+version: 2.5.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.1.1
+  audioplayers: ^5.2.1
+  shared_preferences: ^2.2.2
+  cupertino_icons: ^1.0.6
+  
+  # Firebase packages
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  firebase_storage: ^11.5.6
+  firebase_analytics: ^10.7.4
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/icon/
+
+# Launcher icon configuration
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icon/app_icon.png"
+  min_sdk_android: 21
+  adaptive_icon_background: "#14142B"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+

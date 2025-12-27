@@ -1,206 +1,304 @@
-# Groovy Chord Generator v2.4
+# 🎵 Groovy Chord Generator
 
-🎵 A modern, mobile-optimized web app for creating amazing chord progressions for any genre.
+<div align="center">
 
-## Features
+![Version](https://img.shields.io/badge/version-2.5-purple)
+![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Web-green)
+![Flutter](https://img.shields.io/badge/Flutter-3.x-blue)
+![Firebase](https://img.shields.io/badge/Firebase-Enabled-orange)
 
-### ✨ Smart Presets (v2.4)
-- **Visual Preset Cards**: 8 creative presets with instant one-tap application
-- **Curated Moods**: Lo-Fi Chill Sunday, Cyberpunk Drive, Summer Pop Hit, Midnight Jazz, Epic Cinema, Soul Groove, Festival Drop, Indie Sunset
-- **Auto-Configuration**: Presets automatically set genre, key, complexity, rhythm, and theory options
+**Create amazing chord progressions for any genre** — A cloud-enabled music creation tool built with Flutter and Firebase.
 
-### 🌶️ "Spice It Up" (v2.4)
-- **Chord Substitutions**: Auto-substitute chords for richer, jazzy variations
-- **Tritone Substitutions**: Add sophisticated harmonic twists
-- **Modal Interchange**: Borrow chords from parallel keys
-- **Extension Upgrades**: Transform basic chords to 7ths, 9ths, sus chords
+</div>
 
-### 📜 Progression History (v2.4)
-- **Auto-Save**: Automatically saves last 5 progressions
-- **Instant Recall**: One-tap restore of any saved progression
-- **Metadata Tracking**: Shows key, genre, and time for each saved progression
+## 📸 Preview
 
-### 🎛️ Generator
-- **Genre Selection**: Choose from 8 different genres (Happy Pop, Chill Lo-Fi, EDM, R&B, Jazz, Trap, Cinematic, Indie Rock)
-- **Key Selection**: Support for major and minor keys
-- **Complexity Levels**: Simple, Medium, Complex, and Advanced progressions
-- **Rhythm Options**: Soft, Moderate, Strong, and Intense patterns
-- **Groove/Swing Slider**: Add humanization for a more natural feel (v2.4)
-- **Modal Interchange Toggle**: Enable borrowed chords from parallel keys (v2.4)
-- **Instant Generation**: One-tap chord progression creation
-- **✨ Animation & Sound Effects**: Visual light burst animations and fun sound effects during chord generation
+<div align="center">
 
-### 🎼 Visual Editor (Piano Roll)
-- Touch-optimized grid interaction
-- Pinch-to-zoom support on mobile
-- Zoom in/out and reset controls
-- Click/tap to add or remove notes
-- Visual chord representation
+### 🎹 Main Chord Generator
+Experience the power of intelligent chord progression generation with our beautiful dark-themed interface.
 
-### 💾 MIDI Export
-- Export generated chord progressions as standard MIDI files
-- Compatible with all major DAWs (Ableton, FL Studio, Logic Pro, etc.)
-- Includes tempo and time signature information
-- One-click download from the floating action menu
+![Groovy Chord Generator - Main View](https://github.com/user-attachments/assets/d817d67b-8910-4526-a880-4feaba9174d3)
 
-### ⚙️ Settings
-- Master volume control
-- Sound type selection (Sine, Triangle, Square, Sawtooth)
-- ADSR Envelope controls
-- Toggle Roman numeral display
-- Show/hide tips option
+### Additional Features
 
-### 📱 Mobile-First Design
-- Responsive layout for all screen sizes
-- Bottom navigation bar (Generator, Editor, Settings)
-- Floating action button for quick access
-- Collapsible sections for compact layouts
-- Touch-friendly controls and buttons
+<table>
+  <tr>
+    <td width="50%">
+      <img src="screenshots/02-piano-editor.png" alt="Piano Roll Editor" width="100%"/>
+      <p align="center"><strong>Piano Roll Editor</strong><br/>Fine-tune your progressions with visual editing</p>
+    </td>
+    <td width="50%">
+      <img src="screenshots/03-smart-presets.png" alt="Smart Presets" width="100%"/>
+      <p align="center"><strong>Smart Presets</strong><br/>One-tap genre configurations</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <img src="screenshots/04-bass-generator.png" alt="Bass Line Generator" width="100%"/>
+      <p align="center"><strong>Bass Line Generator</strong><br/>Multiple styles from walking bass to syncopated grooves</p>
+    </td>
+  </tr>
+</table>
 
-### 🚀 Progressive Web App (PWA)
-- Install on mobile devices
-- Offline capability with service worker
-- App-like experience
-- Fast loading and caching
+</div>
 
-## Getting Started
+## 🎬 Quick Demo
 
-### Quick Start (Development)
-```bash
-npm install
-npm run dev
-```
-Then open http://localhost:5173 in your browser.
+**Groovy Chord Generator** helps you create professional chord progressions instantly:
 
-### Usage
-1. Complete the onboarding tutorial (or skip it)
-2. Select your preferred genre and key
-3. Tap the Generate button (🎲) to create a chord progression
-4. Use the Editor tab to view and modify notes
-5. Hit Play to hear your creation!
-6. Export to MIDI using the floating action button (💾)
+1. **🎹 Select your key and genre** - Choose from 12+ musical genres
+2. **🎲 Generate progression** - Get music-theory-based chord progressions with one tap
+3. **🔧 Customize and refine** - Use smart presets, lock specific chords, or add variations
+4. **✏️ Edit in piano roll** - Fine-tune your progression with the built-in editor
+5. **🎸 Generate bass lines** - Add complementary bass lines with multiple styles
+6. **❤️ Save and share** - Keep your favorites and share via URL
 
-## Building an Android APK
+### ✨ Key Highlights
 
-You can convert this PWA into a native Android APK using one of the following methods:
+**🎯 Smart & Intuitive** - Genre-specific presets with optimized settings  
+**🎓 Music Theory Powered** - Based on analysis of top songs in each genre  
+**🎨 Beautiful Dark Theme** - Modern UI with smooth animations and color-coded chords  
+**🔒 Chord Locking** - Lock specific chords while regenerating others  
+**❤️ Favorites System** - Save and manage your best progressions  
+**🔗 Easy Sharing** - Share your chord progressions via URL or text
 
-### Option 1: PWA Builder (Recommended - Easiest)
+## ✨ Features
 
-1. Visit [PWABuilder.com](https://www.pwabuilder.com)
-2. Enter your hosted app URL (or deploy to GitHub Pages first)
-3. Click "Package for stores" → "Android"
-4. Download the generated APK or Android App Bundle
+- 🎹 **Generate chord progressions** for 12+ genres (Pop, Lo-Fi, EDM, R&B, Jazz, Trap, and more)
+- 🎯 **Smart Presets** — One-tap genre configurations with optimized settings
+- 🎸 **Bass Line Generator** — Multiple bass styles including walking bass, syncopated, and more
+- 🎵 **Advanced Music Theory** — Voice leading, modal interchange, secondary dominants
+- 🌶️ **Spice It Up!** — Add variations and extensions to your progressions
+- 📊 **Functional Harmony** — Generate progressions based on harmonic functions
+- 🎛️ **Groove Engine** — Apply rhythmic templates like Neo-Soul Swing, Funk Syncopation
+- 📜 **History** — Access your previous progressions
+- 🔒 **Chord Locking** — Lock specific chords while regenerating others
+- ❤️ **Favorites List** — Save and manage your favorite chord progressions
+- 🔗 **Share Chord Set** — Generate and share URLs for your chord selections
 
-### Option 2: Capacitor (For Development)
+### 🔥 New: Firebase Cloud Features
 
-1. Install Node.js if not already installed
-2. Initialize a Capacitor project:
-   ```bash
-   npm init -y
-   npm install @capacitor/core @capacitor/cli @capacitor/android
-   npx cap init "Groovy Chord Generator" "com.edgarvalle.chordgenerator"
-   ```
-3. Copy your web app to the `www` folder
-4. Add Android platform:
-   ```bash
-   npx cap add android
-   npx cap copy android
-   npx cap open android
-   ```
-5. Build APK from Android Studio (Build → Build Bundle(s) / APK(s) → Build APK(s))
+- ☁️ **Cloud Storage** — Your favorites sync across all devices
+- 👤 **Anonymous Auth** — Start creating immediately, no login required
+- 📱 **Cross-Device Sync** — Access your progressions anywhere
+- 💾 **Offline Support** — Works offline, syncs when online
+- 🔄 **Real-time Updates** — Changes appear instantly across devices
 
-### Option 3: TWA (Trusted Web Activity)
+## 🚀 Getting Started
 
-1. Deploy your PWA to a secure (HTTPS) hosting service
-2. Use [Bubblewrap](https://github.com/AyushAgnihotri2025/AayushAg/AyushAg.github.io) CLI:
-   ```bash
-   npm install -g @AyushAgnihotri2025/AayushAg-cli
-   AyushAg init --manifest https://your-domain.com/manifest.json
-   AyushAg build
-   ```
-3. The APK will be generated in the output folder
+### Quick Start (Recommended)
 
-### Deployment Tips
-- Host your PWA on GitHub Pages, Netlify, or Vercel for free HTTPS hosting
-- Ensure `manifest.json` includes all required icons
-- Test on a real Android device before publishing
-
-## Technologies
-
-- **React 19** with TypeScript for component-based UI
-- **Vite** for fast development and optimized production builds
-- Web Audio API for sound synthesis
-- Canvas API for piano roll visualization
-- Service Worker for offline support
-- CSS Grid and Flexbox for responsive layouts
-- MIDI file generation (native TypeScript implementation)
-
-## Development
+See **[QUICKSTART.md](QUICKSTART.md)** for a complete 5-step guide to get running in 15 minutes!
 
 ### Prerequisites
-- Node.js 18+ and npm
 
-### Getting Started
+- Flutter SDK 3.0 or higher
+- Android Studio / VS Code with Flutter extensions
+- Google account (for Firebase)
+- Android SDK / Xcode (platform-specific)
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/valleedgar085-rgb/groovy-chord-generator.git
+   cd groovy-chord-generator
+   ```
+
+2. Install dependencies:
+   ```bash
+   flutter pub get
+   ```
+
+3. Set up Firebase:
+   ```bash
+   # Install FlutterFire CLI
+   dart pub global activate flutterfire_cli
+   
+   # Configure Firebase
+   flutterfire configure
+   ```
+   
+   See **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** for detailed Firebase configuration.
+
+4. Enable Firebase services:
+   - Go to [Firebase Console](https://console.firebase.google.com/)
+   - Enable **Firestore Database** (test mode)
+   - Enable **Anonymous Authentication**
+
+5. Run the app:
+   ```bash
+   flutter run
+   ```
+
+### Build APK
+
+For detailed build instructions, see **[BUILD_INSTRUCTIONS.md](BUILD_INSTRUCTIONS.md)**.
+
+**Quick Build:**
 ```bash
-# Install dependencies
-npm install
+# Linux/macOS
+./build_apk.sh
 
-# Start development server
-npm run dev
+# Windows
+build_apk.bat
 
-# Build for production
-npm run build
-
-# Preview production build
-npm run preview
-
-# Run linting
-npm run lint
+# Manual
+flutter build apk --release
 ```
 
-## Browser Support
+**Setup Release Signing:**
+See **[KEYSTORE_SETUP.md](KEYSTORE_SETUP.md)** for production release signing configuration.
 
-Works in all modern browsers including:
-- Chrome/Edge (recommended)
-- Firefox
-- Safari
-- Mobile browsers (iOS Safari, Chrome for Android)
+**Generate App Icons:**
+See **[ICON_SETUP.md](ICON_SETUP.md)** for customizing the app icon.
 
-## Version History
+### Build for Web
 
-### v2.4 (Current)
-- ✨ **Smart Presets**: Visual preset cards for instant creativity (Lo-Fi Chill Sunday, Cyberpunk Drive, Summer Pop Hit, etc.)
-- 🌶️ **"Spice It Up" Button**: Auto-substitute chords for richer, jazzy, or genre-twisted variations
-- 📜 **History/Saved Progressions**: Auto-save last 5 progressions for instant recall
-- 🎸 **Modal Interchange**: Borrow chords from parallel keys for more colorful harmonies
-- 🎹 **Genre-Based Voicing**: Shell voicings for jazz, open voicings for cinematic sounds
-- 🎛️ **Groove/Swing Slider**: Rhythm humanization for more natural feel
-- 🎨 **Enhanced Animations**: Music-driven visual feedback on chord cards
-- ⚡ **Performance Improvements**: Optimized piano roll rendering
+```bash
+flutter build web --release
+```
 
-### v2.1
-- ✨ Added animated light effects during chord generation
-- 🔊 Added fun sound effects when generating chords
-- 💾 MIDI export functionality for DAW integration
-- 📱 APK packaging documentation for Android deployment
+## 📱 App Structure
 
-### v2.0
-- Complete mobile-first redesign
-- Added tabbed navigation (Generator, Editor, Settings)
-- Implemented collapsible sections
-- Added floating action button with quick actions
-- Touch-optimized piano roll with zoom/scroll
-- PWA support with offline capability
-- Onboarding tutorial for new users
-- Audio settings (volume, sound type)
-- Display preferences (Roman numerals, tips)
+For detailed project structure and architecture, see **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)**.
 
-### v1.0
-- Initial release
-- Basic chord generation
-- Piano roll editor
-- Audio playback
+```
+lib/
+├── main.dart                          # App entry point + Firebase init
+├── models/
+│   ├── types.dart                     # Type definitions
+│   └── constants.dart                 # Music theory constants
+├── providers/
+│   └── app_state.dart                 # State management with Provider
+├── screens/
+│   ├── home_screen.dart               # Main screen
+│   ├── generator_tab.dart             # Chord generator
+│   ├── editor_tab.dart                # Piano roll editor
+│   ├── bass_tab.dart                  # Bass line generator
+│   └── settings_tab.dart              # Settings
+├── widgets/
+│   ├── header.dart                    # App header
+│   ├── bottom_navigation.dart         # Bottom nav
+│   ├── fab_menu.dart                  # Floating action button
+│   ├── chord_card.dart                # Chord display card
+│   ├── preset_card.dart               # Preset selection card
+│   ├── control_dropdown.dart          # Dropdown controls
+│   └── collapsible_section.dart       # Collapsible sections
+├── services/
+│   ├── firebase_service.dart          # Firebase initialization
+│   ├── auth_service.dart              # Firebase Authentication
+│   ├── firestore_service.dart         # Cloud Firestore operations
+│   ├── firebase_favorites_service.dart # Cloud-enabled favorites
+│   ├── favorites_service.dart         # Local favorites (legacy)
+│   └── share_service.dart             # URL sharing functionality
+├── utilities/
+│   ├── helpers.dart                   # Utility helper functions
+│   └── validators.dart                # Input validation
+└── utils/
+    ├── theme.dart                     # App theming
+    └── music_theory.dart  # Music theory functions
+```
 
-## Credits
+## 🌐 Web Version Structure
 
-Created by **Edgar Valle** | © 2025
+```
+web/
+├── index.html             # Web entry point
+├── assets/
+│   ├── images/            # Web images and icons
+│   └── styles/
+│       └── main.css       # Web-specific styles
+```
+
+## 🎨 Theme
+
+The app features a beautiful dark theme with purple accent colors, optimized for music creation at any time of day. Key theme features include:
+
+- **Modernized color palette** with improved contrast
+- **Responsive layout** adapting to mobile, tablet, and desktop screens
+- **Smooth animations** and transitions between chord selections
+- **Chord type color coding** for visual differentiation
+- **Glowing accents** on interactive elements
+
+## 🎹 Supported Genres
+
+| Genre | Style | Tempo | Common Progressions |
+|-------|-------|-------|---------------------|
+| Happy Upbeat Pop | Major, uplifting | 100-130 BPM | I–V–vi–IV, I–vi–IV–V |
+| Chill Lo-Fi | maj7/min7, jazzy | 60-90 BPM | ii–V–I, I–vi–ii–V |
+| Energetic EDM | Anthemic, powerful | 120-130 BPM | vi–IV–I–V |
+| Soulful R&B | Rich 7ths, 9ths | 70-100 BPM | Smooth progressions |
+| Jazz Fusion | Complex harmony | 120-180 BPM | ii-V-I variations |
+| Dark Deep Trap | Minor/Diminished | 140 BPM (half-time) | Dramatic movements |
+| Cinematic Epic | Dramatic, minor keys | Variable | i-VI progressions |
+| Indie Rock | Dreamy, guitar-driven | 80-120 BPM | I-IV-V, vi-IV-I-V |
+| Reggae | Laid-back | 80 BPM | Classic patterns |
+| Blues | 12-bar variations | 90 BPM | Traditional blues |
+| Country | Nashville style | 110 BPM | Country patterns |
+| Funk | Syncopated grooves | 105 BPM | Funk movements |
+
+## 🎼 Music Theory Behind the Genres
+
+The chord progressions in each genre are derived from analysis of top songs:
+
+- **Happy Upbeat Pop**: Uses the iconic I–V–vi–IV progression found in countless hits
+- **Chill Lo-Fi**: Jazz-influenced ii–V–I progressions with extended chords (maj7, min7)
+- **Energetic EDM**: The vi–IV–I–V progression provides the anthemic quality
+- **Soulful R&B**: Rich harmonies with 7th and 9th chords for smooth transitions
+- **Jazz Fusion**: Complex ii-V-I variations with advanced voice leading
+- **Dark Deep Trap**: Half-time feel at 140 BPM with minor and diminished chords
+- **Cinematic Epic**: Minor keys with i-VI progressions for dramatic tension
+- **Indie Rock**: Mix of classic I-IV-V and modern vi-IV-I-V progressions
+
+## 🆕 New Features (v2.5)
+
+### Favorites List
+Save your favorite chord progressions for quick access later. Simply tap the heart icon on any progression to save it. Access your favorites from the collapsible "Favorites" section on the generator tab.
+
+**New**: Favorites now sync to the cloud via Firebase! Access your saved progressions on any device.
+
+### Share Chord Set
+Share your chord progressions with others! Generate a shareable URL or text that includes:
+- The chord progression
+- Key and genre information
+- Tempo setting
+
+Copy and share via any messaging platform or social media.
+
+## 📚 Documentation
+
+- **[QUICKSTART.md](QUICKSTART.md)** - Get started in 15 minutes
+- **[FIREBASE_SETUP.md](FIREBASE_SETUP.md)** - Detailed Firebase configuration guide
+- **[PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md)** - Complete project architecture and structure
+- **[MOTOROLA_OPTIMIZATION.md](MOTOROLA_OPTIMIZATION.md)** - Performance optimizations for Motorola devices
+- **[README.md](README.md)** - This file (app overview and features)
+
+## 🏗️ Architecture & Tech Stack
+
+- **Framework**: Flutter 3.x
+- **State Management**: Provider
+- **Backend**: Firebase (Cloud Firestore, Authentication)
+- **Storage**: Cloud Firestore + Local SharedPreferences (offline support)
+- **Authentication**: Firebase Anonymous Auth + Email/Password
+- **Platforms**: Android, iOS, Web
+- **Performance**: Optimized for Motorola and lower-end devices
+
+## 🔒 Security & Privacy
+
+- User data is stored securely in Firebase with proper security rules
+- Anonymous authentication for instant access
+- Optional email/password upgrade for permanent accounts
+- Offline support ensures data is never lost
+- All data is user-specific and private by default
+
+## 👨‍💻 Author
+
+**Edgar Valle**
+
+## 📝 License
+
+MIT License © 2025 Edgar Valle
+
+See [LICENSE](LICENSE) for details.
