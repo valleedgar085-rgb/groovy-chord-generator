@@ -1,9 +1,9 @@
-/// Groovy Chord Generator
-/// Firebase Authentication Service
-/// Version 2.5
-/// 
-/// Handles user authentication with Firebase Auth.
-/// Supports anonymous login for quick access and optional email/password auth.
+// Groovy Chord Generator
+// Firebase Authentication Service
+// Version 2.5
+//
+// Handles user authentication with Firebase Auth.
+// Supports anonymous login for quick access and optional email/password auth.
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -135,9 +135,11 @@ class AuthService {
         email: email.trim(),
         password: password,
       );
-      final userCredential = await _auth.currentUser?.linkWithCredential(credential);
+      final userCredential =
+          await _auth.currentUser?.linkWithCredential(credential);
       if (kDebugMode) {
-        print('Anonymous account linked with email: ${userCredential?.user?.email}');
+        print(
+            'Anonymous account linked with email: ${userCredential?.user?.email}');
       }
       return userCredential;
     } catch (e) {

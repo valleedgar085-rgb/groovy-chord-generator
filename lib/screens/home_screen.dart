@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Home Screen
-/// Version 2.5
+// Groovy Chord Generator
+// Home screen
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';

@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Control Dropdown Widget
-/// Version 2.5
+// Groovy Chord Generator
+// Control Dropdown Widget
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import '../utils/theme.dart';

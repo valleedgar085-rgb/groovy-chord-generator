@@ -1,6 +1,7 @@
-/// Groovy Chord Generator
-/// Dart Type Definitions
-/// Version 2.5
+// ignore_for_file: constant_identifier_names
+// Groovy Chord Generator
+// Dart Type Definitions
+// Version 2.5
 
 /// Note names (chromatic scale)
 enum NoteName { C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, B }

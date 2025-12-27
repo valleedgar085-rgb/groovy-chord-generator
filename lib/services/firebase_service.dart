@@ -1,10 +1,10 @@
-/// Groovy Chord Generator
-/// Firebase Service
-/// Version 2.5
-/// 
-/// Core Firebase initialization and configuration service.
-/// This service handles all Firebase setup and provides a centralized
-/// point for Firebase functionality.
+// Groovy Chord Generator
+// Firebase Service
+// Version 2.5
+//
+// Core Firebase initialization and configuration service.
+// This service handles all Firebase setup and provides a centralized
+// point for Firebase functionality.
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';

@@ -1,14 +1,14 @@
 /// Groovy Chord Generator
 /// Favorites Service
 /// Version 2.5
-/// 
+///
 /// Service for managing favorite chord progressions.
 /// Allows users to save, load, and manage their favorite progressions.
+library;
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/types.dart';
-import '../models/constants.dart';
 import '../utilities/helpers.dart';
 
 /// Represents a saved favorite progression
@@ -136,7 +136,8 @@ class FavoritesService {
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
       return jsonList
-          .map((json) => FavoriteProgression.fromJson(json as Map<String, dynamic>))
+          .map((json) =>
+              FavoriteProgression.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       return [];
@@ -193,7 +194,7 @@ class FavoritesService {
     final favorites = await getFavorites();
     final initialLength = favorites.length;
     favorites.removeWhere((f) => f.id == id);
-    
+
     if (favorites.length == initialLength) {
       return false;
     }
@@ -209,7 +210,8 @@ class FavoritesService {
   }
 
   /// Private helper to save favorites list
-  static Future<void> _saveFavorites(List<FavoriteProgression> favorites) async {
+  static Future<void> _saveFavorites(
+      List<FavoriteProgression> favorites) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonList = favorites.map((f) => f.toJson()).toList();
     await prefs.setString(_storageKey, jsonEncode(jsonList));

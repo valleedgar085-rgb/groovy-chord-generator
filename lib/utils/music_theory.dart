@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Music Theory Utility Functions
-/// Version 2.5
+// Groovy Chord Generator
+// Music Theory Utility Functions
+// Version 2.5
 
 import 'dart:math';
 import '../models/types.dart';
@@ -38,18 +38,30 @@ Map<String, dynamic> parseKey(String keyString) {
 
 String keyNameToString(KeyName key) {
   switch (key) {
-    case KeyName.C: return 'C';
-    case KeyName.G: return 'G';
-    case KeyName.D: return 'D';
-    case KeyName.A: return 'A';
-    case KeyName.E: return 'E';
-    case KeyName.F: return 'F';
-    case KeyName.Bb: return 'Bb';
-    case KeyName.Am: return 'Am';
-    case KeyName.Em: return 'Em';
-    case KeyName.Dm: return 'Dm';
-    case KeyName.Bm: return 'Bm';
-    case KeyName.Fm: return 'Fm';
+    case KeyName.C:
+      return 'C';
+    case KeyName.G:
+      return 'G';
+    case KeyName.D:
+      return 'D';
+    case KeyName.A:
+      return 'A';
+    case KeyName.E:
+      return 'E';
+    case KeyName.F:
+      return 'F';
+    case KeyName.Bb:
+      return 'Bb';
+    case KeyName.Am:
+      return 'Am';
+    case KeyName.Em:
+      return 'Em';
+    case KeyName.Dm:
+      return 'Dm';
+    case KeyName.Bm:
+      return 'Bm';
+    case KeyName.Fm:
+      return 'Fm';
   }
 }
 
@@ -57,20 +69,29 @@ String keyNameToString(KeyName key) {
 // Chord Generation Functions
 // ===================================
 
-Chord getChordFromDegree(String root, String degree, bool isMinorKey, ScaleName scale) {
+Chord getChordFromDegree(
+    String root, String degree, bool isMinorKey, ScaleName scale) {
   const degreeMap = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
+    'I': 0,
+    'i': 0,
+    'II': 1,
+    'ii': 1,
+    'III': 2,
+    'iii': 2,
+    'IV': 3,
+    'iv': 3,
+    'V': 4,
+    'v': 4,
+    'VI': 5,
+    'vi': 5,
+    'VII': 6,
+    'vii': 6,
   };
 
   final scaleNotes = getScaleNotes(root, scale);
   final degreeIndex = degreeMap[degree] ?? 0;
-  final chordRoot = scaleNotes[degreeIndex < scaleNotes.length ? degreeIndex : 0];
+  final chordRoot =
+      scaleNotes[degreeIndex < scaleNotes.length ? degreeIndex : 0];
 
   // Determine chord quality based on degree and key
   final isUpperCase = degree == degree.toUpperCase();
@@ -78,23 +99,42 @@ Chord getChordFromDegree(String root, String degree, bool isMinorKey, ScaleName 
 
   if (isMinorKey) {
     const minorKeyQualities = [
-      ChordTypeName.minor, ChordTypeName.diminished, ChordTypeName.major,
-      ChordTypeName.minor, ChordTypeName.minor, ChordTypeName.major, ChordTypeName.major
+      ChordTypeName.minor,
+      ChordTypeName.diminished,
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.minor,
+      ChordTypeName.major,
+      ChordTypeName.major
     ];
-    chordType = isUpperCase ? ChordTypeName.major : (degreeIndex < minorKeyQualities.length ? minorKeyQualities[degreeIndex] : ChordTypeName.major);
+    chordType = isUpperCase
+        ? ChordTypeName.major
+        : (degreeIndex < minorKeyQualities.length
+            ? minorKeyQualities[degreeIndex]
+            : ChordTypeName.major);
   } else {
     const majorKeyQualities = [
-      ChordTypeName.major, ChordTypeName.minor, ChordTypeName.minor,
-      ChordTypeName.major, ChordTypeName.major, ChordTypeName.minor, ChordTypeName.diminished
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.minor,
+      ChordTypeName.major,
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.diminished
     ];
-    chordType = isUpperCase ? ChordTypeName.major : (degreeIndex < majorKeyQualities.length ? majorKeyQualities[degreeIndex] : ChordTypeName.major);
+    chordType = isUpperCase
+        ? ChordTypeName.major
+        : (degreeIndex < majorKeyQualities.length
+            ? majorKeyQualities[degreeIndex]
+            : ChordTypeName.major);
   }
 
   return Chord(
     root: chordRoot,
     type: chordType,
     degree: degree,
-    numeral: romanNumerals[degreeIndex < romanNumerals.length ? degreeIndex : 0],
+    numeral:
+        romanNumerals[degreeIndex < romanNumerals.length ? degreeIndex : 0],
   );
 }
 
@@ -115,14 +155,14 @@ Map<String, dynamic> pitchToNote(int pitch) {
 
 List<String> getChordNotes(Chord chord) {
   final intervals = chordTypes[chord.type]?.intervals ?? [0, 4, 7];
-  return intervals.map((interval) => transposeNote(chord.root, interval)).toList();
+  return intervals
+      .map((interval) => transposeNote(chord.root, interval))
+      .toList();
 }
 
 List<VoicedNote> findBestVoicing(
-  List<String> chordNotes,
-  List<VoicedNote>? previousVoicedNotes,
-  [int baseOctave = 4]
-) {
+    List<String> chordNotes, List<VoicedNote>? previousVoicedNotes,
+    [int baseOctave = 4]) {
   if (previousVoicedNotes == null || previousVoicedNotes.isEmpty) {
     return chordNotes.asMap().entries.map((entry) {
       final index = entry.key;
@@ -136,7 +176,9 @@ List<VoicedNote> findBestVoicing(
     }).toList();
   }
 
-  final prevCenterPitch = previousVoicedNotes.fold<int>(0, (sum, n) => sum + n.pitch) / previousVoicedNotes.length;
+  final prevCenterPitch =
+      previousVoicedNotes.fold<int>(0, (sum, n) => sum + n.pitch) /
+          previousVoicedNotes.length;
 
   final possibleVoicings = <List<VoicedNote>>[];
   const minOctave = 3;
@@ -164,16 +206,19 @@ List<VoicedNote> findBestVoicing(
     }
   }
 
-  var bestVoicing = possibleVoicings.isNotEmpty ? possibleVoicings[0] : <VoicedNote>[];
+  var bestVoicing =
+      possibleVoicings.isNotEmpty ? possibleVoicings[0] : <VoicedNote>[];
   var minDistance = double.infinity;
 
   for (final voicing in possibleVoicings) {
-    final voicingCenter = voicing.fold<int>(0, (sum, n) => sum + n.pitch) / voicing.length;
+    final voicingCenter =
+        voicing.fold<int>(0, (sum, n) => sum + n.pitch) / voicing.length;
     final distance = (voicingCenter - prevCenterPitch).abs();
 
     var totalNoteDistance = 0.0;
     for (final vNote in voicing) {
-      final closestPrev = previousVoicedNotes.fold<double>(double.infinity, (closest, pNote) {
+      final closestPrev =
+          previousVoicedNotes.fold<double>(double.infinity, (closest, pNote) {
         final dist = (vNote.pitch - pNote.pitch).abs().toDouble();
         return dist < closest ? dist : closest;
       });
@@ -211,7 +256,8 @@ List<Chord> applyVoiceLeading(List<Chord> progression) {
 // Advanced Chord Substitution Functions
 // ===================================
 
-List<Chord> applyAdvancedSubstitutions(List<Chord> progression, String root, bool isMinorKey) {
+List<Chord> applyAdvancedSubstitutions(
+    List<Chord> progression, String root, bool isMinorKey) {
   final result = <Chord>[];
 
   for (var i = 0; i < progression.length; i++) {
@@ -219,7 +265,9 @@ List<Chord> applyAdvancedSubstitutions(List<Chord> progression, String root, boo
     final nextChord = i + 1 < progression.length ? progression[i + 1] : null;
 
     // Secondary Dominant
-    if (nextChord != null && (nextChord.degree == 'V' || nextChord.degree == 'v') && _random.nextDouble() > 0.6) {
+    if (nextChord != null &&
+        (nextChord.degree == 'V' || nextChord.degree == 'v') &&
+        _random.nextDouble() > 0.6) {
       final secondaryDomRoot = transposeNote(root, 2);
       final secondaryDom = Chord(
         root: secondaryDomRoot,
@@ -234,7 +282,9 @@ List<Chord> applyAdvancedSubstitutions(List<Chord> progression, String root, boo
     }
 
     // Borrowed Chord
-    if (!isMinorKey && (chord.degree == 'IV' || chord.degree == 'iv') && _random.nextDouble() > 0.7) {
+    if (!isMinorKey &&
+        (chord.degree == 'IV' || chord.degree == 'iv') &&
+        _random.nextDouble() > 0.7) {
       final borrowedChord = chord.copyWith(
         type: ChordTypeName.minor,
         degree: 'iv',
@@ -246,7 +296,9 @@ List<Chord> applyAdvancedSubstitutions(List<Chord> progression, String root, boo
     }
 
     // Tritone Substitution
-    if ((chord.degree == 'V' || chord.degree == 'v') && chord.type == ChordTypeName.dominant7 && _random.nextDouble() > 0.75) {
+    if ((chord.degree == 'V' || chord.degree == 'v') &&
+        chord.type == ChordTypeName.dominant7 &&
+        _random.nextDouble() > 0.75) {
       final tritoneRoot = transposeNote(root, 1);
       final tritoneChord = Chord(
         root: tritoneRoot,
@@ -269,7 +321,8 @@ List<Chord> applyAdvancedSubstitutions(List<Chord> progression, String root, boo
 // Modal Interchange Functions
 // ===================================
 
-List<Chord> applyModalInterchange(List<Chord> progression, String root, bool isMinorKey) {
+List<Chord> applyModalInterchange(
+    List<Chord> progression, String root, bool isMinorKey) {
   const modalInterchangeProbability = 0.3;
   final result = <Chord>[];
 
@@ -288,7 +341,8 @@ List<Chord> applyModalInterchange(List<Chord> progression, String root, bool isM
   final borrowedChords = isMinorKey ? borrowedFromMajor : borrowedFromMinor;
 
   for (final chord in progression) {
-    if (_random.nextDouble() < modalInterchangeProbability && borrowedChords.isNotEmpty) {
+    if (_random.nextDouble() < modalInterchangeProbability &&
+        borrowedChords.isNotEmpty) {
       final borrowedKeys = borrowedChords.keys.toList();
       final symbol = borrowedKeys[_random.nextInt(borrowedKeys.length)];
       final borrowedInfo = borrowedChords[symbol]!;
@@ -326,15 +380,21 @@ Chord applyGenreVoicing(Chord chord, GenreKey genre) {
 // Spice Functions
 // ===================================
 
-List<Chord> spiceUpProgression(List<Chord> progression, String root, bool isMinor) {
+List<Chord> spiceUpProgression(
+    List<Chord> progression, String root, bool isMinor) {
   return progression.map((chord) {
     final spiceType = _random.nextDouble();
 
     if (spiceType < 0.25) {
       if (chord.type == ChordTypeName.major) {
-        return chord.copyWith(type: _random.nextBool() ? ChordTypeName.major7 : ChordTypeName.add9);
+        return chord.copyWith(
+            type:
+                _random.nextBool() ? ChordTypeName.major7 : ChordTypeName.add9);
       } else if (chord.type == ChordTypeName.minor) {
-        return chord.copyWith(type: _random.nextBool() ? ChordTypeName.minor7 : ChordTypeName.minor9);
+        return chord.copyWith(
+            type: _random.nextBool()
+                ? ChordTypeName.minor7
+                : ChordTypeName.minor9);
       }
     } else if (spiceType < 0.5) {
       if (chord.type == ChordTypeName.dominant7 || chord.degree == 'V') {
@@ -364,8 +424,10 @@ List<Chord> spiceUpProgression(List<Chord> progression, String root, bool isMino
         );
       }
     } else {
-      if (chord.type == ChordTypeName.major || chord.type == ChordTypeName.minor) {
-        return chord.copyWith(type: _random.nextBool() ? ChordTypeName.sus4 : ChordTypeName.sus2);
+      if (chord.type == ChordTypeName.major ||
+          chord.type == ChordTypeName.minor) {
+        return chord.copyWith(
+            type: _random.nextBool() ? ChordTypeName.sus4 : ChordTypeName.sus2);
       }
     }
 
@@ -409,9 +471,11 @@ Chord applySpiceToChord(Chord chord, SpiceLevel level) {
   if (config.maxExtension >= 9 && config.allowAlterations) {
     if (chord.type == ChordTypeName.major7 && _random.nextDouble() > 0.6) {
       return chord.copyWith(type: ChordTypeName.major9);
-    } else if (chord.type == ChordTypeName.minor7 && _random.nextDouble() > 0.6) {
+    } else if (chord.type == ChordTypeName.minor7 &&
+        _random.nextDouble() > 0.6) {
       return chord.copyWith(type: ChordTypeName.minor9);
-    } else if (chord.type == ChordTypeName.major && _random.nextDouble() > 0.7) {
+    } else if (chord.type == ChordTypeName.major &&
+        _random.nextDouble() > 0.7) {
       return chord.copyWith(type: ChordTypeName.add9);
     }
   }
@@ -420,7 +484,8 @@ Chord applySpiceToChord(Chord chord, SpiceLevel level) {
   if (level == SpiceLevel.fire && _random.nextBool()) {
     if (_random.nextDouble() > 0.7) {
       if (chord.type == ChordTypeName.major) {
-        return chord.copyWith(type: _random.nextBool() ? ChordTypeName.sus4 : ChordTypeName.sus2);
+        return chord.copyWith(
+            type: _random.nextBool() ? ChordTypeName.sus4 : ChordTypeName.sus2);
       }
     }
   }
@@ -477,7 +542,8 @@ List<BassNote> generateBassLine(
           if (i == 0) {
             note = root;
           } else if (i == notesPerChord - 1 && _random.nextDouble() < 0.5) {
-            final nextChord = progression[(chordIndex + 1) % progression.length];
+            final nextChord =
+                progression[(chordIndex + 1) % progression.length];
             note = transposeNote(nextChord.root, _random.nextBool() ? 1 : 11);
           } else if (useChromatic) {
             note = transposeNote(root, _random.nextInt(11) + 1);
@@ -507,11 +573,14 @@ List<BassNote> generateBassLine(
           final isRest = _random.nextDouble() < 0.2 * (1 - varietyFactor);
           if (!isRest) {
             final useAlternate = _random.nextDouble() < varietyFactor * 0.4;
-            final note = useAlternate ? chordNotes[_random.nextInt(chordNotes.length)] : root;
+            final note = useAlternate
+                ? chordNotes[_random.nextInt(chordNotes.length)]
+                : root;
             bassLine.add(BassNote(
               note: note,
               duration: dur,
-              velocity: rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
+              velocity:
+                  rhythmPattern.dynamics[i % rhythmPattern.dynamics.length],
               octave: bassOctave,
               chordIndex: chordIndex,
               style: style,
@@ -583,10 +652,30 @@ const functionalHarmony = {
 };
 
 const functionalProgressions = [
-  [HarmonyFunction.tonic, HarmonyFunction.subdominant, HarmonyFunction.dominant, HarmonyFunction.tonic],
-  [HarmonyFunction.tonic, HarmonyFunction.tonic, HarmonyFunction.subdominant, HarmonyFunction.dominant],
-  [HarmonyFunction.tonic, HarmonyFunction.subdominant, HarmonyFunction.subdominant, HarmonyFunction.dominant],
-  [HarmonyFunction.subdominant, HarmonyFunction.dominant, HarmonyFunction.tonic, HarmonyFunction.tonic],
+  [
+    HarmonyFunction.tonic,
+    HarmonyFunction.subdominant,
+    HarmonyFunction.dominant,
+    HarmonyFunction.tonic
+  ],
+  [
+    HarmonyFunction.tonic,
+    HarmonyFunction.tonic,
+    HarmonyFunction.subdominant,
+    HarmonyFunction.dominant
+  ],
+  [
+    HarmonyFunction.tonic,
+    HarmonyFunction.subdominant,
+    HarmonyFunction.subdominant,
+    HarmonyFunction.dominant
+  ],
+  [
+    HarmonyFunction.subdominant,
+    HarmonyFunction.dominant,
+    HarmonyFunction.tonic,
+    HarmonyFunction.tonic
+  ],
 ];
 
 List<Chord> generateFunctionalProgression(
@@ -597,16 +686,17 @@ List<Chord> generateFunctionalProgression(
 ) {
   final moodProfile = moodProfiles[mood]!;
   final scale = moodProfile.scales[_random.nextInt(moodProfile.scales.length)];
-  
+
   // Choose a functional progression template
-  final template = functionalProgressions[_random.nextInt(functionalProgressions.length)];
-  
+  final template =
+      functionalProgressions[_random.nextInt(functionalProgressions.length)];
+
   // Build functions list
   final functions = <HarmonyFunction>[];
   for (var i = 0; i < length; i++) {
     functions.add(template[i % template.length]);
   }
-  
+
   // Generate chords based on functions
   return functions.map((func) {
     return generateChordFromFunction(
@@ -628,51 +718,75 @@ Chord generateChordFromFunction(
   List<ChordTypeName> allowedTypes,
   List<double> tensionRange,
 ) {
-  final functionalChords = functionalHarmony[func] ?? functionalHarmony[HarmonyFunction.tonic]!;
-  
+  final functionalChords =
+      functionalHarmony[func] ?? functionalHarmony[HarmonyFunction.tonic]!;
+
   // Filter by tension range
-  final validChords = functionalChords.where(
-    (fc) => (fc['tension'] as double) >= tensionRange[0] && (fc['tension'] as double) <= tensionRange[1]
-  ).toList();
-  
+  final validChords = functionalChords
+      .where((fc) =>
+          (fc['tension'] as double) >= tensionRange[0] &&
+          (fc['tension'] as double) <= tensionRange[1])
+      .toList();
+
   final chosenChord = validChords.isNotEmpty
       ? validChords[_random.nextInt(validChords.length)]
       : functionalChords[_random.nextInt(functionalChords.length)];
-  
+
   final chordType = allowedTypes[_random.nextInt(allowedTypes.length)];
-  
+
   const degreeMap = {
-    'I': 0, 'i': 0,
-    'II': 2, 'ii': 2,
-    'III': 4, 'iii': 4,
-    'IV': 5, 'iv': 5,
-    'V': 7, 'v': 7,
-    'VI': 9, 'vi': 9,
-    'VII': 11, 'vii': 11,
-    'bII': 1, 'bVII': 10, 'bVI': 8, 'bIII': 3,
+    'I': 0,
+    'i': 0,
+    'II': 2,
+    'ii': 2,
+    'III': 4,
+    'iii': 4,
+    'IV': 5,
+    'iv': 5,
+    'V': 7,
+    'v': 7,
+    'VI': 9,
+    'vi': 9,
+    'VII': 11,
+    'vii': 11,
+    'bII': 1,
+    'bVII': 10,
+    'bVI': 8,
+    'bIII': 3,
   };
-  
+
   const degreeToIndex = {
-    'I': 0, 'i': 0,
-    'II': 1, 'ii': 1,
-    'III': 2, 'iii': 2,
-    'IV': 3, 'iv': 3,
-    'V': 4, 'v': 4,
-    'VI': 5, 'vi': 5,
-    'VII': 6, 'vii': 6,
-    'bII': 1, 'bVII': 6, 'bVI': 5, 'bIII': 2,
+    'I': 0,
+    'i': 0,
+    'II': 1,
+    'ii': 1,
+    'III': 2,
+    'iii': 2,
+    'IV': 3,
+    'iv': 3,
+    'V': 4,
+    'v': 4,
+    'VI': 5,
+    'vi': 5,
+    'VII': 6,
+    'vii': 6,
+    'bII': 1,
+    'bVII': 6,
+    'bVI': 5,
+    'bIII': 2,
   };
-  
+
   final degree = chosenChord['degree'] as String;
   final interval = degreeMap[degree] ?? 0;
   final chordRoot = transposeNote(root, interval);
   final degreeIndex = degreeToIndex[degree] ?? 0;
-  
+
   return Chord(
     root: chordRoot,
     type: chordType,
     degree: degree,
-    numeral: romanNumerals[degreeIndex < romanNumerals.length ? degreeIndex : 0],
+    numeral:
+        romanNumerals[degreeIndex < romanNumerals.length ? degreeIndex : 0],
     harmonyFunction: func,
   );
 }
@@ -681,14 +795,15 @@ Chord generateChordFromFunction(
 // Groove Engine Functions
 // ===================================
 
-List<Chord> applyGrooveToProgression(List<Chord> progression, GrooveTemplate template) {
+List<Chord> applyGrooveToProgression(
+    List<Chord> progression, GrooveTemplate template) {
   final pattern = groovePatterns[template]!;
-  
+
   return progression.asMap().entries.map((entry) {
     final index = entry.key;
     final chord = entry.value;
     final beatIndex = index % pattern.beatPattern.length;
-    
+
     return chord.copyWith(
       grooveIntensity: pattern.beatPattern[beatIndex],
       swingOffset: pattern.swingAmount,
@@ -703,120 +818,126 @@ List<Chord> applyGrooveToProgression(List<Chord> progression, GrooveTemplate tem
 /// Intelligently insert passing chords based on harmonic context
 List<String> addPassingChords(List<String> progression, int variety) {
   if (variety < 30 || progression.length >= 12) return progression;
-  
+
   final result = List<String>.from(progression);
   final varietyFactor = variety / 100.0;
   final numInsertions = (varietyFactor * 3).round();
-  
+
   // Passing chord options based on harmonic function
   const passingChords = {
-    'I': ['iii', 'vi', 'V'],      // From tonic
-    'ii': ['iii', 'V', 'IV'],     // From subdominant
-    'iii': ['IV', 'vi', 'ii'],    // Mediant
-    'IV': ['ii', 'V', 'vi'],      // Subdominant
-    'V': ['vi', 'IV', 'I'],       // Dominant
-    'vi': ['ii', 'IV', 'iii'],    // Submediant
-    'VII': ['V', 'iii', 'I'],     // Leading tone
-    'i': ['III', 'VI', 'V'],      // Minor tonic
-    'III': ['VI', 'iv', 'VII'],   // Minor mediant
-    'iv': ['VII', 'V', 'VI'],     // Minor subdominant
-    'VI': ['VII', 'iv', 'III'],   // Minor submediant
+    'I': ['iii', 'vi', 'V'], // From tonic
+    'ii': ['iii', 'V', 'IV'], // From subdominant
+    'iii': ['IV', 'vi', 'ii'], // Mediant
+    'IV': ['ii', 'V', 'vi'], // Subdominant
+    'V': ['vi', 'IV', 'I'], // Dominant
+    'vi': ['ii', 'IV', 'iii'], // Submediant
+    'VII': ['V', 'iii', 'I'], // Leading tone
+    'i': ['III', 'VI', 'V'], // Minor tonic
+    'III': ['VI', 'iv', 'VII'], // Minor mediant
+    'iv': ['VII', 'V', 'VI'], // Minor subdominant
+    'VI': ['VII', 'iv', 'III'], // Minor submediant
   };
-  
+
   for (var i = 0; i < numInsertions && result.length < 12; i++) {
     if (result.length < 2) break;
-    
+
     final insertAfter = _random.nextInt(result.length - 1);
     final currentChord = result[insertAfter];
     // Extract base Roman numeral (remove any added symbols like 7, 9, etc.)
     final baseChord = currentChord.replaceAll(RegExp(r'[^IVXivx]+'), '');
-    
+
     if (passingChords.containsKey(baseChord)) {
       final options = passingChords[baseChord]!;
       final passingChord = randomChoice(options);
       result.insert(insertAfter + 1, passingChord);
     }
   }
-  
+
   return result;
 }
 
 /// Add approach chords (chromatic or diatonic approaches to target chords)
 List<String> addApproachChords(List<String> progression, int variety) {
   if (variety < 50) return progression;
-  
+
   final result = List<String>.from(progression);
-  
+
   // Add chromatic approach to dominant (V) chords
   for (var i = 0; i < result.length - 1; i++) {
-    if ((result[i + 1] == 'V' || result[i + 1] == 'v') && _random.nextDouble() < 0.3) {
+    if ((result[i + 1] == 'V' || result[i + 1] == 'v') &&
+        _random.nextDouble() < 0.3) {
       // Insert diminished chord or secondary dominant
       if (_random.nextBool()) {
-        result.insert(i + 1, 'vii');  // Leading tone diminished
+        result.insert(i + 1, 'vii'); // Leading tone diminished
       } else {
-        result.insert(i + 1, 'V/V');  // Secondary dominant
+        result.insert(i + 1, 'V/V'); // Secondary dominant
       }
       i++; // Skip the inserted chord
     }
   }
-  
+
   return result;
 }
 
 /// Intelligently substitute chords with related harmony
-List<String> applyIntelligentSubstitutions(List<String> progression, int variety, bool isMinor) {
+List<String> applyIntelligentSubstitutions(
+    List<String> progression, int variety, bool isMinor) {
   if (variety < 40) return progression;
-  
+
   final result = <String>[];
   final substitutionChance = (variety / 100.0) * 0.4; // Max 40% chance
-  
+
   // Substitution rules
   final substitutions = {
-    'I': ['iii', 'vi'],           // Tonic substitutes
-    'i': ['III', 'VI'],           // Minor tonic substitutes
-    'IV': ['ii', 'vi'],           // Subdominant substitutes
-    'iv': ['ii', 'VI'],           // Minor subdominant
-    'V': ['vii', 'iii'],          // Dominant substitutes
-    'vi': ['I', 'IV'],            // Submediant substitutes
+    'I': ['iii', 'vi'], // Tonic substitutes
+    'i': ['III', 'VI'], // Minor tonic substitutes
+    'IV': ['ii', 'vi'], // Subdominant substitutes
+    'iv': ['ii', 'VI'], // Minor subdominant
+    'V': ['vii', 'iii'], // Dominant substitutes
+    'vi': ['I', 'IV'], // Submediant substitutes
   };
-  
+
   for (final chord in progression) {
-    if (_random.nextDouble() < substitutionChance && substitutions.containsKey(chord)) {
+    if (_random.nextDouble() < substitutionChance &&
+        substitutions.containsKey(chord)) {
       final options = substitutions[chord]!;
       result.add(randomChoice(options));
     } else {
       result.add(chord);
     }
   }
-  
+
   return result;
 }
 
 /// Create smooth chord transitions by analyzing intervals
 List<Chord> smoothChordTransitions(List<Chord> progression) {
   if (progression.length < 2) return progression;
-  
+
   const passingChordThreshold = 0.3; // 30% chance of adding passing chord
-  
+
   final result = <Chord>[];
   result.add(progression[0]);
-  
+
   for (var i = 1; i < progression.length; i++) {
     final current = progression[i];
     final previous = result[result.length - 1];
-    
+
     // Check if there's a large root movement (more than 5 semitones)
     final prevIndex = getNoteIndex(previous.root);
     final currIndex = getNoteIndex(current.root);
     final interval = (currIndex - prevIndex).abs();
-    
+
     // If large jump and variety allows, consider adding a passing chord
-    if (interval > 5 && interval < 7 && _random.nextDouble() < passingChordThreshold) {
+    if (interval > 5 &&
+        interval < 7 &&
+        _random.nextDouble() < passingChordThreshold) {
       // Add a passing chord between large jumps
       final midpoint = (prevIndex + ((currIndex - prevIndex) / 2).round()) % 12;
       final passingRoot = notes[midpoint];
-      final passingType = _random.nextBool() ? ChordTypeName.minor : ChordTypeName.major;
-      
+      final passingType =
+          _random.nextBool() ? ChordTypeName.minor : ChordTypeName.major;
+
       result.add(Chord(
         root: passingRoot,
         type: passingType,
@@ -824,17 +945,18 @@ List<Chord> smoothChordTransitions(List<Chord> progression) {
         numeral: 'passing',
       ));
     }
-    
+
     result.add(current);
   }
-  
+
   return result;
 }
 
 /// Generate weighted random progression based on harmonic tendencies
-List<String> generateWeightedProgression(int length, bool isMinor, int variety) {
+List<String> generateWeightedProgression(
+    int length, bool isMinor, int variety) {
   final progression = <String>[];
-  
+
   // Harmonic tendency weights (probability of following chord)
   final majorTendencies = {
     'I': {'IV': 0.3, 'V': 0.25, 'vi': 0.2, 'ii': 0.15, 'iii': 0.1},
@@ -844,7 +966,7 @@ List<String> generateWeightedProgression(int length, bool isMinor, int variety) 
     'V': {'I': 0.45, 'vi': 0.25, 'IV': 0.2, 'iii': 0.1},
     'vi': {'ii': 0.3, 'IV': 0.25, 'V': 0.25, 'iii': 0.2},
   };
-  
+
   final minorTendencies = {
     'i': {'iv': 0.3, 'V': 0.25, 'VI': 0.2, 'III': 0.15, 'VII': 0.1},
     'ii': {'V': 0.5, 'iv': 0.2, 'VII': 0.15, 'i': 0.15},
@@ -854,22 +976,22 @@ List<String> generateWeightedProgression(int length, bool isMinor, int variety) 
     'VI': {'VII': 0.3, 'iv': 0.25, 'V': 0.25, 'III': 0.2},
     'VII': {'i': 0.35, 'III': 0.25, 'VI': 0.2, 'V': 0.2},
   };
-  
+
   final tendencies = isMinor ? minorTendencies : majorTendencies;
   String current = isMinor ? 'i' : 'I';
   progression.add(current);
-  
+
   for (var i = 1; i < length; i++) {
     if (!tendencies.containsKey(current)) {
       current = isMinor ? 'i' : 'I';
       progression.add(current);
       continue;
     }
-    
+
     final weights = tendencies[current]!;
     final randomValue = _random.nextDouble();
     var cumulative = 0.0;
-    
+
     for (final entry in weights.entries) {
       cumulative += entry.value;
       if (randomValue <= cumulative) {
@@ -877,49 +999,63 @@ List<String> generateWeightedProgression(int length, bool isMinor, int variety) 
         break;
       }
     }
-    
+
     progression.add(current);
   }
-  
+
   return progression;
 }
 
 /// Analyze and optimize tension/resolution flow in progression
 List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
   if (progression.length < 3) return progression;
-  
+
   final result = List<String>.from(progression);
-  
+
   // Constants for tension analysis
   const highTensionThreshold = 0.6;
   const resolutionProbability = 0.7;
-  
+
   // Tension values for each chord degree (0.0 = stable, 1.0 = high tension)
   final majorTension = {
-    'I': 0.0, 'ii': 0.4, 'iii': 0.5, 'IV': 0.3, 'V': 0.8, 'vi': 0.4, 'vii': 0.9, 'VII': 0.7,
+    'I': 0.0,
+    'ii': 0.4,
+    'iii': 0.5,
+    'IV': 0.3,
+    'V': 0.8,
+    'vi': 0.4,
+    'vii': 0.9,
+    'VII': 0.7,
   };
-  
+
   final minorTension = {
-    'i': 0.0, 'ii': 0.5, 'III': 0.3, 'iv': 0.4, 'v': 0.6, 'V': 0.8, 
-    'VI': 0.3, 'VII': 0.7, 'vii': 0.9,
+    'i': 0.0,
+    'ii': 0.5,
+    'III': 0.3,
+    'iv': 0.4,
+    'v': 0.6,
+    'V': 0.8,
+    'VI': 0.3,
+    'VII': 0.7,
+    'vii': 0.9,
   };
-  
+
   final tensionMap = isMinor ? minorTension : majorTension;
-  
+
   // Ensure good tension curve - avoid too many high-tension chords in a row
   for (var i = 1; i < result.length - 1; i++) {
     // Extract base Roman numeral (remove any added symbols)
     final prev = result[i - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
     final curr = result[i].replaceAll(RegExp(r'[^IVXivx]+'), '');
     final next = result[i + 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
-    
+
     final prevTension = tensionMap[prev] ?? 0.5;
     final currTension = tensionMap[curr] ?? 0.5;
     final nextTension = tensionMap[next] ?? 0.5;
-    
+
     // If we have three high-tension chords in a row, substitute the middle one
-    if (prevTension > highTensionThreshold && 
-        currTension > highTensionThreshold && 
+    if (prevTension > highTensionThreshold &&
+        currTension > highTensionThreshold &&
         nextTension > highTensionThreshold) {
       // Replace with a lower tension chord
       final lowTensionChords = tensionMap.entries
@@ -931,32 +1067,36 @@ List<String> optimizeTensionFlow(List<String> progression, bool isMinor) {
       }
     }
   }
-  
+
   // Ensure resolution at the end (prefer tonic or subdominant)
   if (result.isNotEmpty) {
     // Extract base Roman numeral
-    final lastChord = result[result.length - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
+    final lastChord =
+        result[result.length - 1].replaceAll(RegExp(r'[^IVXivx]+'), '');
     final lastTension = tensionMap[lastChord] ?? 0.5;
-    
+
     // If last chord is high tension, consider resolving
-    if (lastTension > highTensionThreshold && _random.nextDouble() < resolutionProbability) {
+    if (lastTension > highTensionThreshold &&
+        _random.nextDouble() < resolutionProbability) {
       result[result.length - 1] = isMinor ? 'i' : 'I';
     }
   }
-  
+
   return result;
 }
 
 /// Add color tones and extensions strategically based on position in progression
-Chord addStrategicExtensions(Chord chord, int position, int totalLength, int variety) {
+Chord addStrategicExtensions(
+    Chord chord, int position, int totalLength, int variety) {
   if (variety < 30) return chord;
-  
+
   final varietyFactor = variety / 100.0;
   final progressPosition = position / totalLength;
-  
+
   // Add more extensions in the middle of the progression
-  final extensionChance = varietyFactor * (0.4 + (0.4 * (1 - (progressPosition - 0.5).abs() * 2)));
-  
+  final extensionChance =
+      varietyFactor * (0.4 + (0.4 * (1 - (progressPosition - 0.5).abs() * 2)));
+
   if (_random.nextDouble() < extensionChance) {
     // Choose extensions based on chord type and variety
     if (chord.type == ChordTypeName.major) {
@@ -971,7 +1111,7 @@ Chord addStrategicExtensions(Chord chord, int position, int totalLength, int var
       return chord;
     }
   }
-  
+
   return chord;
 }
 
@@ -988,7 +1128,8 @@ int randomInt(int min, int max) {
 }
 
 String getTimeAgo(int timestamp) {
-  final seconds = ((DateTime.now().millisecondsSinceEpoch - timestamp) / 1000).floor();
+  final seconds =
+      ((DateTime.now().millisecondsSinceEpoch - timestamp) / 1000).floor();
 
   if (seconds < 60) return 'Just now';
   if (seconds < 3600) return '${(seconds / 60).floor()}m ago';

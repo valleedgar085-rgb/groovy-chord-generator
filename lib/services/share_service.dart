@@ -1,9 +1,9 @@
-/// Groovy Chord Generator
-/// Share Service
-/// Version 2.5
-///
-/// Service for generating and parsing shareable URLs for chord progressions.
-/// Enables users to share their chord selections with others via URL.
+// Groovy Chord Generator
+// Share Service
+// Version 2.5
+//
+// Service for generating and parsing shareable URLs for chord progressions.
+// Enables users to share their chord selections with others via URL.
 
 import 'dart:convert';
 import '../models/types.dart';
@@ -37,9 +37,8 @@ class SharedChordSet {
 
   static SharedChordSet fromJson(Map<String, dynamic> json) {
     return SharedChordSet(
-      progression: (json['p'] as List)
-          .map((c) => _decodeChord(c as String))
-          .toList(),
+      progression:
+          (json['p'] as List).map((c) => _decodeChord(c as String)).toList(),
       key: KeyName.values[json['k'] as int? ?? 0],
       genre: GenreKey.values[json['g'] as int? ?? 0],
       tempo: json['t'] as int? ?? 120,
@@ -65,18 +64,18 @@ class SharedChordSet {
     }
     return Chord(
       root: parts[0],
-      type: parts.length > 1 
+      type: parts.length > 1
           ? ChordTypeName.values[int.parse(parts[1])]
           : ChordTypeName.major,
       degree: parts.length > 2 ? parts[2] : 'I',
-      numeral: parts.length > 3 ? parts[3] : (parts.length > 2 ? parts[2] : 'I'),
+      numeral:
+          parts.length > 3 ? parts[3] : (parts.length > 2 ? parts[2] : 'I'),
     );
   }
 }
 
 /// Service for sharing chord progressions
 class ShareService {
-  static const String _baseScheme = 'groovychords';
   static const String _sharePrefix = 'share';
 
   /// Generate a shareable URL for a chord progression
@@ -118,10 +117,9 @@ class ShareService {
     }
 
     // Create compact encoding: keyIndex-genreIndex-chord1_chord2_chord3...
-    final chordPart = progression
-        .map((c) => '${c.root}${c.type.index}')
-        .join('_');
-    
+    final chordPart =
+        progression.map((c) => '${c.root}${c.type.index}').join('_');
+
     return '${key.index}-${genre.index}-$chordPart';
   }
 
@@ -164,7 +162,7 @@ class ShareService {
       final chordStrings = parts[2].split('_');
 
       final romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
-      
+
       final progression = chordStrings.asMap().entries.map((entry) {
         final index = entry.key;
         final cs = entry.value;
@@ -186,7 +184,7 @@ class ShareService {
             chordType == ChordTypeName.minor7 ||
             chordType == ChordTypeName.minor9;
         final degree = isMinor ? numeral.toLowerCase() : numeral;
-        
+
         return Chord(
           root: match.group(1)!,
           type: chordType,
@@ -219,13 +217,13 @@ class ShareService {
       genre: genre,
       tempo: tempo,
     );
-    
+
     final chordNames = progression
         .map((c) => '${c.root}${chordTypes[c.type]?.symbol ?? ''}')
         .join(' - ');
-    
+
     final genreName = genreProfiles[genre]?.name ?? 'Custom';
-    
+
     return '''🎵 Check out my chord progression!
 
 $chordNames
@@ -238,18 +236,30 @@ Made with Groovy Chord Generator''';
 
   static String _keyToDisplayName(KeyName key) {
     switch (key) {
-      case KeyName.C: return 'C Major';
-      case KeyName.G: return 'G Major';
-      case KeyName.D: return 'D Major';
-      case KeyName.A: return 'A Major';
-      case KeyName.E: return 'E Major';
-      case KeyName.F: return 'F Major';
-      case KeyName.Bb: return 'Bb Major';
-      case KeyName.Am: return 'A Minor';
-      case KeyName.Em: return 'E Minor';
-      case KeyName.Dm: return 'D Minor';
-      case KeyName.Bm: return 'B Minor';
-      case KeyName.Fm: return 'F Minor';
+      case KeyName.C:
+        return 'C Major';
+      case KeyName.G:
+        return 'G Major';
+      case KeyName.D:
+        return 'D Major';
+      case KeyName.A:
+        return 'A Major';
+      case KeyName.E:
+        return 'E Major';
+      case KeyName.F:
+        return 'F Major';
+      case KeyName.Bb:
+        return 'Bb Major';
+      case KeyName.Am:
+        return 'A Minor';
+      case KeyName.Em:
+        return 'E Minor';
+      case KeyName.Dm:
+        return 'D Minor';
+      case KeyName.Bm:
+        return 'B Minor';
+      case KeyName.Fm:
+        return 'F Minor';
     }
   }
 }

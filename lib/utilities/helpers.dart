@@ -1,14 +1,13 @@
-/// Groovy Chord Generator
-/// Helper Functions
-/// Version 2.5
-///
-/// Utility helper functions used across the application.
+// Groovy Chord Generator
+// Helper Functions
+// Version 2.5
+//
+// Utility helper functions used across the application.
 
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/types.dart';
-import '../models/constants.dart';
 
 /// Layout helpers for responsive design
 class LayoutHelper {
@@ -18,7 +17,7 @@ class LayoutHelper {
   static const double desktopBreakpoint = 1024;
 
   /// Get responsive value based on screen width.
-  /// 
+  ///
   /// The [mobile] value is required and used as the default.
   /// If [tablet] is null, falls back to [mobile].
   /// If [desktop] is null, falls back to [tablet] (or [mobile] if [tablet] is also null).
@@ -199,7 +198,8 @@ class ColorHelper {
   static Color darken(Color color, double amount) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
-    final darkened = hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
+    final darkened =
+        hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0));
     return darkened.toColor();
   }
 
@@ -207,7 +207,8 @@ class ColorHelper {
   static Color lighten(Color color, double amount) {
     assert(amount >= 0 && amount <= 1);
     final hsl = HSLColor.fromColor(color);
-    final lightened = hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
+    final lightened =
+        hsl.withLightness((hsl.lightness + amount).clamp(0.0, 1.0));
     return lightened.toColor();
   }
 }

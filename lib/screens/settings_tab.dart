@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Settings Tab
-/// Version 2.5
+// Groovy Chord Generator
+// Settings tab
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -31,10 +31,12 @@ class SettingsTab extends StatelessWidget {
                   ControlDropdown(
                     label: 'Sound Type',
                     value: appState.soundType,
-                    items: soundTypeOptions.map((o) => DropdownMenuItem(
-                      value: o['value'] as SoundType,
-                      child: Text(o['label'] as String),
-                    )).toList(),
+                    items: soundTypeOptions
+                        .map((o) => DropdownMenuItem(
+                              value: o['value'] as SoundType,
+                              child: Text(o['label'] as String),
+                            ))
+                        .toList(),
                     onChanged: (value) {
                       if (value != null) appState.setSoundType(value);
                     },
@@ -44,7 +46,7 @@ class SettingsTab extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Display Settings
               _buildSettingsGroup(
                 title: 'Display',
@@ -62,7 +64,7 @@ class SettingsTab extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Envelope Settings
               _buildSettingsGroup(
                 title: 'Envelope',
@@ -73,16 +75,20 @@ class SettingsTab extends StatelessWidget {
                   _buildEnvelopeSlider('Decay', appState.envelope.decay, (v) {
                     appState.setEnvelope(appState.envelope.copyWith(decay: v));
                   }),
-                  _buildEnvelopeSlider('Sustain', appState.envelope.sustain, (v) {
-                    appState.setEnvelope(appState.envelope.copyWith(sustain: v));
+                  _buildEnvelopeSlider('Sustain', appState.envelope.sustain,
+                      (v) {
+                    appState
+                        .setEnvelope(appState.envelope.copyWith(sustain: v));
                   }),
-                  _buildEnvelopeSlider('Release', appState.envelope.release, (v) {
-                    appState.setEnvelope(appState.envelope.copyWith(release: v));
+                  _buildEnvelopeSlider('Release', appState.envelope.release,
+                      (v) {
+                    appState
+                        .setEnvelope(appState.envelope.copyWith(release: v));
                   }),
                 ],
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // About Section
               _buildSettingsGroup(
                 title: 'About',
@@ -127,7 +133,7 @@ class SettingsTab extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 100), // Space for FAB
             ],
           ),
@@ -167,7 +173,8 @@ class SettingsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildToggleSetting(String label, bool value, void Function(bool) onChanged) {
+  Widget _buildToggleSetting(
+      String label, bool value, void Function(bool) onChanged) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppTheme.spacingSm),
       child: Row(
@@ -257,7 +264,8 @@ class SettingsTab extends StatelessWidget {
     );
   }
 
-  Widget _buildEnvelopeSlider(String label, double value, void Function(double) onChanged) {
+  Widget _buildEnvelopeSlider(
+      String label, double value, void Function(double) onChanged) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

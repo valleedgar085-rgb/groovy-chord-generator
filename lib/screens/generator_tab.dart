@@ -1,6 +1,7 @@
 /// Groovy Chord Generator
 /// Generator Tab
 /// Version 2.5
+library;
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,7 +11,6 @@ import '../providers/app_state.dart';
 import '../utils/theme.dart';
 import '../utils/music_theory.dart';
 import '../utils/performance_config.dart';
-import '../services/favorites_service.dart';
 import '../widgets/chord_card.dart';
 import '../widgets/preset_card.dart';
 import '../widgets/control_dropdown.dart';
@@ -31,11 +31,11 @@ class GeneratorTab extends StatelessWidget {
               // Quick Controls
               _buildQuickControls(context, appState),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Chord Display
               _buildChordDisplay(context, appState),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Smart Presets
               CollapsibleSection(
                 title: '✨ Smart Presets',
@@ -43,7 +43,7 @@ class GeneratorTab extends StatelessWidget {
                 child: _buildSmartPresets(context, appState),
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Advanced Settings
               CollapsibleSection(
                 title: '⚙️ Advanced Settings',
@@ -51,7 +51,7 @@ class GeneratorTab extends StatelessWidget {
                 child: _buildAdvancedSettings(context, appState),
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Groove Settings
               CollapsibleSection(
                 title: '🎵 Groove Settings',
@@ -59,7 +59,7 @@ class GeneratorTab extends StatelessWidget {
                 child: _buildGrooveSettings(context, appState),
               ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Favorites
               if (appState.favorites.isNotEmpty)
                 CollapsibleSection(
@@ -68,7 +68,7 @@ class GeneratorTab extends StatelessWidget {
                   child: _buildFavorites(context, appState),
                 ),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // History
               if (appState.progressionHistory.isNotEmpty)
                 CollapsibleSection(
@@ -76,7 +76,7 @@ class GeneratorTab extends StatelessWidget {
                   initiallyExpanded: false,
                   child: _buildHistory(context, appState),
                 ),
-              
+
               const SizedBox(height: 100), // Space for FAB
             ],
           ),
@@ -97,93 +97,97 @@ class GeneratorTab extends StatelessWidget {
         // Wrap each item in RepaintBoundary for isolated repaints
         return RepaintBoundary(
           child: Dismissible(
-          key: Key(favorite.id),
-          direction: DismissDirection.endToStart,
-          background: Container(
-            alignment: Alignment.centerRight,
-            padding: const EdgeInsets.only(right: AppTheme.spacingMd),
-            decoration: BoxDecoration(
-              color: AppTheme.error.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
-            ),
-            child: const Icon(Icons.delete, color: AppTheme.error),
-          ),
-          onDismissed: (_) => appState.removeFavorite(favorite.id),
-          child: GestureDetector(
-            onTap: () => appState.loadFavorite(favorite),
-            child: Container(
-              margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
-              padding: const EdgeInsets.all(AppTheme.spacingMd),
+            key: Key(favorite.id),
+            direction: DismissDirection.endToStart,
+            background: Container(
+              alignment: Alignment.centerRight,
+              padding: const EdgeInsets.only(right: AppTheme.spacingMd),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    AppTheme.bgTertiary,
-                    AppTheme.bgTertiary.withValues(alpha: 0.8),
+                color: AppTheme.error.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+              ),
+              child: const Icon(Icons.delete, color: AppTheme.error),
+            ),
+            onDismissed: (_) => appState.removeFavorite(favorite.id),
+            child: GestureDetector(
+              onTap: () => appState.loadFavorite(favorite),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
+                padding: const EdgeInsets.all(AppTheme.spacingMd),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppTheme.bgTertiary,
+                      AppTheme.bgTertiary.withValues(alpha: 0.8),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+                  border: Border.all(
+                      color: AppTheme.accentPink.withValues(alpha: 0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppTheme.accentPink, AppTheme.accentPrimary],
+                        ),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.favorite,
+                          color: Colors.white, size: 20),
+                    ),
+                    const SizedBox(width: AppTheme.spacingMd),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            favorite.name,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppTheme.textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            favorite.progression
+                                .map((c) => getChordSymbol(c))
+                                .join(' - '),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: AppTheme.textSecondary,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppTheme.bgSecondary,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        keyNameToString(favorite.key),
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppTheme.accentSecondary,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
-                borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
-                border: Border.all(color: AppTheme.accentPink.withValues(alpha: 0.3)),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [AppTheme.accentPink, AppTheme.accentPrimary],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(Icons.favorite, color: Colors.white, size: 20),
-                  ),
-                  const SizedBox(width: AppTheme.spacingMd),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          favorite.name,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          favorite.progression.map((c) => getChordSymbol(c)).join(' - '),
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppTheme.textSecondary,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppTheme.bgSecondary,
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      keyNameToString(favorite.key),
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppTheme.accentSecondary,
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ),
-          ),
           ),
         );
       },
@@ -206,10 +210,12 @@ class GeneratorTab extends StatelessWidget {
                 child: ControlDropdown(
                   label: 'Genre',
                   value: appState.genre,
-                  items: genreOptions.map((o) => DropdownMenuItem(
-                    value: o['value'] as GenreKey,
-                    child: Text(o['label'] as String),
-                  )).toList(),
+                  items: genreOptions
+                      .map((o) => DropdownMenuItem(
+                            value: o['value'] as GenreKey,
+                            child: Text(o['label'] as String),
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     if (value != null) appState.setGenre(value);
                   },
@@ -220,10 +226,12 @@ class GeneratorTab extends StatelessWidget {
                 child: ControlDropdown(
                   label: 'Key',
                   value: appState.currentKey,
-                  items: keyOptions.map((o) => DropdownMenuItem(
-                    value: o['value'] as KeyName,
-                    child: Text(o['label'] as String),
-                  )).toList(),
+                  items: keyOptions
+                      .map((o) => DropdownMenuItem(
+                            value: o['value'] as KeyName,
+                            child: Text(o['label'] as String),
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     if (value != null) appState.setCurrentKey(value);
                   },
@@ -238,10 +246,12 @@ class GeneratorTab extends StatelessWidget {
                 child: ControlDropdown(
                   label: 'Complexity',
                   value: appState.complexity,
-                  items: complexityOptions.map((o) => DropdownMenuItem(
-                    value: o['value'] as ComplexityLevel,
-                    child: Text(o['label'] as String),
-                  )).toList(),
+                  items: complexityOptions
+                      .map((o) => DropdownMenuItem(
+                            value: o['value'] as ComplexityLevel,
+                            child: Text(o['label'] as String),
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     if (value != null) appState.setComplexity(value);
                   },
@@ -252,10 +262,12 @@ class GeneratorTab extends StatelessWidget {
                 child: ControlDropdown(
                   label: 'Rhythm',
                   value: appState.rhythm,
-                  items: rhythmOptions.map((o) => DropdownMenuItem(
-                    value: o['value'] as RhythmLevel,
-                    child: Text(o['label'] as String),
-                  )).toList(),
+                  items: rhythmOptions
+                      .map((o) => DropdownMenuItem(
+                            value: o['value'] as RhythmLevel,
+                            child: Text(o['label'] as String),
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     if (value != null) appState.setRhythm(value);
                   },
@@ -332,7 +344,8 @@ class GeneratorTab extends StatelessWidget {
               spacing: AppTheme.spacingSm,
               runSpacing: AppTheme.spacingSm,
               alignment: WrapAlignment.center,
-              children: appState.currentProgression.asMap().entries.map((entry) {
+              children:
+                  appState.currentProgression.asMap().entries.map((entry) {
                 final index = entry.key;
                 final chord = entry.value;
                 return ChordCard(
@@ -395,7 +408,8 @@ class GeneratorTab extends StatelessWidget {
           ElevatedButton(
             onPressed: () async {
               if (controller.text.trim().isNotEmpty) {
-                final success = await appState.addToFavorites(controller.text.trim());
+                final success =
+                    await appState.addToFavorites(controller.text.trim());
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -540,30 +554,34 @@ class GeneratorTab extends StatelessWidget {
         ControlDropdown(
           label: 'Spice Level',
           value: appState.spiceLevel,
-          items: spiceLevelOptions.map((o) => DropdownMenuItem(
-            value: o['value'] as SpiceLevel,
-            child: Text(o['label'] as String),
-          )).toList(),
+          items: spiceLevelOptions
+              .map((o) => DropdownMenuItem(
+                    value: o['value'] as SpiceLevel,
+                    child: Text(o['label'] as String),
+                  ))
+              .toList(),
           onChanged: (value) {
             if (value != null) appState.setSpiceLevel(value);
           },
         ),
         const SizedBox(height: AppTheme.spacingMd),
-        
+
         // Mood
         ControlDropdown(
           label: 'Mood',
           value: appState.currentMood,
-          items: moodOptions.map((o) => DropdownMenuItem(
-            value: o['value'] as MoodType,
-            child: Text(o['label'] as String),
-          )).toList(),
+          items: moodOptions
+              .map((o) => DropdownMenuItem(
+                    value: o['value'] as MoodType,
+                    child: Text(o['label'] as String),
+                  ))
+              .toList(),
           onChanged: (value) {
             if (value != null) appState.setMood(value);
           },
         ),
         const SizedBox(height: AppTheme.spacingMd),
-        
+
         // Toggle options
         _buildToggleOption(
           'Voice Leading',
@@ -605,16 +623,18 @@ class GeneratorTab extends StatelessWidget {
         ControlDropdown(
           label: 'Groove Template',
           value: appState.grooveTemplate,
-          items: grooveTemplateOptions.map((o) => DropdownMenuItem(
-            value: o['value'] as GrooveTemplate,
-            child: Text(o['label'] as String),
-          )).toList(),
+          items: grooveTemplateOptions
+              .map((o) => DropdownMenuItem(
+                    value: o['value'] as GrooveTemplate,
+                    child: Text(o['label'] as String),
+                  ))
+              .toList(),
           onChanged: (value) {
             if (value != null) appState.setGrooveTemplate(value);
           },
         ),
         const SizedBox(height: AppTheme.spacingMd),
-        
+
         // Swing slider
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -652,7 +672,8 @@ class GeneratorTab extends StatelessWidget {
     );
   }
 
-  Widget _buildToggleOption(String label, bool value, void Function(bool) onChanged) {
+  Widget _buildToggleOption(
+      String label, bool value, void Function(bool) onChanged) {
     return Container(
       padding: const EdgeInsets.symmetric(
         vertical: AppTheme.spacingSm,
@@ -694,67 +715,67 @@ class GeneratorTab extends StatelessWidget {
         // Wrap each item in RepaintBoundary for isolated repaints
         return RepaintBoundary(
           child: GestureDetector(
-          onTap: () => appState.restoreFromHistory(index),
-          child: Container(
-            margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
-            padding: const EdgeInsets.all(AppTheme.spacingMd),
-            decoration: BoxDecoration(
-              color: AppTheme.bgTertiary,
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
-              border: Border.all(color: AppTheme.borderColor),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      keyNameToString(entry.key),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: AppTheme.accentSecondary,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.bgSecondary,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        genreProfiles[entry.genre]?.name ?? '',
+            onTap: () => appState.restoreFromHistory(index),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: AppTheme.spacingSm),
+              padding: const EdgeInsets.all(AppTheme.spacingMd),
+              decoration: BoxDecoration(
+                color: AppTheme.bgTertiary,
+                borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+                border: Border.all(color: AppTheme.borderColor),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        keyNameToString(entry.key),
                         style: const TextStyle(
-                          fontSize: 11,
-                          color: AppTheme.textMuted,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.accentSecondary,
                         ),
                       ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgSecondary,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          genreProfiles[entry.genre]?.name ?? '',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    entry.progression.map((c) => getChordSymbol(c)).join(' - '),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppTheme.textPrimary,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  entry.progression.map((c) => getChordSymbol(c)).join(' - '),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: AppTheme.textPrimary,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  getTimeAgo(entry.timestamp),
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppTheme.textMuted,
+                  const SizedBox(height: 4),
+                  Text(
+                    getTimeAgo(entry.timestamp),
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppTheme.textMuted,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
           ),
         );
       },

@@ -1,7 +1,7 @@
-/// Groovy Chord Generator
-/// Main Application Entry Point
-/// Version 2.5
-/// Author: Edgar Valle
+// Groovy Chord Generator
+// Main Application Entry Point
+// Version 2.5
+// Author: Edgar Valle
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -13,7 +13,7 @@ import 'services/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase with web-specific handling
   try {
     await FirebaseService.initialize();
@@ -23,7 +23,7 @@ void main() async {
     debugPrint('Firebase initialization error: $e');
     debugPrint('App will use local storage only');
   }
-  
+
   runApp(const GroovyChordGeneratorApp());
 }
 

@@ -1,14 +1,13 @@
-/// Groovy Chord Generator
-/// Firebase Firestore Service
-/// Version 2.5
-/// 
-/// Service for managing chord progressions and user data in Cloud Firestore.
-/// Provides cloud storage and synchronization for favorites and user preferences.
+// Groovy Chord Generator
+// Firebase Firestore Service
+// Version 2.5
+//
+// Service for managing chord progressions and user data in Cloud Firestore.
+// Provides cloud storage and synchronization for favorites and user preferences.
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import '../models/types.dart';
-import '../models/constants.dart';
 import 'auth_service.dart';
 
 /// Firestore service for cloud data management
@@ -94,9 +93,8 @@ class FirestoreService {
         return [];
       }
 
-      final snapshot = await collection
-          .orderBy('createdAt', descending: true)
-          .get();
+      final snapshot =
+          await collection.orderBy('createdAt', descending: true).get();
 
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
@@ -150,7 +148,8 @@ class FirestoreService {
 
       if (name != null) updateData['name'] = name.trim();
       if (progression != null) {
-        updateData['progression'] = progression.map((c) => _chordToMap(c)).toList();
+        updateData['progression'] =
+            progression.map((c) => _chordToMap(c)).toList();
       }
       if (key != null) updateData['key'] = key.name;
       if (genre != null) updateData['genre'] = genre.name;
@@ -271,10 +270,8 @@ class FirestoreService {
   /// Get a shared progression by ID
   static Future<Map<String, dynamic>?> getSharedProgression(String id) async {
     try {
-      final doc = await _firestore
-          .collection(_progressionsCollection)
-          .doc(id)
-          .get();
+      final doc =
+          await _firestore.collection(_progressionsCollection).doc(id).get();
 
       if (!doc.exists) return null;
 

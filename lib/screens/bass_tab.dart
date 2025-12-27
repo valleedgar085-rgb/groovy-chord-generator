@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Bass Tab
-/// Version 2.5
+// Groovy Chord Generator
+// Bass tab
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -25,14 +25,14 @@ class BassTab extends StatelessWidget {
               // Bass Controls
               _buildBassControls(context, appState),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Bass Display
               _buildBassDisplay(context, appState),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Bass Actions
               _buildBassActions(context, appState),
-              
+
               const SizedBox(height: 100), // Space for FAB
             ],
           ),
@@ -67,10 +67,12 @@ class BassTab extends StatelessWidget {
                 child: ControlDropdown(
                   label: 'Bass Style',
                   value: appState.bassStyle,
-                  items: bassStyleOptions.map((o) => DropdownMenuItem(
-                    value: o['value'] as BassStyle,
-                    child: Text(o['label'] as String),
-                  )).toList(),
+                  items: bassStyleOptions
+                      .map((o) => DropdownMenuItem(
+                            value: o['value'] as BassStyle,
+                            child: Text(o['label'] as String),
+                          ))
+                      .toList(),
                   onChanged: (value) {
                     if (value != null) appState.setBassStyle(value);
                   },
@@ -79,7 +81,7 @@ class BassTab extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppTheme.spacingMd),
-          
+
           // Bass Variety slider
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -179,7 +181,8 @@ class BassTab extends StatelessWidget {
                     ),
                     decoration: BoxDecoration(
                       gradient: AppTheme.accentGradient,
-                      borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
+                      borderRadius:
+                          BorderRadius.circular(AppTheme.borderRadiusSm),
                       boxShadow: AppTheme.shadowGlow,
                     ),
                     child: Column(

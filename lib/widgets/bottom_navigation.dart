@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Bottom Navigation Widget
-/// Version 2.5
+// Groovy Chord Generator
+// Bottom navigation widget
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -74,7 +74,7 @@ class AppBottomNavigation extends StatelessWidget {
     required VoidCallback onTap,
   }) {
     final isActive = tab == currentTab;
-    
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

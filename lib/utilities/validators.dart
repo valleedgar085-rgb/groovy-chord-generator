@@ -1,8 +1,8 @@
-/// Groovy Chord Generator
-/// Validation Functions
-/// Version 2.5
-///
-/// Utility validation functions for input validation across the application.
+// Groovy Chord Generator
+// Validation Functions
+// Version 2.5
+//
+// Utility validation functions for input validation across the application.
 
 import '../models/types.dart';
 import '../models/constants.dart';
@@ -28,7 +28,23 @@ class ValidationResult {
 class ChordValidators {
   /// Valid root notes derived from music theory constants
   static const Set<String> _validRoots = {
-    'C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'
+    'C',
+    'C#',
+    'Db',
+    'D',
+    'D#',
+    'Eb',
+    'E',
+    'F',
+    'F#',
+    'Gb',
+    'G',
+    'G#',
+    'Ab',
+    'A',
+    'A#',
+    'Bb',
+    'B'
   };
 
   /// Validate a chord root note
@@ -74,7 +90,8 @@ class ChordValidators {
     for (var i = 0; i < progression.length; i++) {
       final chordValidation = validateChord(progression[i]);
       if (!chordValidation.isValid) {
-        return ValidationResult.invalid('Chord ${i + 1}: ${chordValidation.errorMessage}');
+        return ValidationResult.invalid(
+            'Chord ${i + 1}: ${chordValidation.errorMessage}');
       }
     }
 
@@ -131,7 +148,8 @@ class SettingsValidators {
       return ValidationResult.invalid('Sustain must be between 0 and 1');
     }
     if (envelope.release < 0 || envelope.release > 5) {
-      return ValidationResult.invalid('Release must be between 0 and 5 seconds');
+      return ValidationResult.invalid(
+          'Release must be between 0 and 5 seconds');
     }
     return ValidationResult.valid;
   }

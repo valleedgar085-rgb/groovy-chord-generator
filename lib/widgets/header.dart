@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// App Header Widget
-/// Version 2.5
+// Groovy Chord Generator
+// App Header Widget
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import '../utils/theme.dart';
@@ -24,7 +24,8 @@ class AppHeader extends StatelessWidget {
         children: [
           // Logo
           ShaderMask(
-            shaderCallback: (bounds) => AppTheme.accentGradient.createShader(bounds),
+            shaderCallback: (bounds) =>
+                AppTheme.accentGradient.createShader(bounds),
             child: const Text(
               'Groovy Chords',
               style: TextStyle(

@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Editor Tab
-/// Version 2.5
+// Groovy Chord Generator
+// Editor tab
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -23,14 +23,14 @@ class EditorTab extends StatelessWidget {
               // Toolbar
               _buildToolbar(context, appState),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Piano Roll placeholder
               _buildPianoRoll(context, appState),
               const SizedBox(height: AppTheme.spacingMd),
-              
+
               // Editor tip
               _buildEditorTip(),
-              
+
               const SizedBox(height: 100), // Space for FAB
             ],
           ),
@@ -175,30 +175,32 @@ class EditorTab extends StatelessWidget {
                 // Wrap each item in RepaintBoundary for isolated repaints
                 return RepaintBoundary(
                   child: Container(
-                  height: 25,
-                  decoration: BoxDecoration(
-                    gradient: isBlackKey
-                        ? const LinearGradient(
-                            colors: [Color(0xFF1A1A1A), Color(0xFF333333)],
-                          )
-                        : const LinearGradient(
-                            colors: [Color(0xFFE8E8E8), Color(0xFFFFFFFF)],
-                          ),
-                    border: Border(
-                      bottom: BorderSide(
-                        color: AppTheme.borderColor.withValues(alpha: 0.3),
+                    height: 25,
+                    decoration: BoxDecoration(
+                      gradient: isBlackKey
+                          ? const LinearGradient(
+                              colors: [Color(0xFF1A1A1A), Color(0xFF333333)],
+                            )
+                          : const LinearGradient(
+                              colors: [Color(0xFFE8E8E8), Color(0xFFFFFFFF)],
+                            ),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: AppTheme.borderColor.withValues(alpha: 0.3),
+                        ),
                       ),
                     ),
-                  ),
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 6),
-                  child: Text(
-                    _getNoteNameForIndex(index),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: isBlackKey ? const Color(0xFFAAAAAA) : const Color(0xFF333333),
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Text(
+                      _getNoteNameForIndex(index),
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: isBlackKey
+                            ? const Color(0xFFAAAAAA)
+                            : const Color(0xFF333333),
+                      ),
                     ),
-                  ),
                   ),
                 );
               },
@@ -234,7 +236,20 @@ class EditorTab extends StatelessWidget {
   }
 
   String _getNoteNameForIndex(int index) {
-    const noteNames = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    const noteNames = [
+      'C',
+      'C#',
+      'D',
+      'D#',
+      'E',
+      'F',
+      'F#',
+      'G',
+      'G#',
+      'A',
+      'A#',
+      'B'
+    ];
     return noteNames[11 - index];
   }
 
@@ -278,7 +293,7 @@ class PianoRollPainter extends CustomPainter {
     // Draw grid lines
     const rowCount = 12;
     final rowHeight = size.height / rowCount;
-    
+
     for (var i = 0; i <= rowCount; i++) {
       final y = i * rowHeight;
       canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);

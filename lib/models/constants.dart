@@ -1,10 +1,10 @@
-/// Groovy Chord Generator
-/// Constants - Music Theory Data
-/// Version 2.5
-/// 
-/// This file contains all the music theory constants used by the chord generator.
-/// Genre profiles are derived from analysis of top songs in each genre to provide
-/// authentic chord progressions, tempo ranges, and characteristic chord types.
+// Groovy Chord Generator
+// Constants - Music Theory Data
+// Version 2.5
+//
+// This file contains all the music theory constants used by the chord generator.
+// Genre profiles are derived from analysis of top songs in each genre to provide
+// authentic chord progressions, tempo ranges, and characteristic chord types.
 
 import 'types.dart';
 
@@ -20,18 +20,38 @@ const String appVersion = '2.5';
 
 /// The 12 chromatic notes using sharps for internal representation
 const List<String> notes = [
-  'C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B'
 ];
 
 /// The 12 chromatic notes using flats for display (more common in jazz/classical)
 const List<String> noteDisplay = [
-  'C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'
+  'C',
+  'Db',
+  'D',
+  'Eb',
+  'E',
+  'F',
+  'Gb',
+  'G',
+  'Ab',
+  'A',
+  'Bb',
+  'B'
 ];
 
 /// Roman numerals for representing scale degrees in chord progressions
-const List<String> romanNumerals = [
-  'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'
-];
+const List<String> romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
 
 // ===================================
 // Chord Types with Intervals
@@ -40,20 +60,34 @@ const List<String> romanNumerals = [
 // display symbol, and full name.
 
 const Map<ChordTypeName, ChordType> chordTypes = {
-  ChordTypeName.major: ChordType(intervals: [0, 4, 7], symbol: '', name: 'Major'),
-  ChordTypeName.minor: ChordType(intervals: [0, 3, 7], symbol: 'm', name: 'Minor'),
-  ChordTypeName.diminished: ChordType(intervals: [0, 3, 6], symbol: 'dim', name: 'Diminished'),
-  ChordTypeName.augmented: ChordType(intervals: [0, 4, 8], symbol: 'aug', name: 'Augmented'),
-  ChordTypeName.major7: ChordType(intervals: [0, 4, 7, 11], symbol: 'maj7', name: 'Major 7th'),
-  ChordTypeName.minor7: ChordType(intervals: [0, 3, 7, 10], symbol: 'm7', name: 'Minor 7th'),
-  ChordTypeName.dominant7: ChordType(intervals: [0, 4, 7, 10], symbol: '7', name: 'Dominant 7th'),
-  ChordTypeName.diminished7: ChordType(intervals: [0, 3, 6, 9], symbol: 'dim7', name: 'Diminished 7th'),
-  ChordTypeName.halfDim7: ChordType(intervals: [0, 3, 6, 10], symbol: 'm7♭5', name: 'Half-Dim 7th'),
-  ChordTypeName.sus2: ChordType(intervals: [0, 2, 7], symbol: 'sus2', name: 'Suspended 2nd'),
-  ChordTypeName.sus4: ChordType(intervals: [0, 5, 7], symbol: 'sus4', name: 'Suspended 4th'),
-  ChordTypeName.add9: ChordType(intervals: [0, 4, 7, 14], symbol: 'add9', name: 'Add 9'),
-  ChordTypeName.minor9: ChordType(intervals: [0, 3, 7, 10, 14], symbol: 'm9', name: 'Minor 9th'),
-  ChordTypeName.major9: ChordType(intervals: [0, 4, 7, 11, 14], symbol: 'maj9', name: 'Major 9th'),
+  ChordTypeName.major:
+      ChordType(intervals: [0, 4, 7], symbol: '', name: 'Major'),
+  ChordTypeName.minor:
+      ChordType(intervals: [0, 3, 7], symbol: 'm', name: 'Minor'),
+  ChordTypeName.diminished:
+      ChordType(intervals: [0, 3, 6], symbol: 'dim', name: 'Diminished'),
+  ChordTypeName.augmented:
+      ChordType(intervals: [0, 4, 8], symbol: 'aug', name: 'Augmented'),
+  ChordTypeName.major7:
+      ChordType(intervals: [0, 4, 7, 11], symbol: 'maj7', name: 'Major 7th'),
+  ChordTypeName.minor7:
+      ChordType(intervals: [0, 3, 7, 10], symbol: 'm7', name: 'Minor 7th'),
+  ChordTypeName.dominant7:
+      ChordType(intervals: [0, 4, 7, 10], symbol: '7', name: 'Dominant 7th'),
+  ChordTypeName.diminished7: ChordType(
+      intervals: [0, 3, 6, 9], symbol: 'dim7', name: 'Diminished 7th'),
+  ChordTypeName.halfDim7:
+      ChordType(intervals: [0, 3, 6, 10], symbol: 'm7♭5', name: 'Half-Dim 7th'),
+  ChordTypeName.sus2:
+      ChordType(intervals: [0, 2, 7], symbol: 'sus2', name: 'Suspended 2nd'),
+  ChordTypeName.sus4:
+      ChordType(intervals: [0, 5, 7], symbol: 'sus4', name: 'Suspended 4th'),
+  ChordTypeName.add9:
+      ChordType(intervals: [0, 4, 7, 14], symbol: 'add9', name: 'Add 9'),
+  ChordTypeName.minor9:
+      ChordType(intervals: [0, 3, 7, 10, 14], symbol: 'm9', name: 'Minor 9th'),
+  ChordTypeName.major9: ChordType(
+      intervals: [0, 4, 7, 11, 14], symbol: 'maj9', name: 'Major 9th'),
 };
 
 // ===================================
@@ -92,72 +126,89 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
     name: 'Happy Upbeat Pop',
     scale: ScaleName.major,
     progressions: [
-      ['I', 'V', 'vi', 'IV'],   // The iconic "Axis of Awesome" progression
-      ['I', 'vi', 'IV', 'V'],   // Classic 50s progression modernized
+      ['I', 'V', 'vi', 'IV'], // The iconic "Axis of Awesome" progression
+      ['I', 'vi', 'IV', 'V'], // Classic 50s progression modernized
       ['I', 'IV', 'V', 'I'],
       ['I', 'IV', 'vi', 'V'],
-      ['vi', 'IV', 'I', 'V'],   // Anthemic progression
-      ['I', 'V', 'IV', 'V'],    // Driving energy
-      ['I', 'iii', 'IV', 'V'],  // Extended harmony
-      ['I', 'V', 'vi', 'iii', 'IV', 'V'],  // Full sequence
-      ['I', 'IV', 'I', 'V'],    // Simple but effective
-      ['I', 'vi', 'ii', 'V'],   // Jazz-influenced pop
-      ['IV', 'V', 'I', 'vi'],   // Inverted energy
+      ['vi', 'IV', 'I', 'V'], // Anthemic progression
+      ['I', 'V', 'IV', 'V'], // Driving energy
+      ['I', 'iii', 'IV', 'V'], // Extended harmony
+      ['I', 'V', 'vi', 'iii', 'IV', 'V'], // Full sequence
+      ['I', 'IV', 'I', 'V'], // Simple but effective
+      ['I', 'vi', 'ii', 'V'], // Jazz-influenced pop
+      ['IV', 'V', 'I', 'vi'], // Inverted energy
       ['I', 'iii', 'vi', 'IV'], // Smooth transition
     ],
-    chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus2, ChordTypeName.add9, ChordTypeName.major7],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.sus2,
+      ChordTypeName.add9,
+      ChordTypeName.major7
+    ],
     melodyScale: ScaleName.pentatonicMajor,
     tempo: 115, // Center of 100-130 BPM range
   ),
-  
+
   // Chill Lo-Fi: 60-90 BPM
   // Focus on maj7/min7 chords with jazz-influenced ii-V-I progressions
   GenreKey.chillLofi: GenreProfile(
     name: 'Chill Lo-Fi',
     scale: ScaleName.minor,
     progressions: [
-      ['ii', 'V', 'I'],         // Classic jazz ii-V-I
-      ['I', 'vi', 'ii', 'V'],   // Turnaround progression
-      ['ii', 'V', 'I', 'vi'],   // Extended turnaround
+      ['ii', 'V', 'I'], // Classic jazz ii-V-I
+      ['I', 'vi', 'ii', 'V'], // Turnaround progression
+      ['ii', 'V', 'I', 'vi'], // Extended turnaround
       ['vi', 'ii', 'V', 'I'],
-      ['I', 'iii', 'vi', 'ii'],  // Smooth jazz movement
-      ['IV', 'iii', 'vi', 'V'],  // Subdominant start
-      ['I', 'IV', 'iii', 'vi'],  // Descending warmth
-      ['ii', 'V', 'iii', 'vi'],  // Altered resolution
-      ['I', 'vi', 'IV', 'V'],    // Pop-influenced lo-fi
-      ['iii', 'vi', 'ii', 'V'],  // Extended approach
-      ['I', 'iii', 'IV', 'V'],   // Classic with color
-      ['vi', 'V', 'IV', 'iii'],  // Descending progression
+      ['I', 'iii', 'vi', 'ii'], // Smooth jazz movement
+      ['IV', 'iii', 'vi', 'V'], // Subdominant start
+      ['I', 'IV', 'iii', 'vi'], // Descending warmth
+      ['ii', 'V', 'iii', 'vi'], // Altered resolution
+      ['I', 'vi', 'IV', 'V'], // Pop-influenced lo-fi
+      ['iii', 'vi', 'ii', 'V'], // Extended approach
+      ['I', 'iii', 'IV', 'V'], // Classic with color
+      ['vi', 'V', 'IV', 'iii'], // Descending progression
     ],
-    chordTypes: [ChordTypeName.major7, ChordTypeName.minor7, ChordTypeName.dominant7, ChordTypeName.minor9, ChordTypeName.add9],
+    chordTypes: [
+      ChordTypeName.major7,
+      ChordTypeName.minor7,
+      ChordTypeName.dominant7,
+      ChordTypeName.minor9,
+      ChordTypeName.add9
+    ],
     melodyScale: ScaleName.pentatonicMinor,
     tempo: 75, // Center of 60-90 BPM range
   ),
-  
+
   // Energetic EDM: 120-130 BPM
   // Uses the anthemic vi-IV-I-V progression common in festival bangers
   GenreKey.energeticEdm: GenreProfile(
     name: 'Energetic EDM',
     scale: ScaleName.major,
     progressions: [
-      ['vi', 'IV', 'I', 'V'],   // The anthemic EDM progression
+      ['vi', 'IV', 'I', 'V'], // The anthemic EDM progression
       ['I', 'V', 'vi', 'IV'],
       ['I', 'IV', 'I', 'V'],
-      ['vi', 'V', 'IV', 'I'],   // Alternative anthemic
-      ['I', 'V', 'IV', 'vi'],   // Build and drop
-      ['IV', 'V', 'vi', 'I'],   // Rising energy
-      ['vi', 'IV', 'V', 'I'],   // Euphoric resolution
-      ['I', 'iii', 'IV', 'V'],  // Extended build
+      ['vi', 'V', 'IV', 'I'], // Alternative anthemic
+      ['I', 'V', 'IV', 'vi'], // Build and drop
+      ['IV', 'V', 'vi', 'I'], // Rising energy
+      ['vi', 'IV', 'V', 'I'], // Euphoric resolution
+      ['I', 'iii', 'IV', 'V'], // Extended build
       ['vi', 'iii', 'IV', 'V'], // Dark to light
       ['I', 'V', 'vi', 'iii', 'IV'], // Festival anthem
-      ['IV', 'I', 'V', 'vi'],   // Power progression
+      ['IV', 'I', 'V', 'vi'], // Power progression
       ['vi', 'IV', 'I', 'iii'], // Melodic EDM
     ],
-    chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus4, ChordTypeName.sus2],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.sus4,
+      ChordTypeName.sus2
+    ],
     melodyScale: ScaleName.major,
     tempo: 125, // Center of 120-130 BPM range
   ),
-  
+
   // Soulful R&B: 70-100 BPM
   // Rich harmonies featuring 7th and 9th chords for smooth, warm sound
   GenreKey.soulfulRnb: GenreProfile(
@@ -167,45 +218,57 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
       ['i', 'VII', 'VI', 'V'],
       ['i', 'iv', 'VII', 'III'],
       ['VI', 'VII', 'i', 'i'],
-      ['i', 'VI', 'VII', 'i'],   // Soulful loop
-      ['iv', 'i', 'VI', 'VII'],  // Subdominant start
-      ['i', 'v', 'VI', 'VII'],   // Minor dominant
-      ['III', 'VI', 'ii', 'V'],  // Major section
-      ['i', 'iv', 'v', 'i'],     // Classic minor
-      ['VI', 'iv', 'i', 'VII'],  // Chromatic movement
-      ['i', 'III', 'iv', 'v'],   // Smooth transitions
+      ['i', 'VI', 'VII', 'i'], // Soulful loop
+      ['iv', 'i', 'VI', 'VII'], // Subdominant start
+      ['i', 'v', 'VI', 'VII'], // Minor dominant
+      ['III', 'VI', 'ii', 'V'], // Major section
+      ['i', 'iv', 'v', 'i'], // Classic minor
+      ['VI', 'iv', 'i', 'VII'], // Chromatic movement
+      ['i', 'III', 'iv', 'v'], // Smooth transitions
       ['iv', 'VII', 'III', 'VI'], // Complex harmony
-      ['i', 'VI', 'iv', 'V'],    // Neo-soul progression
+      ['i', 'VI', 'iv', 'V'], // Neo-soul progression
     ],
-    chordTypes: [ChordTypeName.minor7, ChordTypeName.major7, ChordTypeName.dominant7, ChordTypeName.minor9, ChordTypeName.major9],
+    chordTypes: [
+      ChordTypeName.minor7,
+      ChordTypeName.major7,
+      ChordTypeName.dominant7,
+      ChordTypeName.minor9,
+      ChordTypeName.major9
+    ],
     melodyScale: ScaleName.pentatonicMinor,
     tempo: 85, // Center of 70-100 BPM range
   ),
-  
+
   // Jazz Fusion: 120-180 BPM
   // Complex ii-V-I variations with advanced voice leading
   GenreKey.jazzFusion: GenreProfile(
     name: 'Jazz Fusion',
     scale: ScaleName.dorian,
     progressions: [
-      ['ii', 'V', 'I', 'vi'],   // Classic ii-V-I with vi extension
-      ['I', 'vi', 'ii', 'V'],   // Rhythm changes style
+      ['ii', 'V', 'I', 'vi'], // Classic ii-V-I with vi extension
+      ['I', 'vi', 'ii', 'V'], // Rhythm changes style
       ['iii', 'vi', 'ii', 'V'], // Complex approach
-      ['ii', 'V', 'I'],         // Pure ii-V-I
+      ['ii', 'V', 'I'], // Pure ii-V-I
       ['I', 'IV', 'iii', 'vi'], // Modal movement
       ['IV', 'vii', 'iii', 'vi'], // Diminished passing
       ['ii', 'V', 'iii', 'vi'], // Deceptive resolution
-      ['I', 'iii', 'ii', 'V'],  // Extended approach
+      ['I', 'iii', 'ii', 'V'], // Extended approach
       ['vi', 'ii', 'V', 'iii'], // Circle of fifths
       ['IV', 'VII', 'iii', 'vi'], // Chromatic jazz
-      ['ii', 'V', 'IV', 'I'],   // Backdoor progression
-      ['I', 'VI', 'ii', 'V'],   // Altered approach
+      ['ii', 'V', 'IV', 'I'], // Backdoor progression
+      ['I', 'VI', 'ii', 'V'], // Altered approach
     ],
-    chordTypes: [ChordTypeName.major7, ChordTypeName.minor7, ChordTypeName.dominant7, ChordTypeName.halfDim7, ChordTypeName.diminished7],
+    chordTypes: [
+      ChordTypeName.major7,
+      ChordTypeName.minor7,
+      ChordTypeName.dominant7,
+      ChordTypeName.halfDim7,
+      ChordTypeName.diminished7
+    ],
     melodyScale: ScaleName.dorian,
     tempo: 150, // Center of 120-180 BPM range
   ),
-  
+
   // Dark Deep Trap: 140 BPM (half-time feel)
   // Minor and diminished chords create dark, ominous atmosphere
   GenreKey.darkTrap: GenreProfile(
@@ -215,21 +278,27 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
       ['i', 'VI', 'III', 'VII'],
       ['i', 'iv', 'VI', 'V'],
       ['i', 'VII', 'VI', 'VII'],
-      ['i', 'VI', 'VII', 'i'],   // Dark loop
+      ['i', 'VI', 'VII', 'i'], // Dark loop
       ['i', 'III', 'VI', 'VII'], // Harmonic minor flavor
       ['VI', 'VII', 'i', 'III'], // Dramatic entrance
-      ['i', 'iv', 'V', 'i'],     // Minor cadence
-      ['i', 'VI', 'iv', 'V'],    // Moody progression
-      ['VII', 'VI', 'V', 'i'],   // Descending darkness
+      ['i', 'iv', 'V', 'i'], // Minor cadence
+      ['i', 'VI', 'iv', 'V'], // Moody progression
+      ['VII', 'VI', 'V', 'i'], // Descending darkness
       ['i', 'III', 'VII', 'VI'], // Angular movement
-      ['i', 'VI', 'III', 'iv'],  // Extended darkness
+      ['i', 'VI', 'III', 'iv'], // Extended darkness
       ['VI', 'III', 'VII', 'i'], // Chromatic trap
     ],
-    chordTypes: [ChordTypeName.minor, ChordTypeName.diminished, ChordTypeName.minor7, ChordTypeName.halfDim7, ChordTypeName.augmented],
+    chordTypes: [
+      ChordTypeName.minor,
+      ChordTypeName.diminished,
+      ChordTypeName.minor7,
+      ChordTypeName.halfDim7,
+      ChordTypeName.augmented
+    ],
     melodyScale: ScaleName.harmonicMinor,
     tempo: 140, // Standard trap tempo with half-time feel
   ),
-  
+
   // Cinematic Epic: Variable tempo
   // Minor keys with i-VI progressions for dramatic, emotional impact
   GenreKey.cinematic: GenreProfile(
@@ -240,44 +309,56 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
       ['i', 'iv', 'V', 'i'],
       ['VI', 'VII', 'i', 'V'],
       ['i', 'III', 'VI', 'VII'], // Epic ascension
-      ['VI', 'IV', 'i', 'V'],    // Majestic movement
-      ['i', 'VII', 'VI', 'V'],   // Descending drama
+      ['VI', 'IV', 'i', 'V'], // Majestic movement
+      ['i', 'VII', 'VI', 'V'], // Descending drama
       ['III', 'VI', 'iv', 'VII'], // Color shift
-      ['i', 'VI', 'iv', 'V'],    // Emotional arc
+      ['i', 'VI', 'iv', 'V'], // Emotional arc
       ['VI', 'i', 'III', 'VII'], // Dynamic contrast
-      ['i', 'III', 'IV', 'V'],   // Minor to major
-      ['iv', 'VI', 'VII', 'i'],  // Subdominant epic
+      ['i', 'III', 'IV', 'V'], // Minor to major
+      ['iv', 'VI', 'VII', 'i'], // Subdominant epic
       ['i', 'VI', 'VII', 'III'], // Cinematic sweep
     ],
-    chordTypes: [ChordTypeName.minor, ChordTypeName.major, ChordTypeName.sus4, ChordTypeName.augmented, ChordTypeName.minor7],
+    chordTypes: [
+      ChordTypeName.minor,
+      ChordTypeName.major,
+      ChordTypeName.sus4,
+      ChordTypeName.augmented,
+      ChordTypeName.minor7
+    ],
     melodyScale: ScaleName.minor,
     tempo: 100, // Variable in practice, 100 as base
   ),
-  
+
   // Indie Rock: 80-120 BPM
   // Mix of classic I-IV-V and modern vi-IV-I-V progressions
   GenreKey.indieRock: GenreProfile(
     name: 'Indie Rock',
     scale: ScaleName.major,
     progressions: [
-      ['I', 'IV', 'V', 'I'],         // Classic rock progression
-      ['vi', 'IV', 'I', 'V'],        // Modern indie sound
+      ['I', 'IV', 'V', 'I'], // Classic rock progression
+      ['vi', 'IV', 'I', 'V'], // Modern indie sound
       ['I', 'V', 'vi', 'iii', 'IV'], // Extended progression for variety
       ['I', 'iii', 'IV', 'V'],
       ['I', 'IV', 'ii', 'V'],
-      ['IV', 'I', 'V', 'vi'],        // Alt-rock feel
-      ['I', 'V', 'IV', 'IV'],        // Driving rhythm
-      ['vi', 'V', 'IV', 'I'],        // Melancholic indie
-      ['I', 'iii', 'vi', 'IV'],      // Emotional build
-      ['IV', 'V', 'I', 'I'],         // Triumphant resolution
-      ['I', 'V', 'vi', 'IV', 'I'],   // Extended anthem
-      ['vi', 'iii', 'IV', 'I'],      // Alternative pathway
+      ['IV', 'I', 'V', 'vi'], // Alt-rock feel
+      ['I', 'V', 'IV', 'IV'], // Driving rhythm
+      ['vi', 'V', 'IV', 'I'], // Melancholic indie
+      ['I', 'iii', 'vi', 'IV'], // Emotional build
+      ['IV', 'V', 'I', 'I'], // Triumphant resolution
+      ['I', 'V', 'vi', 'IV', 'I'], // Extended anthem
+      ['vi', 'iii', 'IV', 'I'], // Alternative pathway
     ],
-    chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus2, ChordTypeName.add9, ChordTypeName.major7],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.sus2,
+      ChordTypeName.add9,
+      ChordTypeName.major7
+    ],
     melodyScale: ScaleName.major,
     tempo: 100, // Center of 80-120 BPM range
   ),
-  
+
   // Reggae: 80 BPM
   // Laid-back offbeat feel with classic Jamaican patterns
   GenreKey.reggae: GenreProfile(
@@ -287,45 +368,70 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
       ['I', 'IV', 'I', 'V'],
       ['I', 'V', 'vi', 'IV'],
       ['I', 'IV', 'V', 'IV'],
-      ['I', 'IV', 'I', 'IV'],     // One drop feel
-      ['I', 'V', 'IV', 'I'],      // Classic reggae
-      ['IV', 'I', 'V', 'I'],      // Roots progression
-      ['I', 'vi', 'IV', 'V'],     // Smooth reggae
-      ['I', 'IV', 'vi', 'V'],     // Lovers rock
-      ['I', 'iii', 'IV', 'V'],    // Extended harmony
-      ['IV', 'V', 'I', 'vi'],     // Uplifting reggae
-      ['I', 'IV', 'I', 'iii'],    // Melodic roots
-      ['I', 'V', 'IV', 'IV'],     // Sustained groove
+      ['I', 'IV', 'I', 'IV'], // One drop feel
+      ['I', 'V', 'IV', 'I'], // Classic reggae
+      ['IV', 'I', 'V', 'I'], // Roots progression
+      ['I', 'vi', 'IV', 'V'], // Smooth reggae
+      ['I', 'IV', 'vi', 'V'], // Lovers rock
+      ['I', 'iii', 'IV', 'V'], // Extended harmony
+      ['IV', 'V', 'I', 'vi'], // Uplifting reggae
+      ['I', 'IV', 'I', 'iii'], // Melodic roots
+      ['I', 'V', 'IV', 'IV'], // Sustained groove
     ],
-    chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.dominant7, ChordTypeName.minor7, ChordTypeName.sus2],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.dominant7,
+      ChordTypeName.minor7,
+      ChordTypeName.sus2
+    ],
     melodyScale: ScaleName.pentatonicMajor,
     tempo: 80,
   ),
-  
+
   // Blues: 90 BPM
   // Traditional 12-bar structure with dominant 7th chords
   GenreKey.blues: GenreProfile(
     name: 'Blues',
     scale: ScaleName.mixolydian,
     progressions: [
-      ['I', 'I', 'I', 'I', 'IV', 'IV', 'I', 'I', 'V', 'IV', 'I', 'V'], // 12-bar blues
+      [
+        'I',
+        'I',
+        'I',
+        'I',
+        'IV',
+        'IV',
+        'I',
+        'I',
+        'V',
+        'IV',
+        'I',
+        'V'
+      ], // 12-bar blues
       ['I', 'IV', 'I', 'V'],
       ['i', 'iv', 'i', 'V'],
-      ['I', 'IV', 'V', 'IV'],     // Quick change blues
-      ['I', 'IV', 'I', 'IV'],     // Shuffle blues
-      ['I', 'I', 'IV', 'I'],      // Basic blues
-      ['I', 'IV', 'V', 'I'],      // Classic turnaround
-      ['i', 'iv', 'V', 'i'],      // Minor blues
+      ['I', 'IV', 'V', 'IV'], // Quick change blues
+      ['I', 'IV', 'I', 'IV'], // Shuffle blues
+      ['I', 'I', 'IV', 'I'], // Basic blues
+      ['I', 'IV', 'V', 'I'], // Classic turnaround
+      ['i', 'iv', 'V', 'i'], // Minor blues
       ['I', 'IV', 'I', 'I', 'IV', 'IV', 'I', 'V'], // 8-bar blues
-      ['I', 'V', 'IV', 'I'],      // Rockabilly blues
-      ['I', 'IV', 'iv', 'I'],     // Chromatic blues
-      ['I', 'IV', 'V', 'V'],      // Extended V
+      ['I', 'V', 'IV', 'I'], // Rockabilly blues
+      ['I', 'IV', 'iv', 'I'], // Chromatic blues
+      ['I', 'IV', 'V', 'V'], // Extended V
     ],
-    chordTypes: [ChordTypeName.dominant7, ChordTypeName.minor7, ChordTypeName.major, ChordTypeName.minor, ChordTypeName.diminished],
+    chordTypes: [
+      ChordTypeName.dominant7,
+      ChordTypeName.minor7,
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.diminished
+    ],
     melodyScale: ScaleName.blues,
     tempo: 90,
   ),
-  
+
   // Country: 110 BPM
   // Nashville-style progressions with major key optimism
   GenreKey.country: GenreProfile(
@@ -335,21 +441,27 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
       ['I', 'IV', 'V', 'I'],
       ['I', 'V', 'vi', 'IV'],
       ['I', 'IV', 'I', 'V'],
-      ['I', 'V', 'IV', 'I'],      // Nashville sound
-      ['I', 'IV', 'V', 'V'],      // Extended V
-      ['I', 'iii', 'IV', 'I'],    // Melodic country
-      ['IV', 'I', 'V', 'I'],      // Honky-tonk
-      ['I', 'V', 'vi', 'V'],      // Emotional country
-      ['I', 'IV', 'vi', 'V'],     // Modern country
-      ['I', 'iii', 'vi', 'IV'],   // Pop-country
-      ['I', 'IV', 'I', 'IV'],     // Two-step feel
-      ['I', 'V', 'IV', 'V'],      // Driving country
+      ['I', 'V', 'IV', 'I'], // Nashville sound
+      ['I', 'IV', 'V', 'V'], // Extended V
+      ['I', 'iii', 'IV', 'I'], // Melodic country
+      ['IV', 'I', 'V', 'I'], // Honky-tonk
+      ['I', 'V', 'vi', 'V'], // Emotional country
+      ['I', 'IV', 'vi', 'V'], // Modern country
+      ['I', 'iii', 'vi', 'IV'], // Pop-country
+      ['I', 'IV', 'I', 'IV'], // Two-step feel
+      ['I', 'V', 'IV', 'V'], // Driving country
     ],
-    chordTypes: [ChordTypeName.major, ChordTypeName.minor, ChordTypeName.sus4, ChordTypeName.add9, ChordTypeName.dominant7],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.minor,
+      ChordTypeName.sus4,
+      ChordTypeName.add9,
+      ChordTypeName.dominant7
+    ],
     melodyScale: ScaleName.pentatonicMajor,
     tempo: 110,
   ),
-  
+
   // Funk: 105 BPM
   // Syncopated grooves with dominant 7th and 9th chords
   GenreKey.funk: GenreProfile(
@@ -359,17 +471,23 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
       ['I', 'IV', 'I', 'IV'],
       ['i', 'IV', 'i', 'IV'],
       ['I', 'I', 'IV', 'I'],
-      ['I', 'IV', 'I', 'I'],      // One-chord funk
-      ['i', 'iv', 'i', 'IV'],     // Modal funk
-      ['I', 'IV', 'V', 'IV'],     // Groove progression
-      ['i', 'IV', 'V', 'IV'],     // Minor funk
-      ['I', 'I', 'I', 'IV'],      // Extended tonic
-      ['I', 'IV', 'iv', 'I'],     // Chromatic funk
-      ['i', 'bVII', 'IV', 'i'],   // Dorian funk
-      ['I', 'IV', 'I', 'V'],      // Funk turnaround
-      ['I', 'bVII', 'IV', 'I'],   // Modal groove
+      ['I', 'IV', 'I', 'I'], // One-chord funk
+      ['i', 'iv', 'i', 'IV'], // Modal funk
+      ['I', 'IV', 'V', 'IV'], // Groove progression
+      ['i', 'IV', 'V', 'IV'], // Minor funk
+      ['I', 'I', 'I', 'IV'], // Extended tonic
+      ['I', 'IV', 'iv', 'I'], // Chromatic funk
+      ['i', 'bVII', 'IV', 'i'], // Dorian funk
+      ['I', 'IV', 'I', 'V'], // Funk turnaround
+      ['I', 'bVII', 'IV', 'I'], // Modal groove
     ],
-    chordTypes: [ChordTypeName.dominant7, ChordTypeName.minor7, ChordTypeName.major, ChordTypeName.minor9, ChordTypeName.sus4],
+    chordTypes: [
+      ChordTypeName.dominant7,
+      ChordTypeName.minor7,
+      ChordTypeName.major,
+      ChordTypeName.minor9,
+      ChordTypeName.sus4
+    ],
     melodyScale: ScaleName.pentatonicMinor,
     tempo: 105,
   ),
@@ -382,10 +500,14 @@ const Map<GenreKey, GenreProfile> genreProfiles = {
 // based on the selected complexity level.
 
 const Map<ComplexityLevel, ComplexitySetting> complexitySettings = {
-  ComplexityLevel.simple: ComplexitySetting(chordCount: [3, 4], useExtensions: false, variations: 1),
-  ComplexityLevel.medium: ComplexitySetting(chordCount: [4, 5], useExtensions: true, variations: 2),
-  ComplexityLevel.complex: ComplexitySetting(chordCount: [6, 8], useExtensions: true, variations: 3),
-  ComplexityLevel.advanced: ComplexitySetting(chordCount: [8, 12], useExtensions: true, variations: 4),
+  ComplexityLevel.simple: ComplexitySetting(
+      chordCount: [3, 4], useExtensions: false, variations: 1),
+  ComplexityLevel.medium:
+      ComplexitySetting(chordCount: [4, 5], useExtensions: true, variations: 2),
+  ComplexityLevel.complex:
+      ComplexitySetting(chordCount: [6, 8], useExtensions: true, variations: 3),
+  ComplexityLevel.advanced: ComplexitySetting(
+      chordCount: [8, 12], useExtensions: true, variations: 4),
 };
 
 // ===================================
@@ -415,7 +537,13 @@ const Map<RhythmLevel, RhythmPattern> rhythmPatterns = {
   ),
   RhythmLevel.intense: RhythmPattern(
     name: 'Intense & Driving',
-    durations: [0.8, 0.8, 0.8, 0.8, 0.8], // quintuplet subdivision (5 notes over 4 beats)
+    durations: [
+      0.8,
+      0.8,
+      0.8,
+      0.8,
+      0.8
+    ], // quintuplet subdivision (5 notes over 4 beats)
     dynamics: [1, 0.8, 0.95, 0.85, 0.9],
     melodyDensity: 0.9,
   ),
@@ -527,7 +655,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Happy',
     scales: [ScaleName.major, ScaleName.lydian, ScaleName.pentatonicMajor],
     preferredFunctions: [HarmonyFunction.tonic, HarmonyFunction.subdominant],
-    chordTypes: [ChordTypeName.major, ChordTypeName.major7, ChordTypeName.add9, ChordTypeName.sus2],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.major7,
+      ChordTypeName.add9,
+      ChordTypeName.sus2
+    ],
     tensionRange: [0, 0.5],
     description: 'Bright, uplifting progressions',
   ),
@@ -535,7 +668,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Sad',
     scales: [ScaleName.minor, ScaleName.dorian, ScaleName.phrygian],
     preferredFunctions: [HarmonyFunction.tonic, HarmonyFunction.subdominant],
-    chordTypes: [ChordTypeName.minor, ChordTypeName.minor7, ChordTypeName.minor9, ChordTypeName.sus4],
+    chordTypes: [
+      ChordTypeName.minor,
+      ChordTypeName.minor7,
+      ChordTypeName.minor9,
+      ChordTypeName.sus4
+    ],
     tensionRange: [0.2, 0.6],
     description: 'Melancholic, introspective progressions',
   ),
@@ -543,7 +681,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Dreamy',
     scales: [ScaleName.lydian, ScaleName.dorian, ScaleName.pentatonicMajor],
     preferredFunctions: [HarmonyFunction.tonic, HarmonyFunction.passing],
-    chordTypes: [ChordTypeName.major7, ChordTypeName.minor7, ChordTypeName.add9, ChordTypeName.sus2],
+    chordTypes: [
+      ChordTypeName.major7,
+      ChordTypeName.minor7,
+      ChordTypeName.add9,
+      ChordTypeName.sus2
+    ],
     tensionRange: [0.1, 0.4],
     description: 'Ethereal, floating progressions',
   ),
@@ -551,7 +694,11 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Energetic',
     scales: [ScaleName.major, ScaleName.mixolydian],
     preferredFunctions: [HarmonyFunction.dominant, HarmonyFunction.subdominant],
-    chordTypes: [ChordTypeName.major, ChordTypeName.dominant7, ChordTypeName.sus4],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.dominant7,
+      ChordTypeName.sus4
+    ],
     tensionRange: [0.5, 0.9],
     description: 'Driving, powerful progressions',
   ),
@@ -559,7 +706,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Dark',
     scales: [ScaleName.harmonicMinor, ScaleName.phrygian, ScaleName.locrian],
     preferredFunctions: [HarmonyFunction.dominant, HarmonyFunction.passing],
-    chordTypes: [ChordTypeName.minor, ChordTypeName.diminished, ChordTypeName.halfDim7, ChordTypeName.augmented],
+    chordTypes: [
+      ChordTypeName.minor,
+      ChordTypeName.diminished,
+      ChordTypeName.halfDim7,
+      ChordTypeName.augmented
+    ],
     tensionRange: [0.6, 1.0],
     description: 'Tense, ominous progressions',
   ),
@@ -567,7 +719,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Mysterious',
     scales: [ScaleName.dorian, ScaleName.phrygian, ScaleName.harmonicMinor],
     preferredFunctions: [HarmonyFunction.passing, HarmonyFunction.subdominant],
-    chordTypes: [ChordTypeName.minor7, ChordTypeName.halfDim7, ChordTypeName.sus4, ChordTypeName.diminished7],
+    chordTypes: [
+      ChordTypeName.minor7,
+      ChordTypeName.halfDim7,
+      ChordTypeName.sus4,
+      ChordTypeName.diminished7
+    ],
     tensionRange: [0.4, 0.8],
     description: 'Enigmatic, suspenseful progressions',
   ),
@@ -575,7 +732,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Triumphant',
     scales: [ScaleName.major, ScaleName.lydian],
     preferredFunctions: [HarmonyFunction.dominant, HarmonyFunction.tonic],
-    chordTypes: [ChordTypeName.major, ChordTypeName.major7, ChordTypeName.sus4, ChordTypeName.add9],
+    chordTypes: [
+      ChordTypeName.major,
+      ChordTypeName.major7,
+      ChordTypeName.sus4,
+      ChordTypeName.add9
+    ],
     tensionRange: [0.3, 0.8],
     description: 'Victorious, heroic progressions',
   ),
@@ -583,7 +745,12 @@ const Map<MoodType, MoodProfile> moodProfiles = {
     name: 'Relaxed',
     scales: [ScaleName.major, ScaleName.dorian, ScaleName.pentatonicMajor],
     preferredFunctions: [HarmonyFunction.tonic, HarmonyFunction.subdominant],
-    chordTypes: [ChordTypeName.major7, ChordTypeName.minor7, ChordTypeName.add9, ChordTypeName.sus2],
+    chordTypes: [
+      ChordTypeName.major7,
+      ChordTypeName.minor7,
+      ChordTypeName.add9,
+      ChordTypeName.sus2
+    ],
     tensionRange: [0, 0.3],
     description: 'Calm, soothing progressions',
   ),
@@ -608,7 +775,24 @@ const Map<GrooveTemplate, GroovePattern> groovePatterns = {
   GrooveTemplate.funkSyncopation: GroovePattern(
     name: 'Funk Syncopation',
     template: GrooveTemplate.funkSyncopation,
-    beatPattern: [1, 0.3, 0, 0.8, 0, 0.5, 0.9, 0, 1, 0.3, 0, 0.8, 0, 0.5, 0.9, 0],
+    beatPattern: [
+      1,
+      0.3,
+      0,
+      0.8,
+      0,
+      0.5,
+      0.9,
+      0,
+      1,
+      0.3,
+      0,
+      0.8,
+      0,
+      0.5,
+      0.9,
+      0
+    ],
     swingAmount: 0.15,
     accentBeats: [0, 3, 6, 8, 11, 14],
   ),
@@ -637,10 +821,26 @@ const Map<GrooveTemplate, GroovePattern> groovePatterns = {
 
 // Spice configs
 const Map<SpiceLevel, SpiceConfig> spiceConfigs = {
-  SpiceLevel.mild: SpiceConfig(level: SpiceLevel.mild, allowExtensions: false, allowAlterations: false, maxExtension: 7),
-  SpiceLevel.medium: SpiceConfig(level: SpiceLevel.medium, allowExtensions: true, allowAlterations: false, maxExtension: 9),
-  SpiceLevel.hot: SpiceConfig(level: SpiceLevel.hot, allowExtensions: true, allowAlterations: true, maxExtension: 11),
-  SpiceLevel.fire: SpiceConfig(level: SpiceLevel.fire, allowExtensions: true, allowAlterations: true, maxExtension: 13),
+  SpiceLevel.mild: SpiceConfig(
+      level: SpiceLevel.mild,
+      allowExtensions: false,
+      allowAlterations: false,
+      maxExtension: 7),
+  SpiceLevel.medium: SpiceConfig(
+      level: SpiceLevel.medium,
+      allowExtensions: true,
+      allowAlterations: false,
+      maxExtension: 9),
+  SpiceLevel.hot: SpiceConfig(
+      level: SpiceLevel.hot,
+      allowExtensions: true,
+      allowAlterations: true,
+      maxExtension: 11),
+  SpiceLevel.fire: SpiceConfig(
+      level: SpiceLevel.fire,
+      allowExtensions: true,
+      allowAlterations: true,
+      maxExtension: 13),
 };
 
 // Default state values

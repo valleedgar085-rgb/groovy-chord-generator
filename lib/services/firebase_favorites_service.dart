@@ -1,15 +1,14 @@
-/// Groovy Chord Generator
-/// Firebase Favorites Service
-/// Version 2.5
-/// 
-/// Enhanced favorites service that uses Firebase Firestore for cloud storage
-/// with fallback to local SharedPreferences for offline support.
+// Groovy Chord Generator
+// Firebase Favorites Service
+// Version 2.5
+//
+// Enhanced favorites service that uses Firebase Firestore for cloud storage
+// with fallback to local SharedPreferences for offline support.
 
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import '../models/types.dart';
-import '../models/constants.dart';
 import '../utilities/helpers.dart';
 import 'firestore_service.dart';
 import 'auth_service.dart';
@@ -170,11 +169,11 @@ class FavoritesService {
         final favorites = firestoreData
             .map((data) => FavoriteProgression.fromFirestore(data))
             .toList();
-        
+
         if (kDebugMode) {
           print('Loaded ${favorites.length} favorites from Firebase');
         }
-        
+
         // Sync to local storage as backup
         await _saveToLocalStorage(favorites);
         return favorites;
@@ -200,7 +199,8 @@ class FavoritesService {
     try {
       final List<dynamic> jsonList = jsonDecode(jsonString);
       return jsonList
-          .map((json) => FavoriteProgression.fromJson(json as Map<String, dynamic>))
+          .map((json) =>
+              FavoriteProgression.fromJson(json as Map<String, dynamic>))
           .toList();
     } catch (e) {
       if (kDebugMode) {
@@ -211,7 +211,8 @@ class FavoritesService {
   }
 
   /// Save favorites to local storage
-  static Future<void> _saveToLocalStorage(List<FavoriteProgression> favorites) async {
+  static Future<void> _saveToLocalStorage(
+      List<FavoriteProgression> favorites) async {
     final prefs = await SharedPreferences.getInstance();
     final jsonList = favorites.map((f) => f.toJson()).toList();
     await prefs.setString(_storageKey, jsonEncode(jsonList));
@@ -234,7 +235,7 @@ class FavoritesService {
     }
 
     String? id;
-    
+
     // Try adding to Firebase first
     if (_useFirebase && AuthService.isSignedIn) {
       try {
@@ -318,7 +319,7 @@ class FavoritesService {
     final favorites = await _getFromLocalStorage();
     final initialLength = favorites.length;
     favorites.removeWhere((f) => f.id == id);
-    
+
     if (favorites.length == initialLength) {
       return false;
     }
@@ -340,16 +341,16 @@ class FavoritesService {
     try {
       final localFavorites = await _getFromLocalStorage();
       final firestoreFavorites = await FirestoreService.getFavorites();
-      
+
       // Upload local favorites that aren't in Firebase
       for (final local in localFavorites) {
-        final existsInFirestore = firestoreFavorites.any((f) => 
-          _progressionsMatch(
+        final existsInFirestore = firestoreFavorites.any(
+          (f) => _progressionsMatch(
             FavoriteProgression.fromFirestore(f).progression,
             local.progression,
           ),
         );
-        
+
         if (!existsInFirestore) {
           await FirestoreService.addFavorite(
             name: local.name,
@@ -359,7 +360,7 @@ class FavoritesService {
           );
         }
       }
-      
+
       if (kDebugMode) {
         print('Favorites synced to Firebase');
       }

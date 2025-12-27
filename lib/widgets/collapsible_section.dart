@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// Collapsible Section Widget
-/// Version 2.5
+// Groovy Chord Generator
+// Collapsible Section Widget
+// Version 2.5
 
 import 'package:flutter/material.dart';
 import '../utils/theme.dart';
@@ -40,7 +40,7 @@ class _CollapsibleSectionState extends State<CollapsibleSection>
     _iconRotation = Tween<double>(begin: 0, end: 0.5).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic),
     );
-    
+
     if (_isExpanded) {
       _controller.value = 1.0;
     }
@@ -101,7 +101,7 @@ class _CollapsibleSectionState extends State<CollapsibleSection>
               ),
             ),
           ),
-          
+
           // Content - wrap in RepaintBoundary for better performance
           RepaintBoundary(
             child: ClipRect(

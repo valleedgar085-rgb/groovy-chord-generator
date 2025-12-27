@@ -1,6 +1,6 @@
-/// Groovy Chord Generator
-/// App State Provider
-/// Version 2.5
+// Groovy Chord Generator
+// App state provider
+// Version 2.5
 
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -46,7 +46,7 @@ class AppState extends ChangeNotifier {
   GrooveTemplate _grooveTemplate = defaultGrooveTemplate;
   SpiceLevel _spiceLevel = defaultSpiceLevel;
   List<LockedChord> _lockedChords = [];
-  
+
   // Favorites state
   List<FavoriteProgression> _favorites = [];
   bool _favoritesLoading = false;
@@ -94,9 +94,9 @@ class AppState extends ChangeNotifier {
   Future<void> loadFavorites() async {
     _favoritesLoading = true;
     notifyListeners();
-    
+
     _favorites = await FavoritesService.getFavorites();
-    
+
     _favoritesLoading = false;
     notifyListeners();
   }
@@ -247,7 +247,8 @@ class AppState extends ChangeNotifier {
     final existingIndex = _lockedChords.indexWhere((lc) => lc.index == index);
     if (existingIndex != -1) {
       final existing = _lockedChords[existingIndex];
-      _lockedChords[existingIndex] = existing.copyWith(locked: !existing.locked);
+      _lockedChords[existingIndex] =
+          existing.copyWith(locked: !existing.locked);
     } else {
       _lockedChords.add(LockedChord(index: index, locked: true));
     }
@@ -297,25 +298,29 @@ class AppState extends ChangeNotifier {
     } else {
       // Original progression generation
       final baseProgression = randomChoice(profile.progressions);
-      final degreeSequence = _buildDegreeSequence(baseProgression, complexityConfig);
+      final degreeSequence =
+          _buildDegreeSequence(baseProgression, complexityConfig);
       final scale = isMinor ? ScaleName.minor : profile.scale;
 
       chords = degreeSequence.asMap().entries.map((entry) {
         final index = entry.key;
         final degree = entry.value;
         var chord = getChordFromDegree(root, degree, isMinor, scale);
-        
+
         // Smart chord type selection based on variety and complexity
         if (complexityConfig.useExtensions) {
           final varietyFactor = _chordVariety / 100.0;
           final extensionChance = 0.3 + (varietyFactor * 0.4); // 30-70% chance
-          
+
           if (Random().nextDouble() < extensionChance) {
-            final extensions = profile.chordTypes.where((t) =>
-              t.name.contains('7') || t.name.contains('9') ||
-              t.name.contains('sus') || t.name.contains('add')
-            ).toList();
-            
+            final extensions = profile.chordTypes
+                .where((t) =>
+                    t.name.contains('7') ||
+                    t.name.contains('9') ||
+                    t.name.contains('sus') ||
+                    t.name.contains('add'))
+                .toList();
+
             if (extensions.isNotEmpty) {
               // Weight selection towards 7th chords for smoother sound
               final weights = <ChordTypeName, double>{};
@@ -328,11 +333,11 @@ class AppState extends ChangeNotifier {
                   weights[ext] = 0.25; // Lower weight for sus/add
                 }
               }
-              
+
               // Weighted random selection
               final totalWeight = weights.values.fold(0.0, (sum, w) => sum + w);
               var randomValue = Random().nextDouble() * totalWeight;
-              
+
               for (final weightEntry in weights.entries) {
                 randomValue -= weightEntry.value;
                 if (randomValue <= 0) {
@@ -343,26 +348,33 @@ class AppState extends ChangeNotifier {
             }
           }
         }
-        
+
         // Apply strategic extensions based on position
-        chord = addStrategicExtensions(chord, index, degreeSequence.length, _chordVariety);
-        
+        chord = addStrategicExtensions(
+            chord, index, degreeSequence.length, _chordVariety);
+
         return applyGenreVoicing(chord, _genre);
       }).toList();
     }
 
     // Preserve locked chords
     for (final lc in _lockedChords) {
-      if (lc.locked && lc.index < _currentProgression.length && lc.index < chords.length) {
+      if (lc.locked &&
+          lc.index < _currentProgression.length &&
+          lc.index < chords.length) {
         chords[lc.index] = _currentProgression[lc.index];
       }
     }
 
-    if (_useModalInterchange && (_complexity == ComplexityLevel.complex || _complexity == ComplexityLevel.advanced)) {
+    if (_useModalInterchange &&
+        (_complexity == ComplexityLevel.complex ||
+            _complexity == ComplexityLevel.advanced)) {
       chords = applyModalInterchange(chords, root, isMinor);
     }
 
-    if (_useAdvancedTheory && (_complexity == ComplexityLevel.complex || _complexity == ComplexityLevel.advanced)) {
+    if (_useAdvancedTheory &&
+        (_complexity == ComplexityLevel.complex ||
+            _complexity == ComplexityLevel.advanced)) {
       chords = applyAdvancedSubstitutions(chords, root, isMinor);
     }
 
@@ -381,14 +393,16 @@ class AppState extends ChangeNotifier {
 
     // Generate melody if enabled
     if (_includeMelody) {
-      _currentMelody = _generateMelodyNotes(chords, _genre, _rhythm, _currentKey);
+      _currentMelody =
+          _generateMelodyNotes(chords, _genre, _rhythm, _currentKey);
     } else {
       _currentMelody = [];
     }
 
     // Generate bass line if enabled
     if (_includeBass) {
-      _currentBassLine = generateBassLine(chords, _bassStyle, _bassVariety, _rhythm);
+      _currentBassLine =
+          generateBassLine(chords, _bassStyle, _bassVariety, _rhythm);
     } else {
       _currentBassLine = [];
     }
@@ -396,7 +410,8 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  List<String> _buildDegreeSequence(List<String> baseProgression, ComplexitySetting config) {
+  List<String> _buildDegreeSequence(
+      List<String> baseProgression, ComplexitySetting config) {
     final progression = List<String>.from(baseProgression);
     final targetLength = randomInt(config.chordCount[0], config.chordCount[1]);
 
@@ -404,35 +419,36 @@ class AppState extends ChangeNotifier {
     if (_chordVariety > 0) {
       // Apply smart passing chords
       var enhanced = addPassingChords(progression, _chordVariety);
-      
+
       // Apply approach chords for higher variety
       enhanced = addApproachChords(enhanced, _chordVariety);
-      
+
       // Apply intelligent substitutions
-      enhanced = applyIntelligentSubstitutions(enhanced, _chordVariety, _isMinorKey);
-      
+      enhanced =
+          applyIntelligentSubstitutions(enhanced, _chordVariety, _isMinorKey);
+
       // Optimize tension/resolution flow
       enhanced = optimizeTensionFlow(enhanced, _isMinorKey);
-      
+
       // Trim to target length if needed
       while (enhanced.length > targetLength && enhanced.length > 3) {
         // Only remove from middle if we have enough chords
         final canRemoveFromMiddle = enhanced.length > 3;
-        final removeIndex = canRemoveFromMiddle 
-            ? randomInt(1, enhanced.length - 2) 
+        final removeIndex = canRemoveFromMiddle
+            ? randomInt(1, enhanced.length - 2)
             : enhanced.length - 1;
         enhanced.removeAt(removeIndex);
       }
-      
+
       return enhanced;
     }
 
     // Fallback to simple extension if needed
     while (progression.length < targetLength) {
       final insertIndex = randomInt(0, progression.length);
-      final newChord = randomChoice(_isMinorKey 
-        ? ['ii', 'iv', 'V', 'VI', 'III', 'VII']
-        : ['ii', 'IV', 'V', 'vi', 'iii']);
+      final newChord = randomChoice(_isMinorKey
+          ? ['ii', 'iv', 'V', 'VI', 'III', 'VII']
+          : ['ii', 'IV', 'V', 'vi', 'iii']);
       progression.insert(insertIndex, newChord);
     }
 
@@ -457,9 +473,10 @@ class AppState extends ChangeNotifier {
     for (var chordIndex = 0; chordIndex < progression.length; chordIndex++) {
       final chord = progression[chordIndex];
       final notesPerChord = (4 * rhythmPattern.melodyDensity).ceil() + 1;
-      final chordTones = chordTypes[chord.type]!.intervals.map((interval) =>
-        transposeNote(chord.root, interval)
-      ).toList();
+      final chordTones = chordTypes[chord.type]!
+          .intervals
+          .map((interval) => transposeNote(chord.root, interval))
+          .toList();
 
       for (var i = 0; i < notesPerChord; i++) {
         final shouldUseChordTone = _melodyRandom.nextDouble() > 0.3;
@@ -467,7 +484,8 @@ class AppState extends ChangeNotifier {
 
         final note = randomChoice(sourcePool);
         final duration = randomChoice(rhythmPattern.durations);
-        final velocity = rhythmPattern.dynamics[i % rhythmPattern.dynamics.length];
+        final velocity =
+            rhythmPattern.dynamics[i % rhythmPattern.dynamics.length];
 
         melody.add(MelodyNote(
           note: note,
@@ -586,14 +604,14 @@ class AppState extends ChangeNotifier {
   /// Add current progression to favorites
   Future<bool> addToFavorites(String name) async {
     if (_currentProgression.isEmpty) return false;
-    
+
     final favorite = await FavoritesService.addFavorite(
       name: name,
       progression: _currentProgression,
       key: _currentKey,
       genre: _genre,
     );
-    
+
     if (favorite != null) {
       _favorites.insert(0, favorite);
       notifyListeners();
@@ -637,7 +655,8 @@ class AppState extends ChangeNotifier {
     _currentProgression = restoredProgression;
     _currentKey = favorite.key;
     _genre = favorite.genre;
-    _isMinorKey = favorite.key.name.contains('m') && favorite.key.name.length > 1;
+    _isMinorKey =
+        favorite.key.name.contains('m') && favorite.key.name.length > 1;
 
     final profile = genreProfiles[favorite.genre];
     if (profile != null) {
@@ -647,11 +666,11 @@ class AppState extends ChangeNotifier {
     // Regenerate melody and bass if enabled
     if (_includeMelody) {
       _currentMelody = _generateMelodyNotes(
-        _currentProgression, _genre, _rhythm, _currentKey);
+          _currentProgression, _genre, _rhythm, _currentKey);
     }
     if (_includeBass) {
       _currentBassLine = generateBassLine(
-        _currentProgression, _bassStyle, _bassVariety, _rhythm);
+          _currentProgression, _bassStyle, _bassVariety, _rhythm);
     }
 
     notifyListeners();
@@ -739,16 +758,17 @@ class AppState extends ChangeNotifier {
     _currentKey = sharedSet.key;
     _genre = sharedSet.genre;
     _tempo = sharedSet.tempo;
-    _isMinorKey = sharedSet.key.name.contains('m') && sharedSet.key.name.length > 1;
+    _isMinorKey =
+        sharedSet.key.name.contains('m') && sharedSet.key.name.length > 1;
 
     // Regenerate melody and bass if enabled
     if (_includeMelody) {
       _currentMelody = _generateMelodyNotes(
-        _currentProgression, _genre, _rhythm, _currentKey);
+          _currentProgression, _genre, _rhythm, _currentKey);
     }
     if (_includeBass) {
       _currentBassLine = generateBassLine(
-        _currentProgression, _bassStyle, _bassVariety, _rhythm);
+          _currentProgression, _bassStyle, _bassVariety, _rhythm);
     }
 
     notifyListeners();
