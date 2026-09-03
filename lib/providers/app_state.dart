@@ -9,6 +9,8 @@ import '../models/constants.dart';
 import '../utils/music_theory.dart';
 import '../engine/harmony_engine.dart';
 import '../engine/harmony_candidate_pool.dart';
+import '../engine/song_request.dart';
+import '../engine/seeded_music_generation.dart';
 import '../services/firebase_favorites_service.dart';
 import '../services/share_service.dart';
 
@@ -52,12 +54,14 @@ class AppState extends ChangeNotifier {
   List<LockedChord> _lockedChords = [];
   HarmonySection _harmonySection = HarmonySection.neutral;
   double _lastHarmonyScore = 0.0;
+  int? _lastGenerationSeed;
 
   // Favorites state
   List<FavoriteProgression> _favorites = [];
   bool _favoritesLoading = false;
   final Random _melodyRandom = Random();
   final HarmonyEngine _harmonyEngine = HarmonyEngine();
+  final SeededMusicGeneration _seededGeneration = const SeededMusicGeneration();
   HarmonyCandidatePool? _harmonyCandidatePool;
 
   HarmonyCandidatePool get _producerPool =>
@@ -103,6 +107,7 @@ class AppState extends ChangeNotifier {
   HarmonySection get harmonySection => _harmonySection;
   double get lastHarmonyScore => _lastHarmonyScore;
   int get producerCandidateCount => _producerCandidateCount;
+  int? get lastGenerationSeed => _lastGenerationSeed;
 
   // Initialize favorites on app start
   Future<void> loadFavorites() async {
@@ -282,9 +287,10 @@ class AppState extends ChangeNotifier {
     return lock.locked;
   }
 
-  // Generate progression with the Producer Brain. Eight independent harmonic
-  // candidates are created, scored, and only the strongest is committed.
-  void generateProgression() {
+  /// Generate a progression through an immutable, replayable producer request.
+  /// Passing the same [seed] with the same settings reproduces harmony, melody,
+  /// and bass. Normal UI calls omit it and receive a fresh project seed.
+  void generateProgression({int? seed}) {
     if (_currentProgression.isNotEmpty) {
       final historyEntry = HistoryEntry(
         progression: List.from(_currentProgression),
@@ -298,59 +304,91 @@ class AppState extends ChangeNotifier {
       }
     }
 
-    final keyString = keyNameToString(_currentKey);
-    final keyInfo = parseKey(keyString);
+    final generationSeed =
+        seed ?? (DateTime.now().microsecondsSinceEpoch & 0x7fffffff);
+    final request = SongRequest(
+      seed: generationSeed,
+      key: _currentKey,
+      genre: _genre,
+      mood: _currentMood,
+      complexity: _complexity,
+      spice: _spiceLevel,
+      rhythm: _rhythm,
+      section: _harmonySection,
+      candidateCount: _producerCandidateCount,
+      chordVariety: _chordVariety,
+      useVoiceLeading: _useVoiceLeading,
+      useAdvancedTheory: _useAdvancedTheory,
+      useModalInterchange: _useModalInterchange,
+      useFunctionalHarmony: _useFunctionalHarmony,
+      includeMelody: _includeMelody,
+      includeBass: _includeBass,
+    );
+
+    final keyInfo = parseKey(keyNameToString(request.key));
     final root = keyInfo['root'] as String;
     final isMinor = keyInfo['isMinor'] as bool;
-    final profile = genreProfiles[_genre]!;
-    final complexityConfig = complexitySettings[_complexity]!;
+    final profile = genreProfiles[request.genre]!;
+    final complexityConfig = complexitySettings[request.complexity]!;
 
-    var chords = _producerPool.generateBest(
-      buildCandidate: () => _buildProgressionCandidate(
+    final winner = _producerPool.generateBestForRequest(
+      request: request,
+      buildCandidate: (candidateSeed, candidateIndex) =>
+          _buildProgressionCandidate(
+        request: request,
+        random: Random(candidateSeed),
         root: root,
         isMinor: isMinor,
         profile: profile,
         complexityConfig: complexityConfig,
       ),
-      candidateCount: _producerCandidateCount,
-      section: _harmonySection,
-      applyVoicing: _useVoiceLeading,
     );
 
-    // Defensive fallback: generation should never return an empty candidate,
-    // but keep the app usable if a future generator violates that contract.
-    if (chords.isEmpty) {
-      chords = _buildProgressionCandidate(
-        root: root,
-        isMinor: isMinor,
-        profile: profile,
-        complexityConfig: complexityConfig,
-      );
-      if (_useVoiceLeading) {
-        chords = applyVoiceLeading(chords);
-      }
+    var chords = winner.progression.isNotEmpty
+        ? List<Chord>.from(winner.progression)
+        : _buildProgressionCandidate(
+            request: request,
+            random: Random(request.candidateSeed(0)),
+            root: root,
+            isMinor: isMinor,
+            profile: profile,
+            complexityConfig: complexityConfig,
+          );
+
+    if (request.useVoiceLeading) {
+      chords = applyVoiceLeading(chords);
     }
 
-    // Groove is performance metadata, not harmonic quality, so apply it once
-    // after the winning progression has been chosen.
+    // Groove is performance metadata, not harmonic candidate quality.
     chords = applyGrooveToProgression(chords, _grooveTemplate);
 
-    _lastHarmonyScore =
-        _harmonyEngine.score(chords, section: _harmonySection);
+    _lastHarmonyScore = winner.progression.isNotEmpty
+        ? winner.score
+        : _harmonyEngine.score(chords, section: request.section);
+    _lastGenerationSeed = generationSeed;
     _currentProgression = chords;
     _isMinorKey = isMinor;
 
-    // Melody and bass are generated only once from the winning harmony.
-    if (_includeMelody) {
-      _currentMelody =
-          _generateMelodyNotes(chords, _genre, _rhythm, _currentKey);
+    if (request.includeMelody) {
+      _currentMelody = _seededGeneration.generateMelody(
+        random: Random(request.melodySeed),
+        progression: chords,
+        genre: request.genre,
+        rhythm: request.rhythm,
+        key: request.key,
+      );
     } else {
       _currentMelody = [];
     }
 
-    if (_includeBass) {
-      _currentBassLine =
-          generateBassLine(chords, _bassStyle, _bassVariety, _rhythm);
+    if (request.includeBass) {
+      _currentBassLine = _seededGeneration.generateBass(
+        random: Random(request.bassSeed),
+        progression: chords,
+        style: _bassStyle,
+        variety: _bassVariety,
+        rhythm: request.rhythm,
+      );
     } else {
       _currentBassLine = [];
     }
@@ -358,7 +396,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Replay the last generated musical result against the current settings.
+  /// This is intentionally explicit so future project loading and A/B/C tools
+  /// can reuse the same seed without reaching into provider internals.
+  void replayLastGeneration() {
+    final seed = _lastGenerationSeed;
+    if (seed != null) generateProgression(seed: seed);
+  }
+
   List<Chord> _buildProgressionCandidate({
+    required SongRequest request,
+    required Random random,
     required String root,
     required bool isMinor,
     required GenreProfile profile,
@@ -366,19 +414,23 @@ class AppState extends ChangeNotifier {
   }) {
     List<Chord> chords;
 
-    if (_useFunctionalHarmony) {
-      chords = generateFunctionalProgression(
-        root,
-        isMinor,
-        complexityConfig.chordCount[1],
-        _currentMood,
+    if (request.useFunctionalHarmony) {
+      chords = _seededGeneration.generateFunctionalProgression(
+        random: random,
+        root: root,
+        isMinorKey: isMinor,
+        length: complexityConfig.chordCount[1],
+        mood: request.mood,
       );
     } else {
-      final baseProgression = randomChoice(profile.progressions);
-      final degreeSequence = _buildDegreeSequence(
-        baseProgression,
-        complexityConfig,
+      final baseProgression =
+          _seededGeneration.choice(random, profile.progressions);
+      final degreeSequence = _seededGeneration.buildDegreeSequence(
+        random: random,
+        baseProgression: baseProgression,
+        config: complexityConfig,
         isMinor: isMinor,
+        chordVariety: request.chordVariety,
       );
       final scale = isMinor ? ScaleName.minor : profile.scale;
 
@@ -388,37 +440,33 @@ class AppState extends ChangeNotifier {
         var chord = getChordFromDegree(root, degree, isMinor, scale);
 
         if (complexityConfig.useExtensions) {
-          final varietyFactor = _chordVariety / 100.0;
-          final extensionChance = 0.3 + (varietyFactor * 0.4);
-
-          if (Random().nextDouble() < extensionChance) {
+          final extensionChance = 0.3 + ((request.chordVariety / 100.0) * 0.4);
+          if (random.nextDouble() < extensionChance) {
             final extensions = profile.chordTypes
-                .where((t) =>
-                    t.name.contains('7') ||
-                    t.name.contains('9') ||
-                    t.name.contains('sus') ||
-                    t.name.contains('add'))
-                .toList();
-
+                .where((type) =>
+                    type.name.contains('7') ||
+                    type.name.contains('9') ||
+                    type.name.contains('sus') ||
+                    type.name.contains('add'))
+                .toList(growable: false);
             if (extensions.isNotEmpty) {
               final weights = <ChordTypeName, double>{};
-              for (final ext in extensions) {
-                if (ext.name.contains('7') && !ext.name.contains('9')) {
-                  weights[ext] = 0.5;
-                } else if (ext.name.contains('9')) {
-                  weights[ext] = 0.25;
+              for (final extension in extensions) {
+                if (extension.name.contains('7') &&
+                    !extension.name.contains('9')) {
+                  weights[extension] = 0.5;
+                } else if (extension.name.contains('9')) {
+                  weights[extension] = 0.25;
                 } else {
-                  weights[ext] = 0.25;
+                  weights[extension] = 0.25;
                 }
               }
-
-              final totalWeight = weights.values.fold(0.0, (sum, w) => sum + w);
-              var randomValue = Random().nextDouble() * totalWeight;
-
-              for (final weightEntry in weights.entries) {
-                randomValue -= weightEntry.value;
-                if (randomValue <= 0) {
-                  chord = chord.copyWith(type: weightEntry.key);
+              final total = weights.values.fold(0.0, (sum, value) => sum + value);
+              var value = random.nextDouble() * total;
+              for (final weighted in weights.entries) {
+                value -= weighted.value;
+                if (value <= 0) {
+                  chord = chord.copyWith(type: weighted.key);
                   break;
                 }
               }
@@ -426,74 +474,56 @@ class AppState extends ChangeNotifier {
           }
         }
 
-        chord = addStrategicExtensions(
-            chord, index, degreeSequence.length, _chordVariety);
-        return applyGenreVoicing(chord, _genre);
+        chord = _seededGeneration.addStrategicExtensions(
+          random: random,
+          chord: chord,
+          position: index,
+          totalLength: degreeSequence.length,
+          variety: request.chordVariety,
+        );
+        return applyGenreVoicing(chord, request.genre);
       }).toList();
     }
 
-    if (_useModalInterchange &&
-        (_complexity == ComplexityLevel.complex ||
-            _complexity == ComplexityLevel.advanced)) {
-      chords = applyModalInterchange(chords, root, isMinor);
+    if (request.useModalInterchange &&
+        (request.complexity == ComplexityLevel.complex ||
+            request.complexity == ComplexityLevel.advanced)) {
+      chords = _seededGeneration.applyModalInterchange(
+        random: random,
+        progression: chords,
+        root: root,
+        isMinorKey: isMinor,
+      );
     }
 
-    if (_useAdvancedTheory &&
-        (_complexity == ComplexityLevel.complex ||
-            _complexity == ComplexityLevel.advanced)) {
-      chords = applyAdvancedSubstitutions(chords, root, isMinor);
+    if (request.useAdvancedTheory &&
+        (request.complexity == ComplexityLevel.complex ||
+            request.complexity == ComplexityLevel.advanced)) {
+      chords = _seededGeneration.applyAdvancedSubstitutions(
+        random: random,
+        progression: chords,
+        root: root,
+        isMinorKey: isMinor,
+      );
     }
 
-    chords = applySpiceToProgression(chords, _spiceLevel);
+    chords = _seededGeneration.applySpice(
+      random: random,
+      progression: chords,
+      level: request.spice,
+    );
 
-    // Locks are restored last so substitutions/spice cannot accidentally alter
-    // a chord that the user explicitly asked Chord Flow to keep.
-    for (final lc in _lockedChords) {
-      if (lc.locked &&
-          lc.index < _currentProgression.length &&
-          lc.index < chords.length) {
-        chords[lc.index] = _currentProgression[lc.index];
+    // Locks are restored last so seeded transformations cannot alter a chord
+    // that the user explicitly asked Chord Flow to keep.
+    for (final locked in _lockedChords) {
+      if (locked.locked &&
+          locked.index < _currentProgression.length &&
+          locked.index < chords.length) {
+        chords[locked.index] = _currentProgression[locked.index];
       }
     }
 
     return chords;
-  }
-
-  List<String> _buildDegreeSequence(
-    List<String> baseProgression,
-    ComplexitySetting config, {
-    bool? isMinor,
-  }) {
-    final minor = isMinor ?? _isMinorKey;
-    final progression = List<String>.from(baseProgression);
-    final targetLength = randomInt(config.chordCount[0], config.chordCount[1]);
-
-    if (_chordVariety > 0) {
-      var enhanced = addPassingChords(progression, _chordVariety);
-      enhanced = addApproachChords(enhanced, _chordVariety);
-      enhanced = applyIntelligentSubstitutions(enhanced, _chordVariety, minor);
-      enhanced = optimizeTensionFlow(enhanced, minor);
-
-      while (enhanced.length > targetLength && enhanced.length > 3) {
-        final canRemoveFromMiddle = enhanced.length > 3;
-        final removeIndex = canRemoveFromMiddle
-            ? randomInt(1, enhanced.length - 2)
-            : enhanced.length - 1;
-        enhanced.removeAt(removeIndex);
-      }
-
-      return enhanced;
-    }
-
-    while (progression.length < targetLength) {
-      final insertIndex = randomInt(0, progression.length);
-      final newChord = randomChoice(minor
-          ? ['ii', 'iv', 'V', 'VI', 'III', 'VII']
-          : ['ii', 'IV', 'V', 'vi', 'iii']);
-      progression.insert(insertIndex, newChord);
-    }
-
-    return progression;
   }
 
   List<MelodyNote> _generateMelodyNotes(

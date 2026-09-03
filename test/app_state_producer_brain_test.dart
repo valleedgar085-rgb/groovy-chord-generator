@@ -38,5 +38,54 @@ void main() {
       expect(regenerated.type, locked.type);
       expect(regenerated.degree, locked.degree);
     });
+
+    test('same seed exactly replays harmony melody and bass', () {
+      final state = AppState();
+      state.setIncludeMelody(true);
+      state.setIncludeBass(true);
+      state.setUseFunctionalHarmony(false);
+      state.setChordVariety(72);
+
+      const seed = 20260903;
+      state.generateProgression(seed: seed);
+
+      final firstHarmony = state.currentProgression
+          .map((chord) => '${chord.root}:${chord.type.name}:${chord.degree}')
+          .toList(growable: false);
+      final firstMelody = state.currentMelody
+          .map((note) =>
+              '${note.note}:${note.octave}:${note.duration}:${note.velocity}:${note.chordIndex}')
+          .toList(growable: false);
+      final firstBass = state.currentBassLine
+          .map((note) =>
+              '${note.note}:${note.octave}:${note.duration}:${note.velocity}:${note.chordIndex}:${note.style.name}')
+          .toList(growable: false);
+      final firstScore = state.lastHarmonyScore;
+
+      state.generateProgression(seed: seed);
+
+      expect(state.lastGenerationSeed, seed);
+      expect(
+        state.currentProgression
+            .map((chord) => '${chord.root}:${chord.type.name}:${chord.degree}')
+            .toList(growable: false),
+        firstHarmony,
+      );
+      expect(
+        state.currentMelody
+            .map((note) =>
+                '${note.note}:${note.octave}:${note.duration}:${note.velocity}:${note.chordIndex}')
+            .toList(growable: false),
+        firstMelody,
+      );
+      expect(
+        state.currentBassLine
+            .map((note) =>
+                '${note.note}:${note.octave}:${note.duration}:${note.velocity}:${note.chordIndex}:${note.style.name}')
+            .toList(growable: false),
+        firstBass,
+      );
+      expect(state.lastHarmonyScore, firstScore);
+    });
   });
 }
