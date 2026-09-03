@@ -1,6 +1,6 @@
 // Groovy Chord Generator
 // Home screen
-// Version 2.5
+// Version 2.6
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -10,6 +10,7 @@ import '../utils/theme.dart';
 import '../widgets/header.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/fab_menu.dart';
+import '../widgets/producer_brain_panel.dart';
 import 'generator_tab.dart';
 import 'editor_tab.dart';
 import 'bass_tab.dart';
@@ -22,6 +23,8 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AppState>(
       builder: (context, appState, child) {
+        final isGenerator = appState.currentTab == TabName.generator;
+
         return Scaffold(
           body: Container(
             decoration: const BoxDecoration(
@@ -31,6 +34,7 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 children: [
                   const AppHeader(),
+                  if (isGenerator) ProducerBrainPanel(appState: appState),
                   Expanded(
                     child: _buildCurrentTab(appState.currentTab),
                   ),
