@@ -14,7 +14,7 @@ class StudioAudioEngine {
   StudioAudioEngine();
 
   static const int _maxVoices = 6;
-  final SoLoud _soloud = SoLoud.instance;
+  SoLoud get _soloud => SoLoud.instance;
   final List<AudioSource> _voices = <AudioSource>[];
   final List<SoundHandle> _activeHandles = <SoundHandle>[];
   bool _ready = false;
