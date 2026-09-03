@@ -26,12 +26,16 @@ class HarmonyEngine {
 
     for (final candidate in candidates.skip(1)) {
       final candidateScore = score(candidate);
-      // Tiny seeded jitter prevents identical-score candidates from always
-      // choosing the first item while remaining reproducible in tests.
-      final tieBreak = (_random.nextDouble() - 0.5) * 0.001;
-      if (candidateScore + tieBreak > bestScore) {
+      if (candidateScore > bestScore) {
         best = candidate;
         bestScore = candidateScore;
+      } else if (candidateScore == bestScore) {
+        // Tiny seeded jitter prevents identical-score candidates from always
+        // choosing the first item while remaining reproducible in tests.
+        final tieBreak = (_random.nextDouble() - 0.5) * 0.001;
+        if (tieBreak > 0) {
+          best = candidate;
+        }
       }
     }
 
