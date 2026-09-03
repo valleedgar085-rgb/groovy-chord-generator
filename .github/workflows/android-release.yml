@@ -1,0 +1,121 @@
+name: Chord Flow Android Release
+
+on:
+  push:
+    branches:
+      - main
+      - producer-brain-release-pass
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Rebuild clean Flutter Android host
+        shell: bash
+        run: |
+          # The repository contains remnants of an older Capacitor Android host
+          # alongside Flutter files. Recreate the platform shell from the current
+          # Flutter SDK so packaging is deterministic while preserving the app ID.
+          rm -rf android
+          flutter create \
+            --platforms=android \
+            --org com.edgarvalle \
+            --project-name groovy_chord_generator \
+            .
+
+          # Keep the historical Android application ID so existing installs can
+          # be upgraded instead of creating a second app on the device.
+          grep -RIl 'com.edgarvalle.groovy_chord_generator' android | while read -r file; do
+            sed -i 's/com\.edgarvalle\.groovy_chord_generator/com.edgarvalle.groovychordgenerator/g' "$file"
+          done
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Prepare distributable
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp build/app/outputs/flutter-apk/app-release.apk dist/ChordFlow-v2.6.0.apk
+          sha256sum dist/ChordFlow-v2.6.0.apk | tee dist/ChordFlow-v2.6.0.sha256
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChordFlow-v2.6.0-android
+          path: |
+            dist/ChordFlow-v2.6.0.apk
+            dist/ChordFlow-v2.6.0.sha256
+          if-no-files-found: error
+          retention-days: 30
+
+  publish-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test-and-build-apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ChordFlow-v2.6.0-android
+          path: dist
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          TAG="v2.6.0"
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              dist/ChordFlow-v2.6.0.apk \
+              dist/ChordFlow-v2.6.0.sha256 \
+              --clobber \
+              --repo "$GITHUB_REPOSITORY"
+          else
+            gh release create "$TAG" \
+              dist/ChordFlow-v2.6.0.apk \
+              dist/ChordFlow-v2.6.0.sha256 \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Chord Flow v2.6.0 — Producer Brain" \
+              --notes "Producer Brain candidate ranking, Smart Takes, stronger locked chords, section-aware harmony, and a rebuilt Flutter Android host for more reliable installation."
+          fi
