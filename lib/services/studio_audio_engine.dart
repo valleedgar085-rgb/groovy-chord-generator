@@ -88,7 +88,8 @@ class StudioAudioEngine {
     for (final handle in handles) {
       try {
         if (fade > Duration.zero) {
-          _soloud.fadeVolume(handle, 0.0, fade, thenStop: true);
+          _soloud.fadeVolume(handle, 0.0, fade);
+          _soloud.scheduleStop(handle, fade);
         } else {
           await _soloud.stop(handle);
         }
@@ -121,7 +122,6 @@ class StudioAudioEngine {
       while (midi <= previous) {
         midi += 12;
       }
-      // Keep interactive voicings centered in a comfortable keyboard range.
       while (midi > 79) {
         midi -= 12;
       }
@@ -159,6 +159,7 @@ class StudioAudioEngine {
       'Cb': 11,
       'B#': 0,
     };
-    return pitchClasses[note] ?? pitchClasses[note.replaceAll(RegExp(r'\d'), '')] ?? 0;
+    final normalized = note.replaceAll(RegExp(r'\d'), '');
+    return pitchClasses[note] ?? pitchClasses[normalized] ?? 0;
   }
 }
