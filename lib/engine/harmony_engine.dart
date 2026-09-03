@@ -95,7 +95,7 @@ class HarmonyEngine {
 
     if (_isDominant(penultimate) && _isTonic(last)) return 12.0;
     if (_isSubdominant(penultimate) && _isTonic(last)) return 7.0;
-    if (_isDominant(last)) return 3.0; // useful unresolved loop tension
+    if (_isDominant(last)) return 3.0;
     return 0.0;
   }
 
@@ -120,8 +120,6 @@ class HarmonyEngine {
         chord.isTritoneSubstitution).length;
     final ratio = altered / progression.length;
 
-    // Reward tasteful color, penalize harmony that becomes substitutions all
-    // the time. This keeps "advanced" musical rather than merely complicated.
     if (ratio == 0) return 0.0;
     if (ratio <= 0.34) return 5.0;
     if (ratio <= 0.5) return 1.0;
@@ -166,23 +164,21 @@ class HarmonyEngine {
 
     switch (section) {
       case HarmonySection.verse:
-        // Verses benefit from stability and room for lyrics/melody.
         var value = startsHome ? 2.0 : 0.0;
         if (resolvesHome) value += 2.0;
         if (alteredCount > 1) value -= 2.5;
         return value;
       case HarmonySection.preChorus:
-        // A pre-chorus should lean forward rather than completely settle.
+        // A pre-chorus must lean forward strongly enough to outweigh the
+        // generic cadence bonus that a complete V-I resolution receives.
         var value = endsDominant ? 7.0 : 0.0;
-        if (resolvesHome) value -= 4.0;
+        if (resolvesHome) value -= 8.0;
         return value;
       case HarmonySection.chorus:
-        // Choruses usually benefit from a confident arrival/home cadence.
         var value = resolvesHome ? 8.0 : 0.0;
         if (_isPrimaryTonic(last)) value += 2.0;
         return value;
       case HarmonySection.bridge:
-        // Bridges should provide contrast, but not become random harmony soup.
         if (alteredCount == 1) return 6.0;
         if (alteredCount == 2 && progression.length >= 6) return 3.0;
         if (alteredCount > 2) return -4.0;
