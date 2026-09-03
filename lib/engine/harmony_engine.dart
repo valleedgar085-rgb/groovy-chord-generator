@@ -3,6 +3,12 @@ import 'dart:math';
 import '../models/types.dart';
 import '../utils/music_theory.dart';
 
+/// Musical role of a song section.
+///
+/// The same progression can be excellent for a verse and wrong for a chorus,
+/// so section intent is part of producer-level harmonic decision making.
+enum HarmonySection { neutral, verse, preChorus, chorus, bridge }
+
 /// A reusable, UI-independent harmonic quality layer.
 ///
 /// Chord Flow can use this engine to rank candidate progressions before they
@@ -11,39 +17,49 @@ import '../utils/music_theory.dart';
 class HarmonyEngine {
   HarmonyEngine({int? seed}) : _random = Random(seed);
 
+  static const double _epsilon = 0.000001;
   final Random _random;
 
   /// Returns the strongest candidate according to harmonic motion, cadence,
-  /// repetition control, complexity balance, and voice-leading potential.
+  /// repetition control, complexity balance, voice-leading potential, and
+  /// optional section intent.
+  ///
+  /// A seeded random choice is used only among truly tied best candidates.
+  /// Randomness can never make a lower-scoring progression win.
   List<Chord> selectBest(
     List<List<Chord>> candidates, {
     bool applyVoicing = true,
+    HarmonySection section = HarmonySection.neutral,
   }) {
     if (candidates.isEmpty) return const <Chord>[];
 
-    var best = candidates.first;
-    var bestScore = score(best);
+    var bestScore = double.negativeInfinity;
+    final tiedBest = <List<Chord>>[];
 
-    for (final candidate in candidates.skip(1)) {
-      final candidateScore = score(candidate);
-      if (candidateScore > bestScore) {
-        best = candidate;
+    for (final candidate in candidates) {
+      final candidateScore = score(candidate, section: section);
+      if (candidateScore > bestScore + _epsilon) {
         bestScore = candidateScore;
-      } else if (candidateScore == bestScore) {
-        // Tiny seeded jitter prevents identical-score candidates from always
-        // choosing the first item while remaining reproducible in tests.
-        final tieBreak = (_random.nextDouble() - 0.5) * 0.001;
-        if (tieBreak > 0) {
-          best = candidate;
-        }
+        tiedBest
+          ..clear()
+          ..add(candidate);
+      } else if ((candidateScore - bestScore).abs() <= _epsilon) {
+        tiedBest.add(candidate);
       }
     }
+
+    final best = tiedBest.length == 1
+        ? tiedBest.first
+        : tiedBest[_random.nextInt(tiedBest.length)];
 
     return applyVoicing ? applyVoiceLeading(best) : List<Chord>.from(best);
   }
 
   /// Scores a progression on a 0-100 producer-oriented quality scale.
-  double score(List<Chord> progression) {
+  double score(
+    List<Chord> progression, {
+    HarmonySection section = HarmonySection.neutral,
+  }) {
     if (progression.length < 2) return 0;
 
     var value = 50.0;
@@ -52,6 +68,7 @@ class HarmonyEngine {
     value += _repetitionScore(progression);
     value += _complexityScore(progression);
     value += _voiceLeadingPotential(progression);
+    value += _sectionScore(progression, section);
 
     return value.clamp(0.0, 100.0).toDouble();
   }
@@ -134,12 +151,55 @@ class HarmonyEngine {
     return score.clamp(-5.0, 7.0).toDouble();
   }
 
+  double _sectionScore(List<Chord> progression, HarmonySection section) {
+    if (section == HarmonySection.neutral) return 0.0;
+
+    final last = progression.last.degree;
+    final penultimate = progression[progression.length - 2].degree;
+    final resolvesHome = _isDominant(penultimate) && _isPrimaryTonic(last);
+    final endsDominant = _isDominant(last);
+    final startsHome = _isPrimaryTonic(progression.first.degree);
+    final alteredCount = progression.where((chord) =>
+        chord.isBorrowed ||
+        chord.isSecondaryDominant ||
+        chord.isTritoneSubstitution).length;
+
+    switch (section) {
+      case HarmonySection.verse:
+        // Verses benefit from stability and room for lyrics/melody.
+        var value = startsHome ? 2.0 : 0.0;
+        if (resolvesHome) value += 2.0;
+        if (alteredCount > 1) value -= 2.5;
+        return value;
+      case HarmonySection.preChorus:
+        // A pre-chorus should lean forward rather than completely settle.
+        var value = endsDominant ? 7.0 : 0.0;
+        if (resolvesHome) value -= 4.0;
+        return value;
+      case HarmonySection.chorus:
+        // Choruses usually benefit from a confident arrival/home cadence.
+        var value = resolvesHome ? 8.0 : 0.0;
+        if (_isPrimaryTonic(last)) value += 2.0;
+        return value;
+      case HarmonySection.bridge:
+        // Bridges should provide contrast, but not become random harmony soup.
+        if (alteredCount == 1) return 6.0;
+        if (alteredCount == 2 && progression.length >= 6) return 3.0;
+        if (alteredCount > 2) return -4.0;
+        return 0.5;
+      case HarmonySection.neutral:
+        return 0.0;
+    }
+  }
+
   bool _isStrongResolution(String from, String to) =>
       (_isDominant(from) && _isTonic(to)) ||
       (_isSubdominant(from) && _isDominant(to));
 
+  bool _isPrimaryTonic(String degree) => degree == 'I' || degree == 'i';
+
   bool _isTonic(String degree) =>
-      degree == 'I' || degree == 'i' || degree == 'vi' || degree == 'VI';
+      _isPrimaryTonic(degree) || degree == 'vi' || degree == 'VI';
 
   bool _isDominant(String degree) =>
       degree == 'V' || degree == 'v' || degree == 'V7' || degree == 'V/V';
