@@ -11,9 +11,8 @@ Chord chord(String root, String degree, ChordTypeName type) => Chord(
 
 void main() {
   group('HarmonyEngine', () {
-    final engine = HarmonyEngine(seed: 42);
-
     test('rewards functional dominant-to-tonic resolution', () {
+      final engine = HarmonyEngine(seed: 42);
       final resolved = <Chord>[
         chord('C', 'I', ChordTypeName.major),
         chord('F', 'IV', ChordTypeName.major),
@@ -31,6 +30,7 @@ void main() {
     });
 
     test('penalizes excessive advanced substitutions', () {
+      final engine = HarmonyEngine(seed: 42);
       final tasteful = <Chord>[
         chord('C', 'I', ChordTypeName.major7),
         chord('D', 'ii', ChordTypeName.minor7),
@@ -59,6 +59,7 @@ void main() {
     });
 
     test('selectBest returns the strongest candidate', () {
+      final engine = HarmonyEngine(seed: 42);
       final weak = <Chord>[
         chord('C', 'I', ChordTypeName.major),
         chord('C', 'I', ChordTypeName.major),
@@ -73,6 +74,70 @@ void main() {
       final selected = engine.selectBest([weak, strong], applyVoicing: false);
       expect(selected.last.degree, 'I');
       expect(selected[1].degree, 'V');
+    });
+
+    test('random tie breaking never lets a lower score win', () {
+      final better = <Chord>[
+        chord('F', 'IV', ChordTypeName.major),
+        chord('G', 'V', ChordTypeName.dominant7),
+        chord('C', 'I', ChordTypeName.major),
+      ];
+      final worse = <Chord>[
+        chord('C', 'I', ChordTypeName.major),
+        chord('C', 'I', ChordTypeName.major),
+        chord('C', 'I', ChordTypeName.major),
+      ];
+
+      for (var seed = 0; seed < 100; seed++) {
+        final engine = HarmonyEngine(seed: seed);
+        final selected = engine.selectBest(
+          [better, worse],
+          applyVoicing: false,
+        );
+        expect(selected, same(better));
+      }
+    });
+
+    test('pre-chorus prefers forward dominant tension', () {
+      final engine = HarmonyEngine(seed: 42);
+      final forward = <Chord>[
+        chord('C', 'I', ChordTypeName.major),
+        chord('F', 'IV', ChordTypeName.major),
+        chord('G', 'V', ChordTypeName.dominant7),
+      ];
+      final settled = <Chord>[
+        chord('F', 'IV', ChordTypeName.major),
+        chord('G', 'V', ChordTypeName.dominant7),
+        chord('C', 'I', ChordTypeName.major),
+      ];
+
+      expect(
+        engine.score(forward, section: HarmonySection.preChorus),
+        greaterThan(
+          engine.score(settled, section: HarmonySection.preChorus),
+        ),
+      );
+    });
+
+    test('chorus strongly prefers a dominant-to-home arrival', () {
+      final engine = HarmonyEngine(seed: 42);
+      final arrival = <Chord>[
+        chord('F', 'IV', ChordTypeName.major),
+        chord('G', 'V', ChordTypeName.dominant7),
+        chord('C', 'I', ChordTypeName.major),
+      ];
+      final unresolved = <Chord>[
+        chord('C', 'I', ChordTypeName.major),
+        chord('F', 'IV', ChordTypeName.major),
+        chord('G', 'V', ChordTypeName.dominant7),
+      ];
+
+      expect(
+        engine.score(arrival, section: HarmonySection.chorus),
+        greaterThan(
+          engine.score(unresolved, section: HarmonySection.chorus),
+        ),
+      );
     });
   });
 }
