@@ -1,0 +1,67 @@
+name: Chord Flow Android APK
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build-apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Flutter version
+        run: flutter --version
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run Producer Brain tests
+        run: flutter test
+
+      # The repository currently contains a legacy Capacitor Android wrapper.
+      # Build the Flutter app from a clean generated Android host in CI so the
+      # APK always represents the Dart/Flutter source under lib/.
+      - name: Generate clean Flutter Android host
+        run: |
+          rm -rf android
+          flutter create \
+            --platforms=android \
+            --org com.edgarvalle \
+            --project-name groovy_chord_generator \
+            .
+          flutter pub get
+
+      - name: Build installable debug APK
+        run: |
+          flutter build apk --debug
+          cp build/app/outputs/flutter-apk/app-debug.apk ChordFlow-ProducerBrain.apk
+
+      - name: Upload APK to GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChordFlow-ProducerBrain-APK
+          path: ChordFlow-ProducerBrain.apk
+          if-no-files-found: error
+          retention-days: 30
