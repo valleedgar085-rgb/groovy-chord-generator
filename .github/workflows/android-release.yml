@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   test-and-build-apk:
@@ -85,19 +85,37 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+  publish-release:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test-and-build-apk
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download verified APK artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ChordFlow-v2.6.0-android
+          path: dist
+
       - name: Publish GitHub Release
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
         run: |
           TAG="v2.6.0"
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" dist/ChordFlow-v2.6.0.apk dist/ChordFlow-v2.6.0.sha256 --clobber
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release upload "$TAG" \
+              dist/ChordFlow-v2.6.0.apk \
+              dist/ChordFlow-v2.6.0.sha256 \
+              --clobber \
+              --repo "$GITHUB_REPOSITORY"
           else
             gh release create "$TAG" \
               dist/ChordFlow-v2.6.0.apk \
               dist/ChordFlow-v2.6.0.sha256 \
+              --repo "$GITHUB_REPOSITORY" \
               --title "Chord Flow v2.6.0 — Producer Brain" \
               --notes "Producer Brain candidate ranking, Smart Takes, stronger locked chords, section-aware harmony, and a rebuilt Flutter Android host for more reliable installation."
           fi
