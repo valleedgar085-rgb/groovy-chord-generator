@@ -22,7 +22,7 @@ class ProducerBrainPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final score = appState.lastHarmonyScore.clamp(0.0, 100.0);
+    final score = appState.lastHarmonyScore.clamp(0.0, 100.0).toDouble();
     final hasProgression = appState.currentProgression.isNotEmpty;
 
     return Container(
