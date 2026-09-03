@@ -26,134 +26,209 @@ class ProducerBrainPanel extends StatelessWidget {
     final hasProgression = appState.currentProgression.isNotEmpty;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppTheme.spacingMd,
-        AppTheme.spacingSm,
-        AppTheme.spacingMd,
-        0,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacingMd),
+      margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppTheme.bgSecondary,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
-        border: Border.all(
-          color: AppTheme.accentPrimary.withValues(alpha: 0.32),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF25203F), Color(0xFF151728)],
         ),
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: AppTheme.accentPrimary.withValues(alpha: 0.28),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: AppTheme.accentPrimary.withValues(alpha: 0.1),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.auto_awesome,
-                size: 18,
-                color: AppTheme.accentSecondary,
-              ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Producer Brain',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppTheme.bgTertiary,
-                  borderRadius: BorderRadius.circular(20),
+                  gradient: AppTheme.accentGradient,
+                  borderRadius: BorderRadius.circular(13),
                 ),
-                child: Text(
-                  '${appState.producerCandidateCount} candidates',
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
+                child: const Icon(
+                  Icons.psychology_alt_rounded,
+                  size: 21,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PRODUCER BRAIN',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '8 ideas compete • strongest survives',
+                      style: TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              _QualityBadge(score: score, active: hasProgression),
+              const SizedBox(width: 8),
+              SizedBox(
+                height: 42,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 14),
+                    backgroundColor: AppTheme.accentPrimary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  onPressed: appState.generateProgression,
+                  icon: const Icon(Icons.auto_awesome_rounded, size: 18),
+                  label: const Text(
+                    'CREATE',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 34,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: HarmonySection.values.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 6),
+              itemBuilder: (context, index) {
+                final section = HarmonySection.values[index];
+                final selected = appState.harmonySection == section;
+                return ChoiceChip(
+                  label: Text(_sectionLabels[section]!),
+                  selected: selected,
+                  onSelected: (_) => appState.setHarmonySection(section),
+                  showCheckmark: false,
+                  visualDensity: VisualDensity.compact,
+                  padding: const EdgeInsets.symmetric(horizontal: 5),
+                  labelStyle: TextStyle(
                     fontSize: 10,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w800,
+                    color: selected
+                        ? AppTheme.textPrimary
+                        : AppTheme.textSecondary,
                   ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spacingSm),
-          const Text(
-            'Song section',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+                  selectedColor: AppTheme.accentPrimary.withValues(alpha: 0.28),
+                  backgroundColor: AppTheme.bgPrimary.withValues(alpha: 0.46),
+                  side: BorderSide(
+                    color: selected
+                        ? AppTheme.accentPrimary.withValues(alpha: 0.62)
+                        : AppTheme.borderColor,
+                  ),
+                );
+              },
             ),
           ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: HarmonySection.values.map((section) {
-              final selected = appState.harmonySection == section;
-              return ChoiceChip(
-                label: Text(_sectionLabels[section]!),
-                selected: selected,
-                onSelected: (_) => appState.setHarmonySection(section),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: AppTheme.spacingMd),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  hasProgression ? _scoreLabel(score) : 'Generate to analyze',
+          if (hasProgression) ...[
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Expanded(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      minHeight: 5,
+                      value: score / 100,
+                      backgroundColor: AppTheme.bgPrimary,
+                      color: _scoreColor(score),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  _scoreLabel(score),
                   style: TextStyle(
-                    color: hasProgression
-                        ? _scoreColor(score)
-                        : AppTheme.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    color: _scoreColor(score),
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              Text(
-                hasProgression ? '${score.round()} / 100' : '-- / 100',
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              minHeight: 7,
-              value: hasProgression ? score / 100.0 : 0.0,
-              backgroundColor: AppTheme.bgTertiary,
-              color: hasProgression ? _scoreColor(score) : AppTheme.textMuted,
+              ],
             ),
-          ),
+          ],
         ],
       ),
     );
   }
 
   String _scoreLabel(double score) {
-    if (score >= 90) return 'Excellent harmonic fit';
-    if (score >= 80) return 'Strong harmonic fit';
-    if (score >= 70) return 'Good harmonic fit';
-    if (score >= 60) return 'Usable — room to improve';
-    return 'Experimental result';
+    if (score >= 90) return 'EXCELLENT FIT';
+    if (score >= 80) return 'STRONG FIT';
+    if (score >= 70) return 'GOOD FIT';
+    if (score >= 60) return 'WORKABLE';
+    return 'EXPERIMENTAL';
   }
 
   Color _scoreColor(double score) {
     if (score >= 85) return AppTheme.success;
-    if (score >= 70) return AppTheme.accentSecondary;
-    if (score >= 55) return const Color(0xFFF59E0B);
+    if (score >= 70) return AppTheme.accentCyan;
+    if (score >= 55) return AppTheme.warning;
     return AppTheme.error;
+  }
+}
+
+class _QualityBadge extends StatelessWidget {
+  const _QualityBadge({required this.score, required this.active});
+
+  final double score;
+  final bool active;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 42,
+      height: 42,
+      decoration: BoxDecoration(
+        color: AppTheme.bgPrimary.withValues(alpha: 0.66),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: active
+              ? AppTheme.accentCyan.withValues(alpha: 0.42)
+              : AppTheme.borderColor,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          active ? score.round().toString() : '--',
+          style: TextStyle(
+            color: active ? AppTheme.textPrimary : AppTheme.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+      ),
+    );
   }
 }
