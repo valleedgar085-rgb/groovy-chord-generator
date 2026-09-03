@@ -54,7 +54,7 @@ class HarmonyCandidatePool {
       final candidate = List<Chord>.from(buildCandidate());
       if (candidate.length < 2) continue;
       scored.add(ScoredHarmonyCandidate(
-        progression: candidate,
+        progression: List<Chord>.unmodifiable(candidate),
         score: _engine.score(candidate, section: section),
       ));
     }
