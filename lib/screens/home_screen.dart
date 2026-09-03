@@ -1,6 +1,6 @@
 // Groovy Chord Generator
 // Home screen
-// Version 2.6
+// Version 2.7
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -11,6 +11,7 @@ import '../widgets/header.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/fab_menu.dart';
 import '../widgets/producer_brain_panel.dart';
+import '../widgets/studio_transport.dart';
 import 'generator_tab.dart';
 import 'editor_tab.dart';
 import 'bass_tab.dart';
@@ -26,17 +27,39 @@ class HomeScreen extends StatelessWidget {
         final isGenerator = appState.currentTab == TabName.generator;
 
         return Scaffold(
-          body: Container(
+          extendBody: true,
+          body: DecoratedBox(
             decoration: const BoxDecoration(
-              color: AppTheme.bgPrimary,
+              gradient: RadialGradient(
+                center: Alignment(-0.7, -1.05),
+                radius: 1.25,
+                colors: [
+                  Color(0xFF22183D),
+                  AppTheme.bgPrimary,
+                  Color(0xFF070A12),
+                ],
+                stops: [0, 0.48, 1],
+              ),
             ),
             child: SafeArea(
+              bottom: false,
               child: Column(
                 children: [
                   const AppHeader(),
-                  if (isGenerator) ProducerBrainPanel(appState: appState),
+                  if (isGenerator) ...[
+                    ProducerBrainPanel(appState: appState),
+                    const StudioTransport(),
+                  ],
                   Expanded(
-                    child: _buildCurrentTab(appState.currentTab),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 240),
+                      switchInCurve: Curves.easeOutCubic,
+                      switchOutCurve: Curves.easeInCubic,
+                      child: KeyedSubtree(
+                        key: ValueKey(appState.currentTab),
+                        child: _buildCurrentTab(appState.currentTab),
+                      ),
+                    ),
                   ),
                 ],
               ),
