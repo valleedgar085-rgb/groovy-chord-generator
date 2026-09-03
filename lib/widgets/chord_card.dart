@@ -1,9 +1,12 @@
 // Groovy Chord Generator
 // Chord Card Widget
-// Version 2.5
+// Version 2.7
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+
 import '../models/types.dart';
+import '../providers/playback_controller.dart';
 import '../utils/theme.dart';
 import '../utils/music_theory.dart';
 import '../utilities/helpers.dart';
@@ -29,258 +32,232 @@ class ChordCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chordColor = ColorHelper.getChordTypeColor(chord.type);
-
-    // Wrap in RepaintBoundary to isolate repaints for better performance on lower-end devices
-    return RepaintBoundary(
-      child: TweenAnimationBuilder<double>(
-        tween: Tween(begin: 0, end: 1),
-        duration: Duration(milliseconds: 150 + (index * 40)),
-        curve: Curves.easeOutCubic,
-        builder: (context, value, child) {
-          // Combine scale and translate into a single transform for better performance
-          final scale = 0.9 + (0.1 * value);
-          final translateY = 8 * (1 - value);
-          return Opacity(
-            opacity: value,
-            child: Transform.translate(
-              offset: Offset(0.0, translateY),
-              child: Transform.scale(
-                scale: scale,
-                alignment: Alignment.center,
-                child: child,
-              ),
-            ),
-          );
-        },
-        child: GestureDetector(
-          onTap: onTap ??
-              () {
-                // Play chord sound
-              },
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+    return Consumer<PlaybackController>(
+      builder: (context, playback, _) {
+        final isActive = playback.currentChordIndex == index;
+        return RepaintBoundary(
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0, end: 1),
+            duration: Duration(milliseconds: 140 + (index * 35)),
             curve: Curves.easeOutCubic,
-            constraints: const BoxConstraints(minWidth: 85),
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppTheme.spacingMd,
-              vertical: AppTheme.spacingMd,
-            ),
-            decoration: BoxDecoration(
-              gradient: isLocked
-                  ? LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.success.withValues(alpha: 0.15),
-                        AppTheme.success.withValues(alpha: 0.08),
-                      ],
-                    )
-                  : LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        AppTheme.bgTertiary,
-                        AppTheme.bgTertiary.withValues(alpha: 0.8),
-                      ],
-                    ),
-              borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
-              border: Border.all(
-                color: isLocked
-                    ? AppTheme.success
-                    : chordColor.withValues(alpha: 0.5),
-                width: isLocked ? 2 : 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: (isLocked ? AppTheme.success : chordColor)
-                      .withValues(alpha: 0.2),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
+            builder: (context, value, child) => Opacity(
+              opacity: value,
+              child: Transform.translate(
+                offset: Offset(0, 7 * (1 - value)),
+                child: Transform.scale(
+                  scale: 0.94 + (0.06 * value),
+                  child: child,
                 ),
-              ],
+              ),
             ),
-            child: Stack(
-              children: [
-                // Lock button
-                if (onLockToggle != null)
-                  Positioned(
-                    top: -8,
-                    right: -8,
-                    child: GestureDetector(
-                      onTap: onLockToggle,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: isLocked
-                              ? AppTheme.success.withValues(alpha: 0.2)
-                              : Colors.transparent,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          isLocked ? Icons.lock : Icons.lock_open_outlined,
-                          size: 14,
-                          color:
-                              isLocked ? AppTheme.success : AppTheme.textMuted,
-                        ),
-                      ),
-                    ),
-                  ),
-
-                // Chord content
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Chord icon/avatar
-                    Container(
-                      width: 32,
-                      height: 32,
+            child: Semantics(
+              button: true,
+              label: 'Play ${getChordSymbol(chord)} chord',
+              child: AnimatedScale(
+                scale: isActive ? 1.055 : 1,
+                duration: const Duration(milliseconds: 150),
+                curve: Curves.easeOutBack,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: onTap ?? () => playback.previewChord(chord, index),
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOutCubic,
+                      constraints: const BoxConstraints(minWidth: 92, minHeight: 126),
+                      padding: const EdgeInsets.fromLTRB(13, 12, 13, 10),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
-                          colors: [
-                            chordColor,
-                            ColorHelper.darken(chordColor, 0.2),
-                          ],
+                          colors: isActive
+                              ? [
+                                  chordColor.withValues(alpha: 0.38),
+                                  AppTheme.accentPrimary.withValues(alpha: 0.17),
+                                  AppTheme.bgTertiary,
+                                ]
+                              : isLocked
+                                  ? [
+                                      AppTheme.success.withValues(alpha: 0.16),
+                                      AppTheme.bgTertiary,
+                                    ]
+                                  : [
+                                      const Color(0xFF24233D),
+                                      const Color(0xFF171827),
+                                    ],
                         ),
-                        shape: BoxShape.circle,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isActive
+                              ? chordColor
+                              : isLocked
+                                  ? AppTheme.success.withValues(alpha: 0.72)
+                                  : chordColor.withValues(alpha: 0.32),
+                          width: isActive ? 1.8 : 1,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: chordColor.withValues(alpha: 0.4),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
+                            color: chordColor.withValues(alpha: isActive ? 0.42 : 0.12),
+                            blurRadius: isActive ? 25 : 12,
+                            offset: const Offset(0, 6),
                           ),
                         ],
                       ),
-                      child: Center(
-                        child: Text(
-                          _getChordIcon(),
-                          style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Chord name
-                    Text(
-                      getChordSymbol(chord),
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.textPrimary,
-                        shadows: [
-                          Shadow(
-                            color: chordColor.withValues(alpha: 0.5),
-                            blurRadius: 4,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-
-                    // Chord type
-                    Text(
-                      getChordTypeName(chord.type),
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: chordColor.withValues(alpha: 0.9),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-
-                    // Roman numeral
-                    if (showNumerals) ...[
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.bgSecondary,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          chord.numeral,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.accentSecondary,
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // Harmony function
-                    if (chord.harmonyFunction != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        chord.harmonyFunction!.name,
-                        style: TextStyle(
-                          fontSize: 9,
-                          fontStyle: FontStyle.italic,
-                          color: ColorHelper.getHarmonyFunctionColor(
-                              chord.harmonyFunction!),
-                        ),
-                      ),
-                    ],
-
-                    // Special indicators
-                    if (chord.isBorrowed ||
-                        chord.isSecondaryDominant ||
-                        chord.isTritoneSubstitution)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                AppTheme.accentPrimary.withValues(alpha: 0.3),
-                                AppTheme.accentPink.withValues(alpha: 0.2),
+                      child: Stack(
+                        children: [
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Row(
+                              children: [
+                                if (isActive)
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    margin: const EdgeInsets.only(right: 6),
+                                    decoration: BoxDecoration(
+                                      color: chordColor,
+                                      shape: BoxShape.circle,
+                                      boxShadow: [
+                                        BoxShadow(color: chordColor, blurRadius: 8),
+                                      ],
+                                    ),
+                                  ),
+                                if (onLockToggle != null)
+                                  InkResponse(
+                                    radius: 18,
+                                    onTap: onLockToggle,
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(3),
+                                      child: Icon(
+                                        isLocked
+                                            ? Icons.lock_rounded
+                                            : Icons.lock_open_rounded,
+                                        size: 14,
+                                        color: isLocked
+                                            ? AppTheme.success
+                                            : AppTheme.textMuted,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
-                            borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(
-                            _getSpecialIndicator(),
-                            style: const TextStyle(
-                              fontSize: 8,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.accentSecondary,
-                            ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                width: 34,
+                                height: 34,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      chordColor,
+                                      ColorHelper.darken(chordColor, 0.24),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(11),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    chord.root.isEmpty ? '?' : chord.root.substring(0, 1),
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                getChordSymbol(chord),
+                                style: const TextStyle(
+                                  fontSize: 21,
+                                  fontWeight: FontWeight.w900,
+                                  letterSpacing: -0.6,
+                                  color: AppTheme.textPrimary,
+                                  height: 1,
+                                ),
+                              ),
+                              const SizedBox(height: 5),
+                              Text(
+                                getChordTypeName(chord.type).toUpperCase(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 0.7,
+                                  color: chordColor.withValues(alpha: 0.92),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  if (showNumerals)
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 7,
+                                        vertical: 3,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.bgPrimary.withValues(alpha: 0.58),
+                                        borderRadius: BorderRadius.circular(7),
+                                      ),
+                                      child: Text(
+                                        chord.numeral,
+                                        style: const TextStyle(
+                                          fontSize: 9,
+                                          fontWeight: FontWeight.w800,
+                                          color: AppTheme.accentSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  const Spacer(),
+                                  Icon(
+                                    isActive
+                                        ? Icons.graphic_eq_rounded
+                                        : Icons.touch_app_rounded,
+                                    size: 14,
+                                    color: isActive ? chordColor : AppTheme.textMuted,
+                                  ),
+                                ],
+                              ),
+                              if (chord.isBorrowed ||
+                                  chord.isSecondaryDominant ||
+                                  chord.isTritoneSubstitution) ...[
+                                const SizedBox(height: 5),
+                                Text(
+                                  _specialIndicator(),
+                                  style: const TextStyle(
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppTheme.accentPink,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                        ),
+                        ],
                       ),
-                  ],
+                    ),
+                  ),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
-  String _getChordIcon() {
-    // Return first letter of root note with safety check
-    if (chord.root.isEmpty) return '?';
-    return chord.root.substring(0, 1);
-  }
-
-  String _getSpecialIndicator() {
-    if (chord.isSecondaryDominant) return 'V/V';
-    if (chord.isTritoneSubstitution) return 'TT';
-    if (chord.isBorrowed) return 'Borrowed';
+  String _specialIndicator() {
+    if (chord.isSecondaryDominant) return 'SECONDARY DOMINANT';
+    if (chord.isTritoneSubstitution) return 'TRITONE SUB';
+    if (chord.isBorrowed) return 'BORROWED COLOR';
     return '';
   }
 }

@@ -1,6 +1,6 @@
 // Groovy Chord Generator
 // Bottom navigation widget
-// Version 2.5
+// Version 2.7
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -16,44 +16,46 @@ class AppBottomNavigation extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         return Container(
-          height: AppTheme.navHeight,
-          decoration: const BoxDecoration(
-            color: AppTheme.bgSecondary,
-            border: Border(
-              top: BorderSide(color: AppTheme.borderColor),
-            ),
+          margin: const EdgeInsets.fromLTRB(12, 0, 12, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 7),
+          decoration: BoxDecoration(
+            color: const Color(0xEE11111F),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: AppTheme.borderColor),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.38),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _buildNavItem(
-                context,
-                icon: Icons.auto_awesome,
-                label: 'Generate',
+                icon: Icons.auto_awesome_rounded,
+                label: 'Create',
                 tab: TabName.generator,
                 currentTab: appState.currentTab,
                 onTap: () => appState.setCurrentTab(TabName.generator),
               ),
               _buildNavItem(
-                context,
-                icon: Icons.piano,
-                label: 'Editor',
+                icon: Icons.piano_rounded,
+                label: 'Chords',
                 tab: TabName.editor,
                 currentTab: appState.currentTab,
                 onTap: () => appState.setCurrentTab(TabName.editor),
               ),
               _buildNavItem(
-                context,
-                icon: Icons.music_note,
+                icon: Icons.multiline_chart_rounded,
                 label: 'Bass',
                 tab: TabName.bass,
                 currentTab: appState.currentTab,
                 onTap: () => appState.setCurrentTab(TabName.bass),
               ),
               _buildNavItem(
-                context,
-                icon: Icons.settings,
-                label: 'Settings',
+                icon: Icons.tune_rounded,
+                label: 'Setup',
                 tab: TabName.settings,
                 currentTab: appState.currentTab,
                 onTap: () => appState.setCurrentTab(TabName.settings),
@@ -65,54 +67,71 @@ class AppBottomNavigation extends StatelessWidget {
     );
   }
 
-  Widget _buildNavItem(
-    BuildContext context, {
+  Widget _buildNavItem({
     required IconData icon,
     required String label,
     required TabName tab,
     required TabName currentTab,
     required VoidCallback onTap,
   }) {
-    final isActive = tab == currentTab;
-
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppTheme.spacingMd,
-          vertical: AppTheme.spacingSm,
-        ),
-        decoration: BoxDecoration(
-          color: isActive ? AppTheme.bgTertiary : Colors.transparent,
-          borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedScale(
-              scale: isActive ? 1.1 : 1.0,
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOutCubic,
-              child: Icon(
-                icon,
-                size: 24,
-                color: isActive ? AppTheme.accentSecondary : AppTheme.textMuted,
-              ),
+    final active = tab == currentTab;
+    return Expanded(
+      child: Semantics(
+        button: true,
+        selected: active,
+        label: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 220),
+            curve: Curves.easeOutCubic,
+            height: 54,
+            decoration: BoxDecoration(
+              gradient: active
+                  ? LinearGradient(
+                      colors: [
+                        AppTheme.accentPrimary.withValues(alpha: 0.24),
+                        AppTheme.accentPink.withValues(alpha: 0.11),
+                      ],
+                    )
+                  : null,
+              borderRadius: BorderRadius.circular(18),
+              border: active
+                  ? Border.all(
+                      color: AppTheme.accentPrimary.withValues(alpha: 0.28),
+                    )
+                  : null,
             ),
-            const SizedBox(height: 2),
-            Text(
-              label.toUpperCase(),
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w500,
-                letterSpacing: 0.3,
-                color: isActive ? AppTheme.accentSecondary : AppTheme.textMuted,
-              ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedScale(
+                  scale: active ? 1.08 : 1,
+                  duration: const Duration(milliseconds: 220),
+                  child: Icon(
+                    icon,
+                    size: 23,
+                    color: active
+                        ? AppTheme.textPrimary
+                        : AppTheme.textMuted,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                    letterSpacing: 0.3,
+                    color: active
+                        ? AppTheme.accentSecondary
+                        : AppTheme.textMuted,
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

@@ -1,7 +1,7 @@
 name: groovy_chord_generator
 description: Create amazing chord progressions for any genre - A mobile-optimized music creation tool
 publish_to: 'none'
-version: 2.6.0+2
+version: 2.7.0+3
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -12,6 +12,7 @@ dependencies:
   provider: ^6.1.1
   shared_preferences: ^2.2.2
   cupertino_icons: ^1.0.6
+  flutter_soloud: ^4.1.7
 
   # Firebase packages - kept on one compatible modern generation so Android
   # plugins share current compileSdk requirements.
