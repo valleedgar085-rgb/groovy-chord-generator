@@ -1,16 +1,20 @@
 // Groovy Chord Generator
 // App state provider
-// Version 2.5
+// Version 2.6
 
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import '../models/types.dart';
 import '../models/constants.dart';
 import '../utils/music_theory.dart';
+import '../engine/harmony_engine.dart';
+import '../engine/harmony_candidate_pool.dart';
 import '../services/firebase_favorites_service.dart';
 import '../services/share_service.dart';
 
 class AppState extends ChangeNotifier {
+  static const int _producerCandidateCount = 8;
+
   // Current state
   List<Chord> _currentProgression = [];
   List<MelodyNote> _currentMelody = [];
@@ -46,11 +50,18 @@ class AppState extends ChangeNotifier {
   GrooveTemplate _grooveTemplate = defaultGrooveTemplate;
   SpiceLevel _spiceLevel = defaultSpiceLevel;
   List<LockedChord> _lockedChords = [];
+  HarmonySection _harmonySection = HarmonySection.neutral;
+  double _lastHarmonyScore = 0.0;
 
   // Favorites state
   List<FavoriteProgression> _favorites = [];
   bool _favoritesLoading = false;
   final Random _melodyRandom = Random();
+  final HarmonyEngine _harmonyEngine = HarmonyEngine();
+  HarmonyCandidatePool? _harmonyCandidatePool;
+
+  HarmonyCandidatePool get _producerPool =>
+      _harmonyCandidatePool ??= HarmonyCandidatePool(engine: _harmonyEngine);
 
   // Getters
   List<Chord> get currentProgression => _currentProgression;
@@ -89,6 +100,9 @@ class AppState extends ChangeNotifier {
   List<LockedChord> get lockedChords => _lockedChords;
   List<FavoriteProgression> get favorites => _favorites;
   bool get favoritesLoading => _favoritesLoading;
+  HarmonySection get harmonySection => _harmonySection;
+  double get lastHarmonyScore => _lastHarmonyScore;
+  int get producerCandidateCount => _producerCandidateCount;
 
   // Initialize favorites on app start
   Future<void> loadFavorites() async {
@@ -237,6 +251,11 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setHarmonySection(HarmonySection value) {
+    _harmonySection = value;
+    notifyListeners();
+  }
+
   void setIsPlaying(bool value) {
     _isPlaying = value;
     notifyListeners();
@@ -263,9 +282,9 @@ class AppState extends ChangeNotifier {
     return lock.locked;
   }
 
-  // Generate progression
+  // Generate progression with the Producer Brain. Eight independent harmonic
+  // candidates are created, scored, and only the strongest is committed.
   void generateProgression() {
-    // Save current progression to history
     if (_currentProgression.isNotEmpty) {
       final historyEntry = HistoryEntry(
         progression: List.from(_currentProgression),
@@ -286,6 +305,65 @@ class AppState extends ChangeNotifier {
     final profile = genreProfiles[_genre]!;
     final complexityConfig = complexitySettings[_complexity]!;
 
+    var chords = _producerPool.generateBest(
+      buildCandidate: () => _buildProgressionCandidate(
+        root: root,
+        isMinor: isMinor,
+        profile: profile,
+        complexityConfig: complexityConfig,
+      ),
+      candidateCount: _producerCandidateCount,
+      section: _harmonySection,
+      applyVoicing: _useVoiceLeading,
+    );
+
+    // Defensive fallback: generation should never return an empty candidate,
+    // but keep the app usable if a future generator violates that contract.
+    if (chords.isEmpty) {
+      chords = _buildProgressionCandidate(
+        root: root,
+        isMinor: isMinor,
+        profile: profile,
+        complexityConfig: complexityConfig,
+      );
+      if (_useVoiceLeading) {
+        chords = applyVoiceLeading(chords);
+      }
+    }
+
+    // Groove is performance metadata, not harmonic quality, so apply it once
+    // after the winning progression has been chosen.
+    chords = applyGrooveToProgression(chords, _grooveTemplate);
+
+    _lastHarmonyScore =
+        _harmonyEngine.score(chords, section: _harmonySection);
+    _currentProgression = chords;
+    _isMinorKey = isMinor;
+
+    // Melody and bass are generated only once from the winning harmony.
+    if (_includeMelody) {
+      _currentMelody =
+          _generateMelodyNotes(chords, _genre, _rhythm, _currentKey);
+    } else {
+      _currentMelody = [];
+    }
+
+    if (_includeBass) {
+      _currentBassLine =
+          generateBassLine(chords, _bassStyle, _bassVariety, _rhythm);
+    } else {
+      _currentBassLine = [];
+    }
+
+    notifyListeners();
+  }
+
+  List<Chord> _buildProgressionCandidate({
+    required String root,
+    required bool isMinor,
+    required GenreProfile profile,
+    required ComplexitySetting complexityConfig,
+  }) {
     List<Chord> chords;
 
     if (_useFunctionalHarmony) {
@@ -296,10 +374,12 @@ class AppState extends ChangeNotifier {
         _currentMood,
       );
     } else {
-      // Original progression generation
       final baseProgression = randomChoice(profile.progressions);
-      final degreeSequence =
-          _buildDegreeSequence(baseProgression, complexityConfig);
+      final degreeSequence = _buildDegreeSequence(
+        baseProgression,
+        complexityConfig,
+        isMinor: isMinor,
+      );
       final scale = isMinor ? ScaleName.minor : profile.scale;
 
       chords = degreeSequence.asMap().entries.map((entry) {
@@ -307,10 +387,9 @@ class AppState extends ChangeNotifier {
         final degree = entry.value;
         var chord = getChordFromDegree(root, degree, isMinor, scale);
 
-        // Smart chord type selection based on variety and complexity
         if (complexityConfig.useExtensions) {
           final varietyFactor = _chordVariety / 100.0;
-          final extensionChance = 0.3 + (varietyFactor * 0.4); // 30-70% chance
+          final extensionChance = 0.3 + (varietyFactor * 0.4);
 
           if (Random().nextDouble() < extensionChance) {
             final extensions = profile.chordTypes
@@ -322,19 +401,17 @@ class AppState extends ChangeNotifier {
                 .toList();
 
             if (extensions.isNotEmpty) {
-              // Weight selection towards 7th chords for smoother sound
               final weights = <ChordTypeName, double>{};
               for (final ext in extensions) {
                 if (ext.name.contains('7') && !ext.name.contains('9')) {
-                  weights[ext] = 0.5; // Higher weight for 7th chords
+                  weights[ext] = 0.5;
                 } else if (ext.name.contains('9')) {
-                  weights[ext] = 0.25; // Medium weight for 9th chords
+                  weights[ext] = 0.25;
                 } else {
-                  weights[ext] = 0.25; // Lower weight for sus/add
+                  weights[ext] = 0.25;
                 }
               }
 
-              // Weighted random selection
               final totalWeight = weights.values.fold(0.0, (sum, w) => sum + w);
               var randomValue = Random().nextDouble() * totalWeight;
 
@@ -349,21 +426,10 @@ class AppState extends ChangeNotifier {
           }
         }
 
-        // Apply strategic extensions based on position
         chord = addStrategicExtensions(
             chord, index, degreeSequence.length, _chordVariety);
-
         return applyGenreVoicing(chord, _genre);
       }).toList();
-    }
-
-    // Preserve locked chords
-    for (final lc in _lockedChords) {
-      if (lc.locked &&
-          lc.index < _currentProgression.length &&
-          lc.index < chords.length) {
-        chords[lc.index] = _currentProgression[lc.index];
-      }
     }
 
     if (_useModalInterchange &&
@@ -378,61 +444,37 @@ class AppState extends ChangeNotifier {
       chords = applyAdvancedSubstitutions(chords, root, isMinor);
     }
 
-    // Apply spice level
     chords = applySpiceToProgression(chords, _spiceLevel);
 
-    // Apply groove template
-    chords = applyGrooveToProgression(chords, _grooveTemplate);
-
-    if (_useVoiceLeading) {
-      chords = applyVoiceLeading(chords);
+    // Locks are restored last so substitutions/spice cannot accidentally alter
+    // a chord that the user explicitly asked Chord Flow to keep.
+    for (final lc in _lockedChords) {
+      if (lc.locked &&
+          lc.index < _currentProgression.length &&
+          lc.index < chords.length) {
+        chords[lc.index] = _currentProgression[lc.index];
+      }
     }
 
-    _currentProgression = chords;
-    _isMinorKey = isMinor;
-
-    // Generate melody if enabled
-    if (_includeMelody) {
-      _currentMelody =
-          _generateMelodyNotes(chords, _genre, _rhythm, _currentKey);
-    } else {
-      _currentMelody = [];
-    }
-
-    // Generate bass line if enabled
-    if (_includeBass) {
-      _currentBassLine =
-          generateBassLine(chords, _bassStyle, _bassVariety, _rhythm);
-    } else {
-      _currentBassLine = [];
-    }
-
-    notifyListeners();
+    return chords;
   }
 
   List<String> _buildDegreeSequence(
-      List<String> baseProgression, ComplexitySetting config) {
+    List<String> baseProgression,
+    ComplexitySetting config, {
+    bool? isMinor,
+  }) {
+    final minor = isMinor ?? _isMinorKey;
     final progression = List<String>.from(baseProgression);
     final targetLength = randomInt(config.chordCount[0], config.chordCount[1]);
 
-    // Use intelligent variation based on chord variety setting
     if (_chordVariety > 0) {
-      // Apply smart passing chords
       var enhanced = addPassingChords(progression, _chordVariety);
-
-      // Apply approach chords for higher variety
       enhanced = addApproachChords(enhanced, _chordVariety);
+      enhanced = applyIntelligentSubstitutions(enhanced, _chordVariety, minor);
+      enhanced = optimizeTensionFlow(enhanced, minor);
 
-      // Apply intelligent substitutions
-      enhanced =
-          applyIntelligentSubstitutions(enhanced, _chordVariety, _isMinorKey);
-
-      // Optimize tension/resolution flow
-      enhanced = optimizeTensionFlow(enhanced, _isMinorKey);
-
-      // Trim to target length if needed
       while (enhanced.length > targetLength && enhanced.length > 3) {
-        // Only remove from middle if we have enough chords
         final canRemoveFromMiddle = enhanced.length > 3;
         final removeIndex = canRemoveFromMiddle
             ? randomInt(1, enhanced.length - 2)
@@ -443,10 +485,9 @@ class AppState extends ChangeNotifier {
       return enhanced;
     }
 
-    // Fallback to simple extension if needed
     while (progression.length < targetLength) {
       final insertIndex = randomInt(0, progression.length);
-      final newChord = randomChoice(_isMinorKey
+      final newChord = randomChoice(minor
           ? ['ii', 'iv', 'V', 'VI', 'III', 'VII']
           : ['ii', 'IV', 'V', 'vi', 'iii']);
       progression.insert(insertIndex, newChord);
@@ -530,6 +571,8 @@ class AppState extends ChangeNotifier {
     }
 
     _currentProgression = newProgression;
+    _lastHarmonyScore =
+        _harmonyEngine.score(newProgression, section: _harmonySection);
     notifyListeners();
   }
 
@@ -553,8 +596,6 @@ class AppState extends ChangeNotifier {
     }
 
     notifyListeners();
-
-    // Generate new progression with preset settings
     generateProgression();
   }
 
@@ -572,6 +613,8 @@ class AppState extends ChangeNotifier {
     _currentProgression = restoredProgression;
     _currentKey = entry.key;
     _genre = entry.genre;
+    _lastHarmonyScore =
+        _harmonyEngine.score(restoredProgression, section: _harmonySection);
 
     notifyListeners();
   }
@@ -594,6 +637,7 @@ class AppState extends ChangeNotifier {
     _currentMelody = [];
     _currentBassLine = [];
     _lockedChords = [];
+    _lastHarmonyScore = 0.0;
     notifyListeners();
   }
 
@@ -632,7 +676,6 @@ class AppState extends ChangeNotifier {
 
   /// Load a favorite progression
   void loadFavorite(FavoriteProgression favorite) {
-    // Save current to history first
     if (_currentProgression.isNotEmpty) {
       final historyEntry = HistoryEntry(
         progression: List.from(_currentProgression),
@@ -657,13 +700,14 @@ class AppState extends ChangeNotifier {
     _genre = favorite.genre;
     _isMinorKey =
         favorite.key.name.contains('m') && favorite.key.name.length > 1;
+    _lastHarmonyScore =
+        _harmonyEngine.score(restoredProgression, section: _harmonySection);
 
     final profile = genreProfiles[favorite.genre];
     if (profile != null) {
       _tempo = profile.tempo;
     }
 
-    // Regenerate melody and bass if enabled
     if (_includeMelody) {
       _currentMelody = _generateMelodyNotes(
           _currentProgression, _genre, _rhythm, _currentKey);
@@ -734,7 +778,6 @@ class AppState extends ChangeNotifier {
 
   /// Private helper to load a shared chord set
   void _loadSharedChordSet(SharedChordSet sharedSet) {
-    // Save current to history first
     if (_currentProgression.isNotEmpty) {
       final historyEntry = HistoryEntry(
         progression: List.from(_currentProgression),
@@ -760,8 +803,9 @@ class AppState extends ChangeNotifier {
     _tempo = sharedSet.tempo;
     _isMinorKey =
         sharedSet.key.name.contains('m') && sharedSet.key.name.length > 1;
+    _lastHarmonyScore =
+        _harmonyEngine.score(loadedProgression, section: _harmonySection);
 
-    // Regenerate melody and bass if enabled
     if (_includeMelody) {
       _currentMelody = _generateMelodyNotes(
           _currentProgression, _genre, _rhythm, _currentKey);
