@@ -92,8 +92,6 @@ class HarmonyCandidatePool {
     scored.sort((a, b) {
       final scoreOrder = b.score.compareTo(a.score);
       if (scoreOrder != 0) return scoreOrder;
-      // Stable tie-breaker: lower candidate index wins. This deliberately
-      // avoids hidden RNG in deterministic mode.
       return a.candidateIndex.compareTo(b.candidateIndex);
     });
 
@@ -127,6 +125,47 @@ class HarmonyCandidatePool {
       seed: best.seed,
       candidateIndex: best.candidateIndex,
       section: best.section,
+    );
+  }
+
+  /// App-facing deterministic API. The callback receives both the stable seed
+  /// and candidate index so later A/B/C tooling can preserve candidate identity.
+  /// Final voicing intentionally remains outside this method so ranking always
+  /// evaluates raw harmony and AppState can apply performance processing once.
+  SongCandidate generateBestForRequest({
+    required SongRequest request,
+    required List<Chord> Function(int candidateSeed, int candidateIndex)
+        buildCandidate,
+  }) {
+    final candidates = <SongCandidate>[];
+
+    for (var i = 0; i < request.candidateCount; i++) {
+      final candidateSeed = request.candidateSeed(i);
+      final progression =
+          List<Chord>.from(buildCandidate(candidateSeed, i));
+      if (progression.length < 2) continue;
+      candidates.add(SongCandidate(
+        progression: List<Chord>.unmodifiable(progression),
+        score: _engine.score(progression, section: request.section),
+        seed: candidateSeed,
+        candidateIndex: i,
+        section: request.section,
+      ));
+    }
+
+    candidates.sort((a, b) {
+      final scoreOrder = b.score.compareTo(a.score);
+      if (scoreOrder != 0) return scoreOrder;
+      return a.candidateIndex.compareTo(b.candidateIndex);
+    });
+
+    if (candidates.isNotEmpty) return candidates.first;
+    return SongCandidate(
+      progression: const <Chord>[],
+      score: 0.0,
+      seed: request.seed,
+      candidateIndex: -1,
+      section: request.section,
     );
   }
 }
