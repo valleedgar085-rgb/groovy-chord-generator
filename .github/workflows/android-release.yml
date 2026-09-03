@@ -46,6 +46,25 @@ jobs:
       - name: Run tests
         run: flutter test
 
+      - name: Rebuild clean Flutter Android host
+        shell: bash
+        run: |
+          # The repository contains remnants of an older Capacitor Android host
+          # alongside Flutter files. Recreate the platform shell from the current
+          # Flutter SDK so packaging is deterministic while preserving the app ID.
+          rm -rf android
+          flutter create \
+            --platforms=android \
+            --org com.edgarvalle \
+            --project-name groovy_chord_generator \
+            .
+
+          # Keep the historical Android application ID so existing installs can
+          # be upgraded instead of creating a second app on the device.
+          grep -RIl 'com.edgarvalle.groovy_chord_generator' android | while read -r file; do
+            sed -i 's/com\.edgarvalle\.groovy_chord_generator/com.edgarvalle.groovychordgenerator/g' "$file"
+          done
+
       - name: Build release APK
         run: flutter build apk --release
 
@@ -80,5 +99,5 @@ jobs:
               dist/ChordFlow-v2.6.0.apk \
               dist/ChordFlow-v2.6.0.sha256 \
               --title "Chord Flow v2.6.0 — Producer Brain" \
-              --notes "Producer Brain candidate ranking, Smart Takes, stronger locked chords, section-aware harmony, and Android release build."
+              --notes "Producer Brain candidate ranking, Smart Takes, stronger locked chords, section-aware harmony, and a rebuilt Flutter Android host for more reliable installation."
           fi
