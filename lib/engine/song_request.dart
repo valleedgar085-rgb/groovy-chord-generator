@@ -54,7 +54,8 @@ class SongRequest {
     if (index < 0 || index >= candidateCount) {
       throw RangeError.range(index, 0, candidateCount - 1, 'index');
     }
-    return _mixSeed(index + 1);
+    final baseSeed = _mixSeed(0);
+    return (baseSeed + index) & 0x7fffffff;
   }
 
   /// Stable stream seeds keep harmony, melody, bass, and performance randomness

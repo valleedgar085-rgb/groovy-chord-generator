@@ -32,7 +32,13 @@ void main() {
         numeral: 'I',
       ),
       Chord(
-        root: middle == 'V' ? 'G' : 'F',
+        root: switch (middle) {
+          'ii' => 'D',
+          'IV' => 'F',
+          'V' => 'G',
+          'vi' => 'A',
+          _ => 'F',
+        },
         type: middle == 'ii' || middle == 'vi'
             ? ChordTypeName.minor
             : ChordTypeName.major,
