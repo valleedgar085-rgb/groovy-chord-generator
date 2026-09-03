@@ -120,10 +120,7 @@ class ChordCard extends StatelessWidget {
                                       color: chordColor,
                                       shape: BoxShape.circle,
                                       boxShadow: [
-                                        BoxShadow(
-                                          color: chordColor,
-                                          blurRadius: 8,
-                                        ),
+                                        BoxShadow(color: chordColor, blurRadius: 8),
                                       ],
                                     ),
                                   ),
@@ -197,7 +194,7 @@ class ChordCard extends StatelessWidget {
                                   color: chordColor.withValues(alpha: 0.92),
                                 ),
                               ),
-                              const Spacer(),
+                              const SizedBox(height: 12),
                               Row(
                                 children: [
                                   if (showNumerals)
