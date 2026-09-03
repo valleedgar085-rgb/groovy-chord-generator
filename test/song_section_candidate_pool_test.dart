@@ -90,4 +90,42 @@ void main() {
       orderedEquals(first.progression.map((chord) => chord.degree)),
     );
   });
+
+  test('verse 2 prefers recognizable variation of verse 1', () {
+    final plan = SongPlan.standard(seed: 222);
+    final pool = SongSectionCandidatePool();
+    final reference = <Chord>[
+      c('C', 'I', ChordTypeName.major),
+      c('A', 'vi', ChordTypeName.minor),
+      c('F', 'IV', ChordTypeName.major),
+      c('G', 'V', ChordTypeName.major),
+    ];
+
+    final winner = pool.generateBest(
+      request: request(900),
+      plan: plan,
+      sectionId: 'verse-2',
+      repetitionReference: reference,
+      buildCandidate: (_, index) {
+        if (index.isEven) {
+          return [
+            c('C', 'I', ChordTypeName.major),
+            c('A', 'vi', ChordTypeName.minor),
+            c('D', 'ii', ChordTypeName.minor),
+            c('G', 'V', ChordTypeName.major),
+          ];
+        }
+        return [
+          c('D', 'ii', ChordTypeName.minor),
+          c('G', 'V', ChordTypeName.major),
+          c('D', 'ii', ChordTypeName.minor),
+          c('G', 'V', ChordTypeName.major),
+        ];
+      },
+    );
+
+    expect(winner.progression.first.degree, 'I');
+    expect(winner.progression[1].degree, 'vi');
+    expect(winner.progression.last.degree, 'V');
+  });
 }
