@@ -172,9 +172,11 @@ class HarmonyEngine {
         if (alteredCount > 1) value -= 2.5;
         return value;
       case HarmonySection.preChorus:
-        // A pre-chorus should lean forward rather than completely settle.
-        var value = endsDominant ? 7.0 : 0.0;
-        if (resolvesHome) value -= 4.0;
+        // Section intent must be strong enough to override the generic cadence
+        // reward: a pre-chorus should build anticipation instead of feeling
+        // like the song already arrived home before the chorus begins.
+        var value = endsDominant ? 10.0 : 0.0;
+        if (resolvesHome) value -= 8.0;
         return value;
       case HarmonySection.chorus:
         // Choruses usually benefit from a confident arrival/home cadence.
