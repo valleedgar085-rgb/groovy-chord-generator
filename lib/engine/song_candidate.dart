@@ -6,13 +6,13 @@ import 'harmony_engine.dart';
 /// The candidate keeps the seed and ranking metadata alongside the harmony so
 /// results can be replayed, compared, exported, and evolved by future phases.
 class SongCandidate {
-  const SongCandidate({
-    required this.progression,
+  SongCandidate({
+    required List<Chord> progression,
     required this.score,
     required this.seed,
     required this.candidateIndex,
     required this.section,
-  });
+  }) : progression = List<Chord>.unmodifiable(progression);
 
   final List<Chord> progression;
   final double score;
