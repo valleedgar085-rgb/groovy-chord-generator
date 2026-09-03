@@ -1,5 +1,7 @@
 import '../models/types.dart';
 import 'harmony_engine.dart';
+import 'song_candidate.dart';
+import 'song_request.dart';
 
 /// Builds several harmonic candidates and lets [HarmonyEngine] keep the best.
 ///
@@ -15,9 +17,8 @@ class HarmonyCandidatePool {
   /// Generate [candidateCount] alternatives with [buildCandidate], then select
   /// the strongest progression for the requested song [section].
   ///
-  /// The callback is invoked independently for every candidate so existing
-  /// stochastic generation code can naturally produce variation without being
-  /// duplicated inside the ranking engine.
+  /// This legacy-compatible API remains available while generation call sites
+  /// migrate to the deterministic [SongRequest] contract.
   List<Chord> generateBest({
     required List<Chord> Function() buildCandidate,
     int candidateCount = 8,
@@ -61,6 +62,72 @@ class HarmonyCandidatePool {
 
     scored.sort((a, b) => b.score.compareTo(a.score));
     return List<ScoredHarmonyCandidate>.unmodifiable(scored);
+  }
+
+  /// Deterministic producer-core API.
+  ///
+  /// Every candidate receives a stable seed derived from [request]. As long as
+  /// [buildCandidate] uses only that seed for randomness, replaying the same
+  /// request yields the same candidate set and ranking.
+  List<SongCandidate> generateScoredDeterministic({
+    required SongRequest request,
+    required List<Chord> Function(int candidateSeed) buildCandidate,
+  }) {
+    final scored = <SongCandidate>[];
+
+    for (var i = 0; i < request.candidateCount; i++) {
+      final candidateSeed = request.candidateSeed(i);
+      final progression = List<Chord>.from(buildCandidate(candidateSeed));
+      if (progression.length < 2) continue;
+
+      scored.add(SongCandidate(
+        progression: List<Chord>.unmodifiable(progression),
+        score: _engine.score(progression, section: request.section),
+        seed: candidateSeed,
+        candidateIndex: i,
+        section: request.section,
+      ));
+    }
+
+    scored.sort((a, b) {
+      final scoreOrder = b.score.compareTo(a.score);
+      if (scoreOrder != 0) return scoreOrder;
+      // Stable tie-breaker: lower candidate index wins. This deliberately
+      // avoids hidden RNG in deterministic mode.
+      return a.candidateIndex.compareTo(b.candidateIndex);
+    });
+
+    return List<SongCandidate>.unmodifiable(scored);
+  }
+
+  /// Returns the best deterministic candidate and optionally applies final
+  /// voice leading after ranking, matching the existing producer workflow.
+  SongCandidate? generateBestDeterministic({
+    required SongRequest request,
+    required List<Chord> Function(int candidateSeed) buildCandidate,
+  }) {
+    final candidates = generateScoredDeterministic(
+      request: request,
+      buildCandidate: buildCandidate,
+    );
+    if (candidates.isEmpty) return null;
+
+    final best = candidates.first;
+    final progression = request.useVoiceLeading
+        ? _engine.selectBest(
+            [best.progression],
+            section: request.section,
+            applyVoicing: true,
+          )
+        : List<Chord>.from(best.progression);
+
+    return SongCandidate(
+      progression: List<Chord>.unmodifiable(progression),
+      score: best.score,
+      seed: best.seed,
+      candidateIndex: best.candidateIndex,
+      section: best.section,
+    );
   }
 }
 
