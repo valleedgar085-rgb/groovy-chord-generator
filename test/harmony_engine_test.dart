@@ -94,7 +94,7 @@ void main() {
           [better, worse],
           applyVoicing: false,
         );
-        expect(selected, same(better));
+        expect(selected, orderedEquals(better));
       }
     });
 
