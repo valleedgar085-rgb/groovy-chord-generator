@@ -18,7 +18,7 @@ SongRequest request(int seed) => SongRequest(
       mood: MoodType.happy,
       complexity: ComplexityLevel.medium,
       spice: SpiceLevel.medium,
-      rhythm: RhythmLevel.medium,
+      rhythm: RhythmLevel.moderate,
     );
 
 void main() {
