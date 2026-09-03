@@ -54,8 +54,20 @@ class SongRequest {
     if (index < 0 || index >= candidateCount) {
       throw RangeError.range(index, 0, candidateCount - 1, 'index');
     }
+    return _mixSeed(index + 1);
+  }
 
-    var value = (seed & 0x7fffffff) ^ ((index + 1) * 0x45d9f3b);
+  /// Stable stream seeds keep harmony, melody, bass, and performance randomness
+  /// independent. Changing one generator later will not silently reshuffle all
+  /// of the other musical layers for the same project seed.
+  int get melodySeed => _mixSeed(0x4d454c4f);
+  int get bassSeed => _mixSeed(0x42415353);
+  int get performanceSeed => _mixSeed(0x50455246);
+
+  int streamSeed(int streamId) => _mixSeed(streamId);
+
+  int _mixSeed(int salt) {
+    var value = (seed & 0x7fffffff) ^ (salt * 0x45d9f3b);
     value = ((value ^ (value >> 16)) * 0x45d9f3b) & 0x7fffffff;
     value = ((value ^ (value >> 16)) * 0x45d9f3b) & 0x7fffffff;
     value = (value ^ (value >> 16)) & 0x7fffffff;
