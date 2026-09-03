@@ -78,6 +78,36 @@ void main() {
       expect(calls, 32);
     });
 
+    test('filters short candidates before selecting the best progression', () {
+      var calls = 0;
+      final pool = HarmonyCandidatePool(engine: HarmonyEngine(seed: 42));
+
+      final selected = pool.generateBest(
+        candidateCount: 4,
+        applyVoicing: false,
+        buildCandidate: () {
+          calls++;
+          if (calls == 1 || calls == 3) {
+            return <Chord>[chord('C', 'I', ChordTypeName.major)];
+          }
+          if (calls == 4) {
+            return <Chord>[
+              chord('F', 'IV', ChordTypeName.major),
+              chord('G', 'V', ChordTypeName.dominant7),
+              chord('C', 'I', ChordTypeName.major),
+            ];
+          }
+          return <Chord>[
+            chord('C', 'I', ChordTypeName.major),
+            chord('C', 'I', ChordTypeName.major),
+            chord('C', 'I', ChordTypeName.major),
+          ];
+        },
+      );
+
+      expect(selected.map((chord) => chord.degree), ['IV', 'V', 'I']);
+    });
+
     test('generateScored returns candidates ordered best first', () {
       var calls = 0;
       final pool = HarmonyCandidatePool(engine: HarmonyEngine(seed: 2));
