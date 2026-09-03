@@ -1,3 +1,4 @@
+import '../models/types.dart';
 import 'harmony_engine.dart';
 
 /// Arrangement-level section identity. This is intentionally broader than
@@ -12,9 +13,6 @@ enum SongSectionType {
 }
 
 /// One immutable section target inside a song plan.
-///
-/// Tension and energy are normalized to 0..1 so later melody, bass, rhythm,
-/// dynamics, and harmony engines can all consume the same arrangement intent.
 class SongSectionPlan {
   const SongSectionPlan({
     required this.id,
@@ -34,10 +32,6 @@ class SongSectionPlan {
   final int bars;
   final double targetTension;
   final double targetEnergy;
-
-  /// Sections sharing a group should retain recognizable musical identity.
-  /// Example: verse1 and verse2 can both use `verse-a` while variation tells
-  /// the future motif engine how far the repeat may evolve.
   final String? repetitionGroup;
   final int variation;
 
@@ -58,7 +52,7 @@ class SongSectionPlan {
   }
 }
 
-/// Immutable arrangement blueprint consumed by the future Song Architect.
+/// Immutable arrangement blueprint consumed by the Song Architect.
 class SongPlan {
   SongPlan({
     required this.seed,
@@ -95,6 +89,28 @@ class SongPlan {
         : null;
   }
 
+  /// Converts arrangement intent into the harmonic context consumed by the
+  /// Producer Brain. The previous progression is supplied by the song builder
+  /// because the plan stores intent, not generated musical events.
+  HarmonyTransitionContext harmonyContextFor(
+    String id, {
+    List<Chord> previousProgression = const <Chord>[],
+  }) {
+    final current = sectionById(id);
+    if (current == null) {
+      throw ArgumentError.value(id, 'id', 'Unknown section');
+    }
+    final previous = previousOf(id);
+    final next = nextOf(id);
+    return HarmonyTransitionContext(
+      previousProgression: List<Chord>.unmodifiable(previousProgression),
+      previousSection: previous?.harmonySection ?? HarmonySection.neutral,
+      nextSection: next?.harmonySection ?? HarmonySection.neutral,
+      targetTension: current.targetTension,
+      targetEnergy: current.targetEnergy,
+    );
+  }
+
   /// Stable section seed gives every part its own reproducible random stream.
   int sectionSeed(String id) {
     final index = sections.indexWhere((section) => section.id == id);
@@ -105,8 +121,6 @@ class SongPlan {
     return value;
   }
 
-  /// General-purpose modern song arc. Genre-specific templates can layer on
-  /// top later without changing the core data contract.
   factory SongPlan.standard({required int seed}) {
     return SongPlan(
       seed: seed,
