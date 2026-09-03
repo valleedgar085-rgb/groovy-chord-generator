@@ -100,8 +100,11 @@ class AppState extends ChangeNotifier {
   bool get favoritesLoading => _favoritesLoading;
   HarmonySection get harmonySection => _harmonySection;
   double get lastHarmonyScore => _lastHarmonyScore;
-  List<List<Chord>> get harmonyAlternatives =>
-      List<List<Chord>>.unmodifiable(_harmonyAlternatives);
+  List<List<Chord>> get harmonyAlternatives => List<List<Chord>>.unmodifiable(
+        _harmonyAlternatives.map(
+          (progression) => List<Chord>.unmodifiable(progression),
+        ),
+      );
   int get selectedHarmonyAlternative => _selectedHarmonyAlternative;
 
   Future<void> loadFavorites() async {
@@ -248,6 +251,7 @@ class AppState extends ChangeNotifier {
 
   void setHarmonySection(HarmonySection value) {
     _harmonySection = value;
+    if (_currentProgression.isNotEmpty) _refreshHarmonyScore();
     notifyListeners();
   }
 
@@ -313,9 +317,7 @@ class AppState extends ChangeNotifier {
         complexityConfig: complexityConfig,
       );
       _harmonyAlternatives = [_finalizeHarmony(fallback)];
-      _lastHarmonyScore = engine.score(fallback, section: _harmonySection);
     } else {
-      _lastHarmonyScore = scored.first.score;
       _harmonyAlternatives = scored
           .take(3)
           .map((candidate) => _finalizeHarmony(candidate.progression))
@@ -324,6 +326,7 @@ class AppState extends ChangeNotifier {
 
     _selectedHarmonyAlternative = 0;
     _currentProgression = List<Chord>.from(_harmonyAlternatives.first);
+    _refreshHarmonyScore();
     _regenerateAccompaniment();
     notifyListeners();
   }
@@ -458,8 +461,20 @@ class AppState extends ChangeNotifier {
     if (index < 0 || index >= _harmonyAlternatives.length) return;
     _selectedHarmonyAlternative = index;
     _currentProgression = List<Chord>.from(_harmonyAlternatives[index]);
+    _refreshHarmonyScore();
     _regenerateAccompaniment();
     notifyListeners();
+  }
+
+  void _refreshHarmonyScore() {
+    if (_currentProgression.isEmpty) {
+      _lastHarmonyScore = 0;
+      return;
+    }
+    _lastHarmonyScore = HarmonyEngine(seed: 0).score(
+      _currentProgression,
+      section: _harmonySection,
+    );
   }
 
   void _regenerateAccompaniment() {
@@ -605,6 +620,7 @@ class AppState extends ChangeNotifier {
     _currentProgression = newProgression;
     _harmonyAlternatives = [List<Chord>.from(newProgression)];
     _selectedHarmonyAlternative = 0;
+    _refreshHarmonyScore();
     _regenerateAccompaniment();
     notifyListeners();
   }
@@ -638,6 +654,7 @@ class AppState extends ChangeNotifier {
     _genre = entry.genre;
     _harmonyAlternatives = [List<Chord>.from(restoredProgression)];
     _selectedHarmonyAlternative = 0;
+    _refreshHarmonyScore();
     _regenerateAccompaniment();
     notifyListeners();
   }
@@ -704,6 +721,7 @@ class AppState extends ChangeNotifier {
 
     final profile = genreProfiles[favorite.genre];
     if (profile != null) _tempo = profile.tempo;
+    _refreshHarmonyScore();
     _regenerateAccompaniment();
     notifyListeners();
   }
@@ -765,6 +783,7 @@ class AppState extends ChangeNotifier {
     _isMinorKey = sharedSet.key.name.contains('m') && sharedSet.key.name.length > 1;
     _harmonyAlternatives = [List<Chord>.from(loadedProgression)];
     _selectedHarmonyAlternative = 0;
+    _refreshHarmonyScore();
     _regenerateAccompaniment();
     notifyListeners();
   }
