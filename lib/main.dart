@@ -1,21 +1,22 @@
-// Groovy Chord Generator
-// Main Application Entry Point
-// Version 2.5
-// Author: Edgar Valle
+// Chord Flow
+// Main application entry point
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import 'providers/app_state.dart';
 import 'providers/song_session_controller.dart';
-import 'utils/theme.dart';
 import 'screens/home_screen.dart';
-import 'services/firebase_service.dart';
 import 'services/auth_service.dart';
+import 'services/firebase_service.dart';
+import 'services/fullscreen_service.dart';
+import 'utils/theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await FullscreenService.enableImmersive();
 
-  // Initialize Firebase with web-specific handling
+  // Initialize Firebase with web-specific handling.
   try {
     await FirebaseService.initialize();
     await AuthService.signInAnonymously();
@@ -38,7 +39,6 @@ class GroovyChordGeneratorApp extends StatelessWidget {
         ChangeNotifierProvider(
           create: (_) {
             final appState = AppState();
-            // Load favorites on startup
             appState.loadFavorites();
             return appState;
           },
@@ -47,11 +47,13 @@ class GroovyChordGeneratorApp extends StatelessWidget {
           create: (_) => SongSessionController(),
         ),
       ],
-      child: MaterialApp(
-        title: 'Groovy Chord Generator',
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.darkTheme,
-        home: const HomeScreen(),
+      child: FullscreenLifecycle(
+        child: MaterialApp(
+          title: 'Chord Flow',
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.darkTheme,
+          home: const HomeScreen(),
+        ),
       ),
     );
   }
