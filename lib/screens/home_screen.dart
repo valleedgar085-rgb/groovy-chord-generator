@@ -9,13 +9,12 @@ import '../providers/app_state.dart';
 import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
-import '../widgets/fab_menu.dart';
 import '../widgets/header.dart';
 import '../widgets/producer_brain_panel.dart';
 import '../widgets/studio_transport.dart';
 import 'bass_tab.dart';
 import 'editor_tab.dart';
-import 'generator_tab.dart';
+import 'generator_workspace.dart';
 import 'settings_tab.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -77,8 +76,8 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: const FabMenu(),
-          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+          // Phase 3.75 removes the floating + menu from the primary workflow.
+          // Creation now lives in the explicit Progression / Full Song controls.
           bottomNavigationBar: SafeArea(
             top: false,
             child: Column(
@@ -98,7 +97,7 @@ class HomeScreen extends StatelessWidget {
   Widget _buildCurrentTab(TabName tab) {
     switch (tab) {
       case TabName.generator:
-        return const GeneratorTab();
+        return const GeneratorWorkspace();
       case TabName.editor:
         return const EditorTab();
       case TabName.bass:
