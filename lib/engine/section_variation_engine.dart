@@ -1,7 +1,10 @@
 import 'dart:math';
 
 import '../models/types.dart';
+import '../utils/music_theory.dart';
 import 'harmony_engine.dart';
+import 'motif_transformation_engine.dart';
+import 'song_architecture.dart';
 import 'song_candidate.dart';
 import 'song_draft.dart';
 import 'song_memory.dart';
@@ -14,10 +17,14 @@ import 'song_memory.dart';
 enum SectionVariationLevel { aPrime, aDoublePrime }
 
 class SectionVariationEngine {
-  SectionVariationEngine({HarmonyEngine? harmonyEngine})
-      : _harmonyEngine = harmonyEngine ?? HarmonyEngine(seed: 0);
+  SectionVariationEngine({
+    HarmonyEngine? harmonyEngine,
+    MotifTransformationEngine? motifEngine,
+  })  : _harmonyEngine = harmonyEngine ?? HarmonyEngine(seed: 0),
+        _motifEngine = motifEngine ?? const MotifTransformationEngine();
 
   final HarmonyEngine _harmonyEngine;
+  final MotifTransformationEngine _motifEngine;
 
   GeneratedSongSection transform({
     required GeneratedSongSection source,
@@ -58,10 +65,25 @@ class SectionVariationEngine {
       forceTargetChordIndexes: changedChordIndexes,
     );
 
+    final motifResult = _motifEngine.transform(
+      progression: progression,
+      melody: melody,
+      bass: bass,
+      seed: seed ^ 0x6d2b79f5,
+      intensity: level == SectionVariationLevel.aPrime
+          ? MotifVariationIntensity.subtle
+          : MotifVariationIntensity.developed,
+      emphasizeCadence: level == SectionVariationLevel.aDoublePrime &&
+          target.plan.type == SongSectionType.chorus,
+    );
+
+    // Any pitch-class changes introduced by cadence development receive a fresh
+    // voicing pass so playback/export never carries stale source voicings.
+    final developedProgression = applyVoiceLeading(motifResult.progression);
     final identityBefore = targetMemory.identitySimilarityTo(sourceMemory);
     final identityBias = level == SectionVariationLevel.aPrime ? 2.0 : 0.5;
     final score = (_harmonyEngine.score(
-              progression,
+              developedProgression,
               section: target.plan.harmonySection,
             ) +
             identityBefore * identityBias)
@@ -71,14 +93,14 @@ class SectionVariationEngine {
     return GeneratedSongSection(
       plan: target.plan,
       candidate: SongCandidate(
-        progression: progression,
+        progression: developedProgression,
         score: score,
         seed: target.candidate.seed,
         candidateIndex: target.candidate.candidateIndex,
         section: target.candidate.section,
       ),
-      melody: melody,
-      bass: bass,
+      melody: motifResult.melody,
+      bass: motifResult.bass,
     );
   }
 
