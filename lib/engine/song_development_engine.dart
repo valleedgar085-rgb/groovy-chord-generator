@@ -94,6 +94,37 @@ class SongDevelopmentEngine {
     );
   }
 
+  /// If [sourceSectionId] is the canonical source of a repetition family,
+  /// re-derive all later A′ / A″ members from the new source. This keeps the
+  /// dependency graph coherent when Verse 1 or Chorus 1 is regenerated.
+  SongDraft redevelopDependents(
+    SongDraft draft,
+    String sourceSectionId,
+  ) {
+    final sourcePlan = draft.plan.sectionById(sourceSectionId);
+    final group = sourcePlan?.repetitionGroup;
+    if (sourcePlan == null || group == null || sourcePlan.variation > 0) {
+      return draft;
+    }
+
+    final sourceIndex = draft.plan.sections.indexWhere(
+      (section) => section.id == sourceSectionId,
+    );
+    if (sourceIndex < 0) return draft;
+
+    var updated = draft;
+    for (var index = sourceIndex + 1; index < draft.plan.sections.length; index++) {
+      final candidatePlan = draft.plan.sections[index];
+      if (candidatePlan.repetitionGroup != group || candidatePlan.variation <= 0) {
+        continue;
+      }
+      if (updated.sectionById(candidatePlan.id) == null) continue;
+      final transformed = developSection(updated, candidatePlan.id);
+      updated = updated.withSection(transformed);
+    }
+    return updated;
+  }
+
   SectionVariationLevel _levelFor(int variation) {
     return variation >= 2
         ? SectionVariationLevel.aDoublePrime
