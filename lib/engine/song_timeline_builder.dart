@@ -51,7 +51,9 @@ class SongTimelineBuilder {
               chordIndex: chordIndex,
               startBeat: chordStart,
               durationBeats: chordBeats,
-              velocity: (0.58 + (plan.targetEnergy * 0.34)).clamp(0.0, 1.0),
+              velocity: (0.58 + (plan.targetEnergy * 0.34))
+                  .clamp(0.0, 1.0)
+                  .toDouble(),
               midiPitches: _chordMidiPitches(chord),
               label: chord.numeral.isNotEmpty ? chord.numeral : chord.root,
             ),
