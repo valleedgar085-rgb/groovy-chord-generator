@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import '../engine/producer_song_composer.dart';
 import '../engine/song_architecture.dart';
 import '../engine/song_draft.dart';
+import '../engine/song_memory.dart';
+import '../engine/song_memory_extractor.dart';
 import '../engine/song_request.dart';
 import '../models/types.dart';
 
@@ -13,12 +15,17 @@ import '../models/types.dart';
 /// object so Song Memory, section regeneration, timeline editing, and export can
 /// grow without turning AppState into another monolith.
 class SongSessionController extends ChangeNotifier {
-  SongSessionController({ProducerSongComposer? composer})
-      : _composer = composer ?? ProducerSongComposer();
+  SongSessionController({
+    ProducerSongComposer? composer,
+    SongMemoryExtractor? memoryExtractor,
+  })  : _composer = composer ?? ProducerSongComposer(),
+        _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor();
 
   final ProducerSongComposer _composer;
+  final SongMemoryExtractor _memoryExtractor;
 
   SongDraft? _currentDraft;
+  SongMemory? _currentMemory;
   String? _selectedSectionId;
   SongRequest? _lastRequest;
   SongPlan? _lastPlan;
@@ -30,9 +37,11 @@ class SongSessionController extends ChangeNotifier {
       <_SectionRegenerationOp>[];
 
   SongDraft? get currentDraft => _currentDraft;
+  SongMemory? get currentMemory => _currentMemory;
   String? get selectedSectionId => _selectedSectionId;
   SongRequest? get lastRequest => _lastRequest;
   bool get hasSong => _currentDraft != null && _currentDraft!.sections.isNotEmpty;
+  bool get hasMemory => _currentMemory != null && _currentMemory!.sections.isNotEmpty;
   bool get isComplete => _currentDraft?.isComplete ?? false;
   double get averageHarmonyScore => _currentDraft?.averageHarmonyScore ?? 0.0;
   bool get canRegenerateSelected => hasSong && selectedSection != null;
@@ -47,6 +56,29 @@ class SongSessionController extends ChangeNotifier {
     final id = _selectedSectionId;
     if (draft == null || id == null) return null;
     return draft.sectionById(id);
+  }
+
+  SectionMemory? get selectedSectionMemory {
+    final memory = _currentMemory;
+    final id = _selectedSectionId;
+    if (memory == null || id == null) return null;
+    return memory.section(id);
+  }
+
+  SectionMemory? get selectedSourceMemory {
+    final memory = _currentMemory;
+    final id = _selectedSectionId;
+    if (memory == null || id == null) return null;
+    return memory.sourceFor(id);
+  }
+
+  /// Similarity between the selected section and its canonical repetition
+  /// source. Source sections naturally score 1.0 against themselves.
+  double get selectedIdentitySimilarity {
+    final selected = selectedSectionMemory;
+    final source = selectedSourceMemory;
+    if (selected == null || source == null) return 0.0;
+    return selected.identitySimilarityTo(source);
   }
 
   List<Chord> get selectedProgression =>
@@ -73,6 +105,7 @@ class SongSessionController extends ChangeNotifier {
     );
 
     _currentDraft = draft;
+    _currentMemory = _memoryExtractor.capture(draft);
     _selectedSectionId = draft.sections.isEmpty ? null : draft.sections.first.plan.id;
     _lastRequest = request;
     _lastPlan = effectivePlan;
@@ -108,7 +141,9 @@ class SongSessionController extends ChangeNotifier {
       grooveTemplate: _lastGrooveTemplate,
     );
 
-    _currentDraft = draft.withSection(replacement);
+    final updatedDraft = draft.withSection(replacement);
+    _currentDraft = updatedDraft;
+    _currentMemory = _memoryExtractor.capture(updatedDraft);
     _selectedSectionId = targetId;
     _sectionRevisions[targetId] = revision;
     _regenerationOps.add(_SectionRegenerationOp(targetId, revision));
@@ -150,6 +185,7 @@ class SongSessionController extends ChangeNotifier {
     }
 
     _currentDraft = draft;
+    _currentMemory = _memoryExtractor.capture(draft);
     _sectionRevisions
       ..clear()
       ..addAll(rebuiltRevisions);
@@ -179,6 +215,7 @@ class SongSessionController extends ChangeNotifier {
   void clear() {
     if (_currentDraft == null && _selectedSectionId == null) return;
     _currentDraft = null;
+    _currentMemory = null;
     _selectedSectionId = null;
     _lastRequest = null;
     _lastPlan = null;
