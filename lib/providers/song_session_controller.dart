@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../engine/producer_song_composer.dart';
 import '../engine/song_architecture.dart';
+import '../engine/song_development_engine.dart';
 import '../engine/song_draft.dart';
 import '../engine/song_memory.dart';
 import '../engine/song_memory_extractor.dart';
@@ -17,11 +18,14 @@ import '../models/types.dart';
 class SongSessionController extends ChangeNotifier {
   SongSessionController({
     ProducerSongComposer? composer,
+    SongDevelopmentEngine? developmentEngine,
     SongMemoryExtractor? memoryExtractor,
   })  : _composer = composer ?? ProducerSongComposer(),
+        _developmentEngine = developmentEngine ?? SongDevelopmentEngine(),
         _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor();
 
   final ProducerSongComposer _composer;
+  final SongDevelopmentEngine _developmentEngine;
   final SongMemoryExtractor _memoryExtractor;
 
   SongDraft? _currentDraft;
@@ -96,13 +100,14 @@ class SongSessionController extends ChangeNotifier {
     GrooveTemplate grooveTemplate = GrooveTemplate.straight,
   }) {
     final effectivePlan = plan ?? SongPlan.standard(seed: request.seed);
-    final draft = _composer.compose(
+    final rawDraft = _composer.compose(
       request: request,
       plan: effectivePlan,
       bassStyle: bassStyle,
       bassVariety: bassVariety,
       grooveTemplate: grooveTemplate,
     );
+    final draft = _developmentEngine.develop(rawDraft);
 
     _currentDraft = draft;
     _currentMemory = _memoryExtractor.capture(draft);
@@ -131,7 +136,7 @@ class SongSessionController extends ChangeNotifier {
     if (draft.sectionById(targetId) == null) return false;
 
     final revision = (_sectionRevisions[targetId] ?? 0) + 1;
-    final replacement = _composer.regenerateSection(
+    final rawReplacement = _composer.regenerateSection(
       request: request,
       draft: draft,
       sectionId: targetId,
@@ -141,6 +146,11 @@ class SongSessionController extends ChangeNotifier {
       grooveTemplate: _lastGrooveTemplate,
     );
 
+    final rawUpdatedDraft = draft.withSection(rawReplacement);
+    final replacement = _developmentEngine.developSection(
+      rawUpdatedDraft,
+      targetId,
+    );
     final updatedDraft = draft.withSection(replacement);
     _currentDraft = updatedDraft;
     _currentMemory = _memoryExtractor.capture(updatedDraft);
@@ -161,17 +171,18 @@ class SongSessionController extends ChangeNotifier {
     final previouslySelected = _selectedSectionId;
     final operations = List<_SectionRegenerationOp>.from(_regenerationOps);
 
-    var draft = _composer.compose(
+    final rawBase = _composer.compose(
       request: request,
       plan: plan,
       bassStyle: _lastBassStyle,
       bassVariety: _lastBassVariety,
       grooveTemplate: _lastGrooveTemplate,
     );
+    var draft = _developmentEngine.develop(rawBase);
     final rebuiltRevisions = <String, int>{};
 
     for (final operation in operations) {
-      final replacement = _composer.regenerateSection(
+      final rawReplacement = _composer.regenerateSection(
         request: request,
         draft: draft,
         sectionId: operation.sectionId,
@@ -179,6 +190,11 @@ class SongSessionController extends ChangeNotifier {
         bassStyle: _lastBassStyle,
         bassVariety: _lastBassVariety,
         grooveTemplate: _lastGrooveTemplate,
+      );
+      final rawUpdatedDraft = draft.withSection(rawReplacement);
+      final replacement = _developmentEngine.developSection(
+        rawUpdatedDraft,
+        operation.sectionId,
       );
       draft = draft.withSection(replacement);
       rebuiltRevisions[operation.sectionId] = operation.revision;
