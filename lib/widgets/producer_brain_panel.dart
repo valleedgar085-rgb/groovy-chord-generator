@@ -13,128 +13,120 @@ class ProducerBrainPanel extends StatelessWidget {
   final AppState appState;
 
   static const _sectionLabels = <HarmonySection, String>{
-    HarmonySection.neutral: 'Auto',
-    HarmonySection.verse: 'Verse',
-    HarmonySection.preChorus: 'Pre',
-    HarmonySection.chorus: 'Chorus',
-    HarmonySection.bridge: 'Bridge',
+    HarmonySection.neutral: 'AUTO',
+    HarmonySection.verse: 'VERSE',
+    HarmonySection.preChorus: 'PRE',
+    HarmonySection.chorus: 'CHORUS',
+    HarmonySection.bridge: 'BRIDGE',
   };
 
   @override
   Widget build(BuildContext context) {
     final score = appState.lastHarmonyScore.clamp(0.0, 100.0).toDouble();
     final hasProgression = appState.currentProgression.isNotEmpty;
+    final scoreColor = hasProgression ? _scoreColor(score) : AppTheme.textMuted;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(
-        AppTheme.spacingMd,
-        AppTheme.spacingSm,
-        AppTheme.spacingMd,
-        0,
-      ),
-      padding: const EdgeInsets.all(AppTheme.spacingMd),
+      height: 58,
+      margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: AppTheme.bgSecondary,
-        borderRadius: BorderRadius.circular(AppTheme.borderRadius),
+        color: AppTheme.bgSecondary.withValues(alpha: 0.72),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(
-          color: AppTheme.accentPrimary.withValues(alpha: 0.32),
+          color: AppTheme.borderColor.withValues(alpha: 0.78),
         ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.auto_awesome,
-                size: 18,
-                color: AppTheme.accentSecondary,
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.accentPrimary.withValues(alpha: 0.42),
+                  AppTheme.accentCyan.withValues(alpha: 0.22),
+                ],
               ),
-              const SizedBox(width: 8),
-              const Expanded(
-                child: Text(
-                  'Producer Brain',
-                  style: TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppTheme.bgTertiary,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  '${appState.producerCandidateCount} candidates',
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppTheme.spacingSm),
-          const Text(
-            'Song section',
-            style: TextStyle(
-              color: AppTheme.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.auto_awesome_rounded,
+              size: 19,
+              color: AppTheme.textPrimary,
             ),
           ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: HarmonySection.values.map((section) {
-              final selected = appState.harmonySection == section;
-              return ChoiceChip(
-                label: Text(_sectionLabels[section]!),
-                selected: selected,
-                onSelected: (_) => appState.setHarmonySection(section),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              );
-            }).toList(),
+          const SizedBox(width: 9),
+          Expanded(
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: HarmonySection.values.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 5),
+              itemBuilder: (context, index) {
+                final section = HarmonySection.values[index];
+                final selected = appState.harmonySection == section;
+                return InkWell(
+                  onTap: () => appState.setHarmonySection(section),
+                  borderRadius: BorderRadius.circular(11),
+                  child: AnimatedContainer(
+                    duration: AppTheme.animationFast,
+                    alignment: Alignment.center,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: selected
+                          ? AppTheme.accentPrimary.withValues(alpha: 0.22)
+                          : AppTheme.bgTertiary.withValues(alpha: 0.72),
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(
+                        color: selected
+                            ? AppTheme.accentSecondary.withValues(alpha: 0.42)
+                            : Colors.transparent,
+                      ),
+                    ),
+                    child: Text(
+                      _sectionLabels[section]!,
+                      style: TextStyle(
+                        fontSize: 8,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.65,
+                        color: selected
+                            ? AppTheme.textPrimary
+                            : AppTheme.textMuted,
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-          const SizedBox(height: AppTheme.spacingMd),
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  hasProgression ? _scoreLabel(score) : 'Generate to analyze',
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 48,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  hasProgression ? '${score.round()}' : '--',
                   style: TextStyle(
-                    color: hasProgression
-                        ? _scoreColor(score)
-                        : AppTheme.textMuted,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    height: 1,
+                    fontWeight: FontWeight.w800,
+                    color: scoreColor,
                   ),
                 ),
-              ),
-              Text(
-                hasProgression ? '${score.round()} / 100' : '-- / 100',
-                style: const TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: hasProgression ? score / 100 : 0,
+                    minHeight: 3,
+                    backgroundColor: AppTheme.bgElevated,
+                    color: scoreColor,
+                  ),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: LinearProgressIndicator(
-              minHeight: 7,
-              value: hasProgression ? score / 100.0 : 0.0,
-              backgroundColor: AppTheme.bgTertiary,
-              color: hasProgression ? _scoreColor(score) : AppTheme.textMuted,
+              ],
             ),
           ),
         ],
@@ -142,18 +134,10 @@ class ProducerBrainPanel extends StatelessWidget {
     );
   }
 
-  String _scoreLabel(double score) {
-    if (score >= 90) return 'Excellent harmonic fit';
-    if (score >= 80) return 'Strong harmonic fit';
-    if (score >= 70) return 'Good harmonic fit';
-    if (score >= 60) return 'Usable — room to improve';
-    return 'Experimental result';
-  }
-
   Color _scoreColor(double score) {
     if (score >= 85) return AppTheme.success;
     if (score >= 70) return AppTheme.accentSecondary;
-    if (score >= 55) return const Color(0xFFF59E0B);
+    if (score >= 55) return AppTheme.warning;
     return AppTheme.error;
   }
 }
