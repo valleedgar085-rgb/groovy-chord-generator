@@ -82,7 +82,7 @@ class _StudioTransportState extends State<StudioTransport> {
                       activeChord == null
                           ? 'PLAYING'
                           : 'NOW  $activeChord  •  ${_audio.activeChordIndex + 1}/${widget.progression.length}',
-                      key: ValueKey(activeChord),
+                      key: ValueKey('${_audio.activeChordIndex}:$activeChord'),
                       style: const TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w800,
