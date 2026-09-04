@@ -25,6 +25,9 @@ class SongSessionController extends ChangeNotifier {
   BassStyle _lastBassStyle = BassStyle.root;
   int _lastBassVariety = 50;
   GrooveTemplate _lastGrooveTemplate = GrooveTemplate.straight;
+  final Map<String, int> _sectionRevisions = <String, int>{};
+  final List<_SectionRegenerationOp> _regenerationOps =
+      <_SectionRegenerationOp>[];
 
   SongDraft? get currentDraft => _currentDraft;
   String? get selectedSectionId => _selectedSectionId;
@@ -32,6 +35,12 @@ class SongSessionController extends ChangeNotifier {
   bool get hasSong => _currentDraft != null && _currentDraft!.sections.isNotEmpty;
   bool get isComplete => _currentDraft?.isComplete ?? false;
   double get averageHarmonyScore => _currentDraft?.averageHarmonyScore ?? 0.0;
+  bool get canRegenerateSelected => hasSong && selectedSection != null;
+
+  Map<String, int> get sectionRevisions =>
+      Map<String, int>.unmodifiable(_sectionRevisions);
+
+  int revisionFor(String sectionId) => _sectionRevisions[sectionId] ?? 0;
 
   GeneratedSongSection? get selectedSection {
     final draft = _currentDraft;
@@ -70,25 +79,92 @@ class SongSessionController extends ChangeNotifier {
     _lastBassStyle = bassStyle;
     _lastBassVariety = bassVariety;
     _lastGrooveTemplate = grooveTemplate;
+    _sectionRevisions.clear();
+    _regenerationOps.clear();
     notifyListeners();
   }
 
-  /// Rebuilds the exact same song from the stored request and plan.
+  /// Generates a deterministic new revision of one section while preserving
+  /// every other section in the current draft.
+  ///
+  /// Revisions are recorded as operations so [replay] can reconstruct the exact
+  /// sequence of local edits, including cases where a later section was changed
+  /// before an earlier section.
+  bool regenerateSection([String? sectionId]) {
+    final request = _lastRequest;
+    final draft = _currentDraft;
+    final targetId = sectionId ?? _selectedSectionId;
+    if (request == null || draft == null || targetId == null) return false;
+    if (draft.sectionById(targetId) == null) return false;
+
+    final revision = (_sectionRevisions[targetId] ?? 0) + 1;
+    final replacement = _composer.regenerateSection(
+      request: request,
+      draft: draft,
+      sectionId: targetId,
+      revision: revision,
+      bassStyle: _lastBassStyle,
+      bassVariety: _lastBassVariety,
+      grooveTemplate: _lastGrooveTemplate,
+    );
+
+    _currentDraft = draft.withSection(replacement);
+    _selectedSectionId = targetId;
+    _sectionRevisions[targetId] = revision;
+    _regenerationOps.add(_SectionRegenerationOp(targetId, revision));
+    notifyListeners();
+    return true;
+  }
+
+  /// Rebuilds the exact same song, including every section-regeneration edit,
+  /// from the stored request, plan and deterministic operation log.
   void replay() {
     final request = _lastRequest;
     final plan = _lastPlan;
     if (request == null || plan == null) return;
+
     final previouslySelected = _selectedSectionId;
-    generate(
+    final operations = List<_SectionRegenerationOp>.from(_regenerationOps);
+
+    var draft = _composer.compose(
       request: request,
       plan: plan,
       bassStyle: _lastBassStyle,
       bassVariety: _lastBassVariety,
       grooveTemplate: _lastGrooveTemplate,
     );
-    if (previouslySelected != null) {
-      selectSection(previouslySelected);
+    final rebuiltRevisions = <String, int>{};
+
+    for (final operation in operations) {
+      final replacement = _composer.regenerateSection(
+        request: request,
+        draft: draft,
+        sectionId: operation.sectionId,
+        revision: operation.revision,
+        bassStyle: _lastBassStyle,
+        bassVariety: _lastBassVariety,
+        grooveTemplate: _lastGrooveTemplate,
+      );
+      draft = draft.withSection(replacement);
+      rebuiltRevisions[operation.sectionId] = operation.revision;
     }
+
+    _currentDraft = draft;
+    _sectionRevisions
+      ..clear()
+      ..addAll(rebuiltRevisions);
+    // Keep the original operation order; it is part of the replay contract.
+    _regenerationOps
+      ..clear()
+      ..addAll(operations);
+
+    if (previouslySelected != null &&
+        draft.sectionById(previouslySelected) != null) {
+      _selectedSectionId = previouslySelected;
+    } else {
+      _selectedSectionId = draft.sections.isEmpty ? null : draft.sections.first.plan.id;
+    }
+    notifyListeners();
   }
 
   bool selectSection(String sectionId) {
@@ -106,6 +182,15 @@ class SongSessionController extends ChangeNotifier {
     _selectedSectionId = null;
     _lastRequest = null;
     _lastPlan = null;
+    _sectionRevisions.clear();
+    _regenerationOps.clear();
     notifyListeners();
   }
+}
+
+class _SectionRegenerationOp {
+  const _SectionRegenerationOp(this.sectionId, this.revision);
+
+  final String sectionId;
+  final int revision;
 }
