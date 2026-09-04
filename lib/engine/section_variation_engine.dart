@@ -4,6 +4,7 @@ import '../models/types.dart';
 import '../utils/music_theory.dart';
 import 'harmony_engine.dart';
 import 'motif_transformation_engine.dart';
+import 'section_development_metadata.dart';
 import 'song_architecture.dart';
 import 'song_candidate.dart';
 import 'song_draft.dart';
@@ -101,6 +102,13 @@ class SectionVariationEngine {
       ),
       melody: motifResult.melody,
       bass: motifResult.bass,
+      development: SectionDevelopmentMetadata(
+        identity: level == SectionVariationLevel.aPrime
+            ? SectionDevelopmentIdentity.aPrime
+            : SectionDevelopmentIdentity.aDoublePrime,
+        sourceSectionId: source.plan.id,
+        operations: motifResult.operations,
+      ),
     );
   }
 
