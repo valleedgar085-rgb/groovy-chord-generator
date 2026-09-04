@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
+import 'providers/song_session_controller.dart';
 import 'utils/theme.dart';
 import 'screens/home_screen.dart';
 import 'services/firebase_service.dart';
@@ -32,13 +33,20 @@ class GroovyChordGeneratorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) {
-        final appState = AppState();
-        // Load favorites on startup
-        appState.loadFavorites();
-        return appState;
-      },
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (_) {
+            final appState = AppState();
+            // Load favorites on startup
+            appState.loadFavorites();
+            return appState;
+          },
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SongSessionController(),
+        ),
+      ],
       child: MaterialApp(
         title: 'Groovy Chord Generator',
         debugShowCheckedModeBanner: false,
