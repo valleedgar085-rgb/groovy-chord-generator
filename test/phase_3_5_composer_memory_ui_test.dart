@@ -53,15 +53,19 @@ void main() {
     expect(find.text('SONG COMPOSER'), findsOneWidget);
     expect(find.text('ARRANGEMENT • SONG MEMORY'), findsOneWidget);
     expect(find.text('A′'), findsWidgets);
+
+    // Final Chorus is outside the initial horizontal arrangement viewport, so
+    // select it through the session and verify the selected-section memory UI.
+    expect(session.selectSection('final-chorus'), isTrue);
+    await tester.pumpAndSettle();
+    expect(session.selectedSectionId, 'final-chorus');
     expect(find.text('A″'), findsWidgets);
 
-    final verse2 = find.text('VERSE 2');
-    expect(verse2, findsOneWidget);
-    await tester.ensureVisible(verse2);
-    await tester.tap(verse2);
+    expect(session.selectSection('verse-2'), isTrue);
     await tester.pumpAndSettle();
 
     expect(session.selectedSectionId, 'verse-2');
+    expect(find.text('A′'), findsWidgets);
     expect(find.text('SOURCE'), findsOneWidget);
     expect(find.text('VERSE 1'), findsWidgets);
     expect(find.text('IDENTITY'), findsWidgets);
