@@ -1,18 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/motif_transformation_engine.dart';
+import '../engine/section_development_metadata.dart';
 import '../engine/song_architecture.dart';
+import '../engine/song_draft.dart';
 import '../providers/app_state.dart';
 import '../providers/song_request_adapter.dart';
 import '../providers/song_session_controller.dart';
 import '../utils/music_theory.dart';
 import '../utils/theme.dart';
 
-/// First live arrangement surface for the multi-section Producer Brain.
+/// Arrangement surface for the multi-section Producer Brain.
 ///
-/// It deliberately stays read-mostly in Phase 2.5: generate a complete song,
-/// inspect/select sections, and replay the exact seed. Section regeneration and
-/// Song Memory are layered on after this bridge is proven stable.
+/// In addition to generation and replay, the Composer now exposes the real
+/// Song Memory lineage retained by each generated section: A / A′ / A″,
+/// canonical source identity, similarity, and actual motif operations.
 class SongComposerSheet extends StatelessWidget {
   const SongComposerSheet({super.key});
 
@@ -227,7 +230,7 @@ class SongComposerSheet extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 58,
+          height: 68,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             itemCount: draft.sections.length,
@@ -240,7 +243,7 @@ class SongComposerSheet extends StatelessWidget {
                 onTap: () => session.selectSection(section.plan.id),
                 child: AnimatedContainer(
                   duration: AppTheme.animationFast,
-                  width: 76,
+                  width: 88,
                   padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
                   decoration: BoxDecoration(
                     color: selectedSection
@@ -257,25 +260,33 @@ class SongComposerSheet extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        _shortSectionLabel(section.plan.id),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: selectedSection
-                              ? AppTheme.textPrimary
-                              : AppTheme.textSecondary,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: 0.5,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _shortSectionLabel(section.plan.id),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                color: selectedSection
+                                    ? AppTheme.textPrimary
+                                    : AppTheme.textSecondary,
+                                fontSize: 8,
+                                fontWeight: FontWeight.w900,
+                                letterSpacing: 0.35,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          _identityBadge(section.development.identity, compact: true),
+                        ],
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 6),
                       Text(
                         '${section.candidate.score.round()} • ${section.plan.bars} bars',
                         style: const TextStyle(
                           color: AppTheme.textMuted,
-                          fontSize: 8,
+                          fontSize: 7.5,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -287,7 +298,7 @@ class SongComposerSheet extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 16),
-        _selectedSectionCard(selected),
+        _selectedSectionCard(selected, session),
         const SizedBox(height: 16),
         Row(
           children: [
@@ -321,9 +332,21 @@ class SongComposerSheet extends StatelessWidget {
     );
   }
 
-  Widget _selectedSectionCard(dynamic section) {
-    final plan = section.plan as SongSectionPlan;
+  Widget _selectedSectionCard(
+    GeneratedSongSection section,
+    SongSessionController session,
+  ) {
+    final plan = section.plan;
     final chords = section.progression;
+    final development = section.development;
+    final rawSimilarity = development.isDeveloped
+        ? (session.currentMemory?.similarity(
+              development.sourceSectionId,
+              plan.id,
+            ) ??
+            session.selectedIdentitySimilarity)
+        : 1.0;
+    final identitySimilarity = rawSimilarity.clamp(0.0, 1.0).toDouble();
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -370,6 +393,8 @@ class SongComposerSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 14),
+          _developmentSummary(development, identitySimilarity),
+          const SizedBox(height: 14),
           Wrap(
             spacing: 7,
             runSpacing: 7,
@@ -393,6 +418,26 @@ class SongComposerSheet extends StatelessWidget {
                 )
                 .toList(growable: false),
           ),
+          if (development.operations.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            const Text(
+              'DEVELOPMENT MOVES',
+              style: TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.9,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: development.operations
+                  .map((operation) => _operationBadge(_operationLabel(operation)))
+                  .toList(growable: false),
+            ),
+          ],
           const SizedBox(height: 13),
           Row(
             children: [
@@ -404,6 +449,146 @@ class SongComposerSheet extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _developmentSummary(
+    SectionDevelopmentMetadata development,
+    double identitySimilarity,
+  ) {
+    final developed = development.isDeveloped;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppTheme.bgElevated.withValues(alpha: 0.82),
+        borderRadius: BorderRadius.circular(13),
+        border: Border.all(
+          color: _identityColor(development.identity).withValues(alpha: 0.26),
+        ),
+      ),
+      child: Row(
+        children: [
+          _identityBadge(development.identity),
+          const SizedBox(width: 9),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  developed
+                      ? 'FROM ${_shortSectionLabel(development.sourceSectionId)}'
+                      : 'ORIGINAL MOTIF',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 9,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  developed
+                      ? 'IDENTITY ${(identitySimilarity * 100).round()}%'
+                      : 'CANONICAL SOURCE',
+                  style: const TextStyle(
+                    color: AppTheme.textMuted,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (developed)
+            Icon(
+              Icons.account_tree_rounded,
+              size: 16,
+              color: _identityColor(development.identity),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _identityBadge(
+    SectionDevelopmentIdentity identity, {
+    bool compact = false,
+  }) {
+    final color = _identityColor(identity);
+    return Container(
+      constraints: BoxConstraints(minWidth: compact ? 21 : 32),
+      padding: EdgeInsets.symmetric(
+        horizontal: compact ? 5 : 8,
+        vertical: compact ? 2 : 5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(compact ? 7 : 9),
+        border: Border.all(color: color.withValues(alpha: 0.34)),
+      ),
+      child: Text(
+        identity.label,
+        textAlign: TextAlign.center,
+        style: TextStyle(
+          color: color,
+          fontSize: compact ? 7 : 11,
+          height: 1,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+    );
+  }
+
+  Color _identityColor(SectionDevelopmentIdentity identity) {
+    switch (identity) {
+      case SectionDevelopmentIdentity.original:
+        return AppTheme.textSecondary;
+      case SectionDevelopmentIdentity.aPrime:
+        return AppTheme.accentCyan;
+      case SectionDevelopmentIdentity.aDoublePrime:
+        return AppTheme.accentSecondary;
+    }
+  }
+
+  Widget _operationBadge(String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+      decoration: BoxDecoration(
+        color: AppTheme.accentPrimary.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: AppTheme.accentPrimary.withValues(alpha: 0.20),
+        ),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          color: AppTheme.textSecondary,
+          fontSize: 7,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.4,
+        ),
+      ),
+    );
+  }
+
+  String _operationLabel(MotifOperation operation) {
+    switch (operation) {
+      case MotifOperation.rhythmicDisplacement:
+        return 'RHYTHM SHIFT';
+      case MotifOperation.embellishment:
+        return 'EMBELLISH';
+      case MotifOperation.simplification:
+        return 'SIMPLIFY';
+      case MotifOperation.contourInversion:
+        return 'INVERT';
+      case MotifOperation.sequence:
+        return 'SEQUENCE';
+      case MotifOperation.cadenceIntensification:
+        return 'CADENCE+';
+    }
   }
 
   Widget _generateButton(
