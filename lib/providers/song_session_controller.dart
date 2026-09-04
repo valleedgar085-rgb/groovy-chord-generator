@@ -7,6 +7,8 @@ import '../engine/song_draft.dart';
 import '../engine/song_memory.dart';
 import '../engine/song_memory_extractor.dart';
 import '../engine/song_request.dart';
+import '../engine/song_timeline.dart';
+import '../engine/song_timeline_builder.dart';
 import '../models/types.dart';
 
 /// Live full-song state for the application.
@@ -20,16 +22,20 @@ class SongSessionController extends ChangeNotifier {
     ProducerSongComposer? composer,
     SongDevelopmentEngine? developmentEngine,
     SongMemoryExtractor? memoryExtractor,
+    SongTimelineBuilder? timelineBuilder,
   })  : _composer = composer ?? ProducerSongComposer(),
         _developmentEngine = developmentEngine ?? SongDevelopmentEngine(),
-        _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor();
+        _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor(),
+        _timelineBuilder = timelineBuilder ?? const SongTimelineBuilder();
 
   final ProducerSongComposer _composer;
   final SongDevelopmentEngine _developmentEngine;
   final SongMemoryExtractor _memoryExtractor;
+  final SongTimelineBuilder _timelineBuilder;
 
   SongDraft? _currentDraft;
   SongMemory? _currentMemory;
+  SongTimeline? _currentTimeline;
   String? _selectedSectionId;
   SongRequest? _lastRequest;
   SongPlan? _lastPlan;
@@ -42,10 +48,12 @@ class SongSessionController extends ChangeNotifier {
 
   SongDraft? get currentDraft => _currentDraft;
   SongMemory? get currentMemory => _currentMemory;
+  SongTimeline? get currentTimeline => _currentTimeline;
   String? get selectedSectionId => _selectedSectionId;
   SongRequest? get lastRequest => _lastRequest;
   bool get hasSong => _currentDraft != null && _currentDraft!.sections.isNotEmpty;
   bool get hasMemory => _currentMemory != null && _currentMemory!.sections.isNotEmpty;
+  bool get hasTimeline => _currentTimeline != null && _currentTimeline!.sections.isNotEmpty;
   bool get isComplete => _currentDraft?.isComplete ?? false;
   double get averageHarmonyScore => _currentDraft?.averageHarmonyScore ?? 0.0;
   bool get canRegenerateSelected => hasSong && selectedSection != null;
@@ -60,6 +68,13 @@ class SongSessionController extends ChangeNotifier {
     final id = _selectedSectionId;
     if (draft == null || id == null) return null;
     return draft.sectionById(id);
+  }
+
+  TimelineSection? get selectedTimelineSection {
+    final timeline = _currentTimeline;
+    final id = _selectedSectionId;
+    if (timeline == null || id == null) return null;
+    return timeline.sectionById(id);
   }
 
   SectionMemory? get selectedSectionMemory {
@@ -110,7 +125,7 @@ class SongSessionController extends ChangeNotifier {
     final draft = _developmentEngine.develop(rawDraft);
 
     _currentDraft = draft;
-    _currentMemory = _memoryExtractor.capture(draft);
+    _refreshDerivedSongState(draft);
     _selectedSectionId = draft.sections.isEmpty ? null : draft.sections.first.plan.id;
     _lastRequest = request;
     _lastPlan = effectivePlan;
@@ -164,7 +179,7 @@ class SongSessionController extends ChangeNotifier {
     }
 
     _currentDraft = updatedDraft;
-    _currentMemory = _memoryExtractor.capture(updatedDraft);
+    _refreshDerivedSongState(updatedDraft);
     _selectedSectionId = targetId;
     _sectionRevisions[targetId] = revision;
     _regenerationOps.add(_SectionRegenerationOp(targetId, revision));
@@ -221,7 +236,7 @@ class SongSessionController extends ChangeNotifier {
     }
 
     _currentDraft = draft;
-    _currentMemory = _memoryExtractor.capture(draft);
+    _refreshDerivedSongState(draft);
     _sectionRevisions
       ..clear()
       ..addAll(rebuiltRevisions);
@@ -252,12 +267,18 @@ class SongSessionController extends ChangeNotifier {
     if (_currentDraft == null && _selectedSectionId == null) return;
     _currentDraft = null;
     _currentMemory = null;
+    _currentTimeline = null;
     _selectedSectionId = null;
     _lastRequest = null;
     _lastPlan = null;
     _sectionRevisions.clear();
     _regenerationOps.clear();
     notifyListeners();
+  }
+
+  void _refreshDerivedSongState(SongDraft draft) {
+    _currentMemory = _memoryExtractor.capture(draft);
+    _currentTimeline = _timelineBuilder.build(draft);
   }
 }
 
