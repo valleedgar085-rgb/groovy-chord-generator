@@ -123,17 +123,19 @@ class SongSessionController extends ChangeNotifier {
   }
 
   /// Generates a deterministic new revision of one section while preserving
-  /// every other section in the current draft.
+  /// every unrelated section in the current draft.
   ///
-  /// Revisions are recorded as operations so [replay] can reconstruct the exact
-  /// sequence of local edits, including cases where a later section was changed
-  /// before an earlier section.
+  /// If the regenerated section is a canonical repetition source (Verse 1,
+  /// Chorus 1, etc.), later A′ / A″ dependents are re-derived automatically.
+  /// Revisions are recorded as operations so [replay] reconstructs the exact
+  /// sequence of local edits.
   bool regenerateSection([String? sectionId]) {
     final request = _lastRequest;
     final draft = _currentDraft;
     final targetId = sectionId ?? _selectedSectionId;
     if (request == null || draft == null || targetId == null) return false;
-    if (draft.sectionById(targetId) == null) return false;
+    final existing = draft.sectionById(targetId);
+    if (existing == null) return false;
 
     final revision = (_sectionRevisions[targetId] ?? 0) + 1;
     final rawReplacement = _composer.regenerateSection(
@@ -147,11 +149,20 @@ class SongSessionController extends ChangeNotifier {
     );
 
     final rawUpdatedDraft = draft.withSection(rawReplacement);
-    final replacement = _developmentEngine.developSection(
-      rawUpdatedDraft,
-      targetId,
-    );
-    final updatedDraft = draft.withSection(replacement);
+    final SongDraft updatedDraft;
+    if (existing.plan.variation > 0) {
+      final replacement = _developmentEngine.developSection(
+        rawUpdatedDraft,
+        targetId,
+      );
+      updatedDraft = draft.withSection(replacement);
+    } else {
+      updatedDraft = _developmentEngine.redevelopDependents(
+        rawUpdatedDraft,
+        targetId,
+      );
+    }
+
     _currentDraft = updatedDraft;
     _currentMemory = _memoryExtractor.capture(updatedDraft);
     _selectedSectionId = targetId;
@@ -182,6 +193,8 @@ class SongSessionController extends ChangeNotifier {
     final rebuiltRevisions = <String, int>{};
 
     for (final operation in operations) {
+      final existing = draft.sectionById(operation.sectionId);
+      if (existing == null) continue;
       final rawReplacement = _composer.regenerateSection(
         request: request,
         draft: draft,
@@ -192,11 +205,18 @@ class SongSessionController extends ChangeNotifier {
         grooveTemplate: _lastGrooveTemplate,
       );
       final rawUpdatedDraft = draft.withSection(rawReplacement);
-      final replacement = _developmentEngine.developSection(
-        rawUpdatedDraft,
-        operation.sectionId,
-      );
-      draft = draft.withSection(replacement);
+      if (existing.plan.variation > 0) {
+        final replacement = _developmentEngine.developSection(
+          rawUpdatedDraft,
+          operation.sectionId,
+        );
+        draft = draft.withSection(replacement);
+      } else {
+        draft = _developmentEngine.redevelopDependents(
+          rawUpdatedDraft,
+          operation.sectionId,
+        );
+      }
       rebuiltRevisions[operation.sectionId] = operation.revision;
     }
 
