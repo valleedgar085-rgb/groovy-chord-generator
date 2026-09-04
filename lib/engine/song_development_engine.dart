@@ -57,12 +57,14 @@ class SongDevelopmentEngine {
   }
 
   /// Applies development to exactly one section inside an already generated
-  /// draft. Used after local regeneration so a regenerated Verse 2 still
-  /// behaves as a Verse 1-derived A′ rather than losing its family identity.
+  /// draft. [sourceSectionId] can pin a known canonical source during dependency
+  /// propagation so every dependent in the family derives from the same source
+  /// even while earlier dependents are being replaced in the same pass.
   GeneratedSongSection developSection(
     SongDraft draft,
-    String sectionId,
-  ) {
+    String sectionId, {
+    String? sourceSectionId,
+  }) {
     final target = draft.sectionById(sectionId);
     if (target == null) {
       throw ArgumentError.value(sectionId, 'sectionId', 'Unknown song section');
@@ -74,11 +76,14 @@ class SongDevelopmentEngine {
 
     final memory = _memoryExtractor.capture(draft);
     final targetMemory = memory.section(sectionId);
-    if (targetMemory == null || targetMemory.sourceSectionId == sectionId) {
+    final resolvedSourceId = sourceSectionId ?? targetMemory?.sourceSectionId;
+    if (targetMemory == null ||
+        resolvedSourceId == null ||
+        resolvedSourceId == sectionId) {
       return target;
     }
-    final source = draft.sectionById(targetMemory.sourceSectionId);
-    final sourceMemory = memory.section(targetMemory.sourceSectionId);
+    final source = draft.sectionById(resolvedSourceId);
+    final sourceMemory = memory.section(resolvedSourceId);
     if (source == null || sourceMemory == null) return target;
 
     return _variationEngine.transform(
@@ -119,7 +124,11 @@ class SongDevelopmentEngine {
         continue;
       }
       if (updated.sectionById(candidatePlan.id) == null) continue;
-      final transformed = developSection(updated, candidatePlan.id);
+      final transformed = developSection(
+        updated,
+        candidatePlan.id,
+        sourceSectionId: sourceSectionId,
+      );
       updated = updated.withSection(transformed);
     }
     return updated;
