@@ -6,11 +6,13 @@ import 'package:provider/provider.dart';
 
 import '../models/types.dart';
 import '../providers/app_state.dart';
+import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
 import '../widgets/header.dart';
 import '../widgets/producer_brain_panel.dart';
+import '../widgets/song_timeline_preview.dart';
 import '../widgets/studio_transport.dart';
 import 'bass_tab.dart';
 import 'editor_tab.dart';
@@ -67,6 +69,17 @@ class HomeScreen extends StatelessWidget {
                       if (isGenerator) ...[
                         const CreateModePanel(),
                         ProducerBrainPanel(appState: appState),
+                        Consumer<SongSessionController>(
+                          builder: (context, session, _) {
+                            if (!session.hasTimeline) {
+                              return const SizedBox.shrink();
+                            }
+                            return Padding(
+                              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+                              child: SongTimelinePreview(session: session),
+                            );
+                          },
+                        ),
                       ],
                       Expanded(child: _buildCurrentTab(appState.currentTab)),
                       const SizedBox(height: 150),
