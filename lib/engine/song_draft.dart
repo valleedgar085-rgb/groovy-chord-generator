@@ -1,4 +1,5 @@
 import '../models/types.dart';
+import 'section_development_metadata.dart';
 import 'song_architecture.dart';
 import 'song_candidate.dart';
 
@@ -9,13 +10,17 @@ class GeneratedSongSection {
     required this.candidate,
     List<MelodyNote> melody = const <MelodyNote>[],
     List<BassNote> bass = const <BassNote>[],
+    SectionDevelopmentMetadata? development,
   })  : melody = List<MelodyNote>.unmodifiable(melody),
-        bass = List<BassNote>.unmodifiable(bass);
+        bass = List<BassNote>.unmodifiable(bass),
+        development =
+            development ?? SectionDevelopmentMetadata.original(plan.id);
 
   final SongSectionPlan plan;
   final SongCandidate candidate;
   final List<MelodyNote> melody;
   final List<BassNote> bass;
+  final SectionDevelopmentMetadata development;
 
   List<Chord> get progression => candidate.progression;
 }
