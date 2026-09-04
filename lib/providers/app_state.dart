@@ -1,6 +1,6 @@
 // Groovy Chord Generator
 // App state provider
-// Version 2.6
+// Version 2.8
 
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -9,6 +9,7 @@ import '../models/constants.dart';
 import '../utils/music_theory.dart';
 import '../engine/harmony_engine.dart';
 import '../engine/harmony_candidate_pool.dart';
+import '../engine/seeded_harmony_builder.dart';
 import '../engine/song_request.dart';
 import '../engine/seeded_music_generation.dart';
 import '../services/firebase_favorites_service.dart';
@@ -62,6 +63,7 @@ class AppState extends ChangeNotifier {
   final Random _melodyRandom = Random();
   final HarmonyEngine _harmonyEngine = HarmonyEngine();
   final SeededMusicGeneration _seededGeneration = const SeededMusicGeneration();
+  final SeededHarmonyBuilder _harmonyBuilder = const SeededHarmonyBuilder();
   HarmonyCandidatePool? _harmonyCandidatePool;
 
   HarmonyCandidatePool get _producerPool =>
@@ -287,9 +289,10 @@ class AppState extends ChangeNotifier {
     return lock.locked;
   }
 
-  /// Generate a progression through an immutable, replayable producer request.
-  /// Passing the same [seed] with the same settings reproduces harmony, melody,
-  /// and bass. Normal UI calls omit it and receive a fresh project seed.
+  /// Generate a progression through the same UI-independent harmony builder
+  /// used by Song Architect. This is the Phase 3.75 compatibility seam: the
+  /// single-loop workflow and full-song workflow now share one construction
+  /// path before Producer Brain ranking and canonical theory repair.
   void generateProgression({int? seed}) {
     if (_currentProgression.isNotEmpty) {
       final historyEntry = HistoryEntry(
@@ -326,34 +329,25 @@ class AppState extends ChangeNotifier {
     );
 
     final keyInfo = parseKey(keyNameToString(request.key));
-    final root = keyInfo['root'] as String;
     final isMinor = keyInfo['isMinor'] as bool;
-    final profile = genreProfiles[request.genre]!;
-    final complexityConfig = complexitySettings[request.complexity]!;
+    final lockedProgression = List<Chord>.from(_currentProgression);
+
+    List<Chord> buildCandidate(int candidateSeed) => _harmonyBuilder.build(
+          request: request,
+          random: Random(candidateSeed),
+          lockedChords: _lockedChords,
+          lockedProgression: lockedProgression,
+        );
 
     final winner = _producerPool.generateBestForRequest(
       request: request,
       buildCandidate: (candidateSeed, candidateIndex) =>
-          _buildProgressionCandidate(
-        request: request,
-        random: Random(candidateSeed),
-        root: root,
-        isMinor: isMinor,
-        profile: profile,
-        complexityConfig: complexityConfig,
-      ),
+          buildCandidate(candidateSeed),
     );
 
     var chords = winner.progression.isNotEmpty
         ? List<Chord>.from(winner.progression)
-        : _buildProgressionCandidate(
-            request: request,
-            random: Random(request.candidateSeed(0)),
-            root: root,
-            isMinor: isMinor,
-            profile: profile,
-            complexityConfig: complexityConfig,
-          );
+        : List<Chord>.from(buildCandidate(request.candidateSeed(0)));
 
     if (request.useVoiceLeading) {
       chords = applyVoiceLeading(chords);
@@ -397,133 +391,9 @@ class AppState extends ChangeNotifier {
   }
 
   /// Replay the last generated musical result against the current settings.
-  /// This is intentionally explicit so future project loading and A/B/C tools
-  /// can reuse the same seed without reaching into provider internals.
   void replayLastGeneration() {
     final seed = _lastGenerationSeed;
     if (seed != null) generateProgression(seed: seed);
-  }
-
-  List<Chord> _buildProgressionCandidate({
-    required SongRequest request,
-    required Random random,
-    required String root,
-    required bool isMinor,
-    required GenreProfile profile,
-    required ComplexitySetting complexityConfig,
-  }) {
-    List<Chord> chords;
-
-    if (request.useFunctionalHarmony) {
-      chords = _seededGeneration.generateFunctionalProgression(
-        random: random,
-        root: root,
-        isMinorKey: isMinor,
-        length: complexityConfig.chordCount[1],
-        mood: request.mood,
-      );
-    } else {
-      final baseProgression =
-          _seededGeneration.choice(random, profile.progressions);
-      final degreeSequence = _seededGeneration.buildDegreeSequence(
-        random: random,
-        baseProgression: baseProgression,
-        config: complexityConfig,
-        isMinor: isMinor,
-        chordVariety: request.chordVariety,
-      );
-      final scale = isMinor ? ScaleName.minor : profile.scale;
-
-      chords = degreeSequence.asMap().entries.map((entry) {
-        final index = entry.key;
-        final degree = entry.value;
-        var chord = getChordFromDegree(root, degree, isMinor, scale);
-
-        if (complexityConfig.useExtensions) {
-          final extensionChance = 0.3 + ((request.chordVariety / 100.0) * 0.4);
-          if (random.nextDouble() < extensionChance) {
-            final extensions = profile.chordTypes
-                .where((type) =>
-                    type.name.contains('7') ||
-                    type.name.contains('9') ||
-                    type.name.contains('sus') ||
-                    type.name.contains('add'))
-                .toList(growable: false);
-            if (extensions.isNotEmpty) {
-              final weights = <ChordTypeName, double>{};
-              for (final extension in extensions) {
-                if (extension.name.contains('7') &&
-                    !extension.name.contains('9')) {
-                  weights[extension] = 0.5;
-                } else if (extension.name.contains('9')) {
-                  weights[extension] = 0.25;
-                } else {
-                  weights[extension] = 0.25;
-                }
-              }
-              final total = weights.values.fold(0.0, (sum, value) => sum + value);
-              var value = random.nextDouble() * total;
-              for (final weighted in weights.entries) {
-                value -= weighted.value;
-                if (value <= 0) {
-                  chord = chord.copyWith(type: weighted.key);
-                  break;
-                }
-              }
-            }
-          }
-        }
-
-        chord = _seededGeneration.addStrategicExtensions(
-          random: random,
-          chord: chord,
-          position: index,
-          totalLength: degreeSequence.length,
-          variety: request.chordVariety,
-        );
-        return applyGenreVoicing(chord, request.genre);
-      }).toList();
-    }
-
-    if (request.useModalInterchange &&
-        (request.complexity == ComplexityLevel.complex ||
-            request.complexity == ComplexityLevel.advanced)) {
-      chords = _seededGeneration.applyModalInterchange(
-        random: random,
-        progression: chords,
-        root: root,
-        isMinorKey: isMinor,
-      );
-    }
-
-    if (request.useAdvancedTheory &&
-        (request.complexity == ComplexityLevel.complex ||
-            request.complexity == ComplexityLevel.advanced)) {
-      chords = _seededGeneration.applyAdvancedSubstitutions(
-        random: random,
-        progression: chords,
-        root: root,
-        isMinorKey: isMinor,
-      );
-    }
-
-    chords = _seededGeneration.applySpice(
-      random: random,
-      progression: chords,
-      level: request.spice,
-    );
-
-    // Locks are restored last so seeded transformations cannot alter a chord
-    // that the user explicitly asked Chord Flow to keep.
-    for (final locked in _lockedChords) {
-      if (locked.locked &&
-          locked.index < _currentProgression.length &&
-          locked.index < chords.length) {
-        chords[locked.index] = _currentProgression[locked.index];
-      }
-    }
-
-    return chords;
   }
 
   List<MelodyNote> _generateMelodyNotes(
@@ -700,8 +570,9 @@ class AppState extends ChangeNotifier {
     if (result) {
       _favorites.removeWhere((f) => f.id == id);
       notifyListeners();
+      return true;
     }
-    return result;
+    return false;
   }
 
   /// Load a favorite progression
