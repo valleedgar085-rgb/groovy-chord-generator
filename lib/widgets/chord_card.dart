@@ -31,14 +31,19 @@ class ChordCard extends StatefulWidget {
 class _ChordCardState extends State<ChordCard> {
   final AudioPlaybackService _audio = AudioPlaybackService.instance;
   bool _pressed = false;
-
-  bool get _isActive =>
-      _audio.isPlaying && _audio.activeChordIndex == widget.index;
+  bool _isActive = false;
 
   @override
   void initState() {
     super.initState();
+    _isActive = _audio.isPlaying && _audio.activeChordIndex == widget.index;
     _audio.addListener(_refresh);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChordCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _isActive = _audio.isPlaying && _audio.activeChordIndex == widget.index;
   }
 
   @override
@@ -48,7 +53,10 @@ class _ChordCardState extends State<ChordCard> {
   }
 
   void _refresh() {
-    if (mounted) setState(() {});
+    final nextIsActive =
+        _audio.isPlaying && _audio.activeChordIndex == widget.index;
+    if (!mounted || nextIsActive == _isActive) return;
+    setState(() => _isActive = nextIsActive);
   }
 
   @override
