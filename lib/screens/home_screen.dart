@@ -1,20 +1,21 @@
 // Chord Flow
 // Studio shell
-// Version 2.7
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../models/types.dart';
 import '../providers/app_state.dart';
 import '../utils/theme.dart';
-import '../widgets/header.dart';
 import '../widgets/bottom_navigation.dart';
+import '../widgets/create_mode_panel.dart';
 import '../widgets/fab_menu.dart';
+import '../widgets/header.dart';
 import '../widgets/producer_brain_panel.dart';
 import '../widgets/studio_transport.dart';
-import 'generator_tab.dart';
-import 'editor_tab.dart';
 import 'bass_tab.dart';
+import 'editor_tab.dart';
+import 'generator_tab.dart';
 import 'settings_tab.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -64,7 +65,10 @@ class HomeScreen extends StatelessWidget {
                   child: Column(
                     children: [
                       const AppHeader(),
-                      if (isGenerator) ProducerBrainPanel(appState: appState),
+                      if (isGenerator) ...[
+                        const CreateModePanel(),
+                        ProducerBrainPanel(appState: appState),
+                      ],
                       Expanded(child: _buildCurrentTab(appState.currentTab)),
                       const SizedBox(height: 150),
                     ],
