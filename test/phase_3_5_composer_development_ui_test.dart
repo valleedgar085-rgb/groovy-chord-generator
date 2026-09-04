@@ -97,8 +97,15 @@ void main() {
       expect(find.text('FROM VERSE 1'), findsOneWidget);
       expect(find.text('DEVELOPMENT MOVES'), findsOneWidget);
       expect(find.text('A′'), findsWidgets);
-      expect(find.text('A″'), findsWidgets);
       expect(find.textContaining('IDENTITY '), findsOneWidget);
+
+      // The Final Chorus card may be outside the horizontal viewport. Select it
+      // through the live session so the selected-card lineage is rendered and
+      // verify the true A″ source instead of depending on lazy ListView layout.
+      expect(session.selectSection('final-chorus'), isTrue);
+      await tester.pumpAndSettle();
+      expect(find.text('A″'), findsOneWidget);
+      expect(find.text('FROM CHORUS 1'), findsOneWidget);
     });
   });
 }
