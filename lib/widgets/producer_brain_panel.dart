@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 import '../engine/harmony_engine.dart';
 import '../providers/app_state.dart';
+import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
 import 'song_composer_sheet.dart';
 
@@ -26,6 +28,11 @@ class ProducerBrainPanel extends StatelessWidget {
     final score = appState.lastHarmonyScore.clamp(0.0, 100.0).toDouble();
     final hasProgression = appState.currentProgression.isNotEmpty;
     final scoreColor = hasProgression ? _scoreColor(score) : AppTheme.textMuted;
+    final songSession = context.watch<SongSessionController>();
+    final selectedSongSection = songSession.selectedSectionId;
+    final selectedRevision = selectedSongSection == null
+        ? 0
+        : songSession.revisionFor(selectedSongSection);
 
     return Container(
       height: 58,
@@ -170,6 +177,50 @@ class ProducerBrainPanel extends StatelessWidget {
               ),
             ),
           ),
+          if (songSession.canRegenerateSelected) ...[
+            const SizedBox(width: 5),
+            Tooltip(
+              message: selectedSongSection == null
+                  ? 'Regenerate selected song section'
+                  : 'Regenerate $selectedSongSection',
+              child: InkWell(
+                onTap: () => songSession.regenerateSection(),
+                borderRadius: BorderRadius.circular(11),
+                child: Container(
+                  width: 36,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentPrimary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: AppTheme.accentPrimary.withValues(alpha: 0.24),
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(
+                        Icons.autorenew_rounded,
+                        size: 15,
+                        color: AppTheme.accentSecondary,
+                      ),
+                      const SizedBox(height: 1),
+                      Text(
+                        selectedRevision == 0 ? 'RE' : 'R$selectedRevision',
+                        style: const TextStyle(
+                          fontSize: 6,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.35,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
