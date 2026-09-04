@@ -43,7 +43,7 @@ Map<String, String> draftSignatures(SongDraft draft) => {
 
 void main() {
   group('Phase 2.5 section regeneration', () {
-    test('regeneration replaces only the requested section', () {
+    test('regeneration preserves unrelated sections and refreshes dependents', () {
       final session = SongSessionController();
       session.generate(request: requestFor(41001));
       final before = draftSignatures(session.currentDraft!);
@@ -56,13 +56,22 @@ void main() {
       expect(session.revisionFor('chorus-1'), 1);
       expect(session.sectionRevisions, {'chorus-1': 1});
 
+      const changedFamily = {'chorus-1', 'chorus-2', 'final-chorus'};
       for (final entry in before.entries) {
-        if (entry.key == 'chorus-1') continue;
+        if (changedFamily.contains(entry.key)) continue;
         expect(after[entry.key], entry.value, reason: '${entry.key} must be preserved');
       }
+
+      final source = session.currentDraft!.sectionById('chorus-1')!;
+      final chorus2 = session.currentDraft!.sectionById('chorus-2')!;
+      final finalChorus = session.currentDraft!.sectionById('final-chorus')!;
+      for (final dependent in [chorus2, finalChorus]) {
+        expect(dependent.progression.first.degree, source.progression.first.degree);
+        expect(dependent.progression.last.degree, source.progression.last.degree);
+      }
       expect(
-        session.currentDraft!.sectionById('chorus-1')!.candidate.seed,
-        isNot(session.currentDraft!.sectionById('chorus-2')!.candidate.seed),
+        source.candidate.seed,
+        isNot(chorus2.candidate.seed),
       );
     });
 
