@@ -155,6 +155,7 @@ class AudioPlaybackService extends ChangeNotifier {
           duration: release,
           velocity: 0.82,
           includeBass: _bassEnabled,
+          generation: generation,
         );
         final remaining = chordDuration - release;
         if (remaining > Duration.zero) await Future<void>.delayed(remaining);
@@ -185,11 +186,25 @@ class AudioPlaybackService extends ChangeNotifier {
     required Duration duration,
     required double velocity,
     required bool includeBass,
+    int? generation,
   }) async {
     final handles = <SoundHandle>[];
+    final hasBeenCancelled = () =>
+        generation != null && generation != _transportGeneration;
+
+    Future<void> stopHandles() async {
+      for (final handle in handles) {
+        _activeHandles.remove(handle);
+        if (_engine.getIsValidVoiceHandle(handle)) await _engine.stop(handle);
+      }
+    }
 
     if (includeBass && midiNotes.isNotEmpty) {
       final bassSource = await _bassSourceForMidi(_bassMidiFor(midiNotes.first));
+      if (hasBeenCancelled()) {
+        await stopHandles();
+        return;
+      }
       final bassHandle = _engine.play(
         bassSource,
         volume: (_bassVolume * velocity).clamp(0.0, 1.0),
@@ -199,7 +214,15 @@ class AudioPlaybackService extends ChangeNotifier {
     }
 
     for (var i = 0; i < midiNotes.length; i++) {
+      if (hasBeenCancelled()) {
+        await stopHandles();
+        return;
+      }
       final source = await _sourceForMidi(midiNotes[i]);
+      if (hasBeenCancelled()) {
+        await stopHandles();
+        return;
+      }
       final emphasis = i == 0 ? 1.0 : 0.86;
       final maxPan = 0.34 * _stereoWidth;
       final pan = midiNotes.length <= 1
@@ -218,16 +241,17 @@ class AudioPlaybackService extends ChangeNotifier {
     }
 
     await Future<void>.delayed(duration);
+    if (hasBeenCancelled()) {
+      await stopHandles();
+      return;
+    }
     for (final handle in handles) {
       if (_engine.getIsValidVoiceHandle(handle)) {
         _engine.fadeVolume(handle, 0.0, const Duration(milliseconds: 110));
       }
     }
     await Future<void>.delayed(const Duration(milliseconds: 115));
-    for (final handle in handles) {
-      _activeHandles.remove(handle);
-      if (_engine.getIsValidVoiceHandle(handle)) await _engine.stop(handle);
-    }
+    await stopHandles();
   }
 
   Future<AudioSource> _sourceForMidi(int midi) async {
