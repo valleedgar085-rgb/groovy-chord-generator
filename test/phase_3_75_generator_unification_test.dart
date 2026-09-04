@@ -10,8 +10,7 @@ import 'package:groovy_chord_generator/engine/seeded_harmony_builder.dart';
 import 'package:groovy_chord_generator/models/types.dart';
 import 'package:groovy_chord_generator/providers/app_state.dart';
 import 'package:groovy_chord_generator/providers/song_request_adapter.dart';
-import 'package:groovy_chord_generator/providers/song_session_controller.dart';
-import 'package:groovy_chord_generator/screens/home_screen.dart';
+import 'package:groovy_chord_generator/screens/generator_workspace.dart';
 
 String _chordSignature(Chord chord) =>
     '${chord.root}:${chord.type.name}:${chord.degree}:${chord.numeral}';
@@ -63,20 +62,16 @@ void main() {
       expect(_chordSignature(state.currentProgression.first), locked);
     });
 
-    testWidgets('Home Create flow uses compact workspace without a FAB',
+    testWidgets('compact Create workspace replaces the old primary FAB flow',
         (tester) async {
       final appState = AppState();
-      final songSession = SongSessionController();
 
       await tester.pumpWidget(
-        MultiProvider(
-          providers: [
-            ChangeNotifierProvider<AppState>.value(value: appState),
-            ChangeNotifierProvider<SongSessionController>.value(
-              value: songSession,
-            ),
-          ],
-          child: const MaterialApp(home: HomeScreen()),
+        ChangeNotifierProvider<AppState>.value(
+          value: appState,
+          child: const MaterialApp(
+            home: Scaffold(body: GeneratorWorkspace()),
+          ),
         ),
       );
       await tester.pumpAndSettle();
