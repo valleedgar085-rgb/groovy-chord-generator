@@ -36,7 +36,7 @@ class AudioPlaybackService extends ChangeNotifier {
   bool _isPlaying = false;
   bool _looping = false;
   bool _bassEnabled = true;
-  int _transportGeneration = 0;
+  int _playbackSession = 0;
   int _activeChordIndex = -1;
   int _bpm = 96;
   double _masterVolume = 0.72;
@@ -64,6 +64,9 @@ class AudioPlaybackService extends ChangeNotifier {
     if (!_engine.isInitialized) {
       await _engine.init(sampleRate: 48000, bufferSize: 1024, lowLatency: true);
     }
+    // Chords can use 5-note extensions plus bass. A larger, explicit pool avoids
+    // voice stealing when a user taps quickly while the previous chord fades.
+    _engine.setMaxActiveVoiceCount(48);
     _engine.setGlobalVolume(_masterVolume);
     _isReady = true;
     notifyListeners();
@@ -115,32 +118,40 @@ class AudioPlaybackService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> auditionChord(Chord chord, {
+  /// Tapping a chord starts a new bounded playback session. It intentionally
+  /// cancels a running progression or previous audition so no oscillator from
+  /// an older tap can keep running behind the new sound.
+  Future<void> auditionChord(
+    Chord chord, {
     Duration duration = const Duration(milliseconds: 1150),
   }) async {
     await initialize();
+    await stop();
+    final session = ++_playbackSession;
     await _playLayeredChord(
       _voicedMidiNotes(chord),
       duration: duration,
       velocity: 0.92,
       includeBass: false,
+      session: session,
     );
   }
 
-  Future<void> playProgression(List<Chord> progression, {
+  Future<void> playProgression(
+    List<Chord> progression, {
     int beatsPerChord = 4,
   }) async {
     if (progression.isEmpty) return;
     await initialize();
     await stop();
 
-    final generation = ++_transportGeneration;
+    final session = ++_playbackSession;
     _isPlaying = true;
     notifyListeners();
 
     do {
       for (var index = 0; index < progression.length; index++) {
-        if (generation != _transportGeneration) return;
+        if (!_sessionIsActive(session)) return;
         _activeChordIndex = index;
         notifyListeners();
 
@@ -155,53 +166,72 @@ class AudioPlaybackService extends ChangeNotifier {
           duration: release,
           velocity: 0.82,
           includeBass: _bassEnabled,
-          generation: generation,
+          session: session,
         );
+        if (!_sessionIsActive(session)) return;
         final remaining = chordDuration - release;
-        if (remaining > Duration.zero) await Future<void>.delayed(remaining);
+        if (remaining > Duration.zero) {
+          await Future<void>.delayed(remaining);
+        }
       }
-    } while (_looping && generation == _transportGeneration);
+    } while (_looping && _sessionIsActive(session));
 
-    if (generation == _transportGeneration) {
+    if (_sessionIsActive(session)) {
       _isPlaying = false;
       _activeChordIndex = -1;
       notifyListeners();
     }
   }
 
+  /// Cancels the current Dart playback session and then stops every live handle
+  /// known both to the service and to every waveform source. The source-handle
+  /// sweep is deliberate: it catches a voice even if a race prevented it from
+  /// being retained in [_activeHandles].
   Future<void> stop() async {
-    _transportGeneration++;
-    final handles = List<SoundHandle>.from(_activeHandles);
-    _activeHandles.clear();
-    for (final handle in handles) {
-      if (_engine.getIsValidVoiceHandle(handle)) await _engine.stop(handle);
+    _playbackSession++;
+
+    final handles = <SoundHandle>{..._activeHandles};
+    for (final source in _noteSources.values) {
+      handles.addAll(source.handles);
     }
+    for (final source in _bassSources.values) {
+      handles.addAll(source.handles);
+    }
+    _activeHandles.clear();
+
+    for (final handle in handles) {
+      if (_engine.getIsValidVoiceHandle(handle)) {
+        await _engine.stop(handle);
+      }
+    }
+
     final changed = _isPlaying || _activeChordIndex != -1;
     _isPlaying = false;
     _activeChordIndex = -1;
     if (changed) notifyListeners();
   }
 
-  Future<void> _playLayeredChord(List<int> midiNotes, {
+  Future<void> _playLayeredChord(
+    List<int> midiNotes, {
     required Duration duration,
     required double velocity,
     required bool includeBass,
-    int? generation,
+    required int session,
   }) async {
     final handles = <SoundHandle>[];
-    final hasBeenCancelled = () =>
-        generation != null && generation != _transportGeneration;
 
     Future<void> stopHandles() async {
       for (final handle in handles) {
         _activeHandles.remove(handle);
-        if (_engine.getIsValidVoiceHandle(handle)) await _engine.stop(handle);
+        if (_engine.getIsValidVoiceHandle(handle)) {
+          await _engine.stop(handle);
+        }
       }
     }
 
     if (includeBass && midiNotes.isNotEmpty) {
       final bassSource = await _bassSourceForMidi(_bassMidiFor(midiNotes.first));
-      if (hasBeenCancelled()) {
+      if (!_sessionIsActive(session)) {
         await stopHandles();
         return;
       }
@@ -209,17 +239,16 @@ class AudioPlaybackService extends ChangeNotifier {
         bassSource,
         volume: (_bassVolume * velocity).clamp(0.0, 1.0),
       );
-      handles.add(bassHandle);
-      _activeHandles.add(bassHandle);
+      _registerHandle(bassHandle, handles, duration);
     }
 
     for (var i = 0; i < midiNotes.length; i++) {
-      if (hasBeenCancelled()) {
+      if (!_sessionIsActive(session)) {
         await stopHandles();
         return;
       }
       final source = await _sourceForMidi(midiNotes[i]);
-      if (hasBeenCancelled()) {
+      if (!_sessionIsActive(session)) {
         await stopHandles();
         return;
       }
@@ -233,26 +262,43 @@ class AudioPlaybackService extends ChangeNotifier {
         volume: (_chordVolume * velocity * emphasis).clamp(0.0, 1.0),
         pan: pan,
       );
-      handles.add(handle);
-      _activeHandles.add(handle);
+      _registerHandle(handle, handles, duration);
+
       if (_strumMs > 0 && i + 1 < midiNotes.length) {
         await Future<void>.delayed(Duration(milliseconds: _strumMs));
       }
     }
 
     await Future<void>.delayed(duration);
-    if (hasBeenCancelled()) {
+    if (!_sessionIsActive(session)) {
       await stopHandles();
       return;
     }
+
     for (final handle in handles) {
       if (_engine.getIsValidVoiceHandle(handle)) {
-        _engine.fadeVolume(handle, 0.0, const Duration(milliseconds: 110));
+        _engine.fadeVolume(handle, 0.0, const Duration(milliseconds: 90));
       }
     }
-    await Future<void>.delayed(const Duration(milliseconds: 115));
+    await Future<void>.delayed(const Duration(milliseconds: 100));
     await stopHandles();
   }
+
+  void _registerHandle(
+    SoundHandle handle,
+    List<SoundHandle> localHandles,
+    Duration requestedDuration,
+  ) {
+    localHandles.add(handle);
+    _activeHandles.add(handle);
+
+    // Waveform sources are continuous oscillators. A native scheduled stop is
+    // the final safety net if Dart-side cancellation/fading is interrupted.
+    final hardStop = requestedDuration + const Duration(milliseconds: 450);
+    _engine.scheduleStop(handle, hardStop);
+  }
+
+  bool _sessionIsActive(int session) => session == _playbackSession;
 
   Future<AudioSource> _sourceForMidi(int midi) async {
     final key = '${_synthCharacter.name}:$midi';
@@ -260,7 +306,7 @@ class AudioPlaybackService extends ChangeNotifier {
     if (existing != null) return existing;
     final source = await _engine.loadWaveform(
       _waveformForCharacter(_synthCharacter),
-      true,
+      _usesSuperWave(_synthCharacter),
       _scaleForCharacter(_synthCharacter),
       _detuneForCharacter(_synthCharacter),
     );
@@ -272,7 +318,7 @@ class AudioPlaybackService extends ChangeNotifier {
   Future<AudioSource> _bassSourceForMidi(int midi) async {
     final existing = _bassSources[midi];
     if (existing != null) return existing;
-    final source = await _engine.loadWaveform(WaveForm.sin, true, 0.10, 0.01);
+    final source = await _engine.loadWaveform(WaveForm.sin, false, 0.10, 0.0);
     _engine.setWaveformFreq(source, _midiFrequency(midi));
     _bassSources[midi] = source;
     return source;
@@ -289,25 +335,28 @@ class AudioPlaybackService extends ChangeNotifier {
     }
   }
 
+  bool _usesSuperWave(SynthCharacter character) =>
+      character == SynthCharacter.analog;
+
   double _scaleForCharacter(SynthCharacter character) {
     switch (character) {
       case SynthCharacter.warm:
-        return 0.20;
+        return 0.10;
       case SynthCharacter.clean:
-        return 0.08;
+        return 0.0;
       case SynthCharacter.analog:
-        return 0.13;
+        return 0.12;
     }
   }
 
   double _detuneForCharacter(SynthCharacter character) {
     switch (character) {
       case SynthCharacter.warm:
-        return 0.035;
+        return 0.0;
       case SynthCharacter.clean:
         return 0.0;
       case SynthCharacter.analog:
-        return 0.055;
+        return 0.04;
     }
   }
 
@@ -327,7 +376,7 @@ class AudioPlaybackService extends ChangeNotifier {
       final pitchClass = _pitchClass(note);
       var midi = 48 + pitchClass;
       while (midi <= previous) midi += 12;
-      while (midi > 76) midi -= 12;
+      while (midi > 76 && midi - 12 > previous) midi -= 12;
       if (result.contains(midi)) midi += 12;
       result.add(midi);
       previous = midi;
@@ -338,9 +387,23 @@ class AudioPlaybackService extends ChangeNotifier {
 
   int _pitchClass(String note) {
     const pitchClasses = <String, int>{
-      'C': 0, 'C#': 1, 'Db': 1, 'D': 2, 'D#': 3, 'Eb': 3,
-      'E': 4, 'F': 5, 'F#': 6, 'Gb': 6, 'G': 7, 'G#': 8,
-      'Ab': 8, 'A': 9, 'A#': 10, 'Bb': 10, 'B': 11,
+      'C': 0,
+      'C#': 1,
+      'Db': 1,
+      'D': 2,
+      'D#': 3,
+      'Eb': 3,
+      'E': 4,
+      'F': 5,
+      'F#': 6,
+      'Gb': 6,
+      'G': 7,
+      'G#': 8,
+      'Ab': 8,
+      'A': 9,
+      'A#': 10,
+      'Bb': 10,
+      'B': 11,
     };
     final normalized = note.length >= 2 && (note[1] == '#' || note[1] == 'b')
         ? note.substring(0, 2)
