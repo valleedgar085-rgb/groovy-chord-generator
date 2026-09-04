@@ -1,4 +1,5 @@
 import '../models/types.dart';
+import 'harmonic_realizer.dart';
 import 'harmony_engine.dart';
 import 'song_architecture.dart';
 import 'song_candidate.dart';
@@ -9,10 +10,14 @@ import 'song_request.dart';
 /// Candidates are evaluated with neighboring section intent, the actual
 /// previous-section progression, and optional repetition-group identity.
 class SongSectionCandidatePool {
-  SongSectionCandidatePool({HarmonyEngine? engine})
-      : _engine = engine ?? HarmonyEngine();
+  SongSectionCandidatePool({
+    HarmonyEngine? engine,
+    HarmonicRealizer? realizer,
+  })  : _engine = engine ?? HarmonyEngine(),
+        _realizer = realizer ?? const HarmonicRealizer();
 
   final HarmonyEngine _engine;
+  final HarmonicRealizer _realizer;
 
   SongCandidate generateBest({
     required SongRequest request,
@@ -40,7 +45,8 @@ class SongSectionCandidatePool {
     SongCandidate? best;
     for (var i = 0; i < sectionRequest.candidateCount; i++) {
       final candidateSeed = sectionRequest.candidateSeed(i);
-      final progression = List<Chord>.from(buildCandidate(candidateSeed, i));
+      final raw = List<Chord>.from(buildCandidate(candidateSeed, i));
+      final progression = _realizer.repairProgression(raw, sectionRequest);
       if (progression.length < 2) continue;
 
       var score = _engine.score(
