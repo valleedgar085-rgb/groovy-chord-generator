@@ -93,12 +93,17 @@ class SectionVariationEngine {
 
     final output = <Chord>[];
     for (var index = 0; index < target.length; index++) {
-      final sourceIndex = index < source.length ? index : source.length - 1;
-      final sourceChord = source[sourceIndex];
+      final sourceChord = _sourceChordForPosition(
+        source,
+        target.length,
+        index,
+      );
       final targetChord = target[index];
 
-      // First and last chord are identity anchors. Preserving them protects the
-      // opening fingerprint and cadence even for A″ sections.
+      // First and final harmony are explicit identity anchors. The final target
+      // slot always maps to source.last, even when A′/A″ has a different chord
+      // count from its source. This preserves the source cadence semantically,
+      // not merely by positional index.
       final isIdentityAnchor = index == 0 || index == target.length - 1;
       final keepSource = isIdentityAnchor || random.nextDouble() < sourceRetention;
       final selected = keepSource ? sourceChord : targetChord;
@@ -115,18 +120,28 @@ class SectionVariationEngine {
 
   Set<int> _changedChordIndexes(List<Chord> source, List<Chord> output) {
     final changed = <int>{};
+    if (source.isEmpty) {
+      return {for (var index = 0; index < output.length; index++) index};
+    }
     for (var index = 0; index < output.length; index++) {
-      if (index >= source.length) {
-        changed.add(index);
-        continue;
-      }
-      final a = source[index];
+      final a = _sourceChordForPosition(source, output.length, index);
       final b = output[index];
       if (a.root != b.root || a.degree != b.degree || a.type != b.type) {
         changed.add(index);
       }
     }
     return changed;
+  }
+
+  Chord _sourceChordForPosition(
+    List<Chord> source,
+    int targetLength,
+    int index,
+  ) {
+    if (index <= 0) return source.first;
+    if (index >= targetLength - 1) return source.last;
+    final sourceIndex = index < source.length ? index : source.length - 1;
+    return source[sourceIndex];
   }
 
   List<MelodyNote> _blendMelody(
