@@ -143,6 +143,30 @@ void main() {
       expect(after.totalTicks, before.totalTicks);
     });
 
+    test('SongSession keeps timeline synchronized through regenerate replay clear', () {
+      final session = SongSessionController();
+      session.generate(request: _request(95007));
+
+      expect(session.hasTimeline, isTrue);
+      expect(session.currentTimeline, isNotNull);
+      expect(session.selectedTimelineSection!.id, 'intro');
+      expect(session.selectedTimelineEvents, isNotEmpty);
+
+      expect(session.regenerateSection('bridge'), isTrue);
+      expect(session.selectedSectionId, 'bridge');
+      expect(session.selectedTimelineSection!.id, 'bridge');
+      final regeneratedSignature = _timelineSignature(session.currentTimeline!);
+
+      session.replay();
+      expect(_timelineSignature(session.currentTimeline!), regeneratedSignature);
+      expect(session.selectedTimelineSection!.id, 'bridge');
+
+      session.clear();
+      expect(session.currentTimeline, isNull);
+      expect(session.hasTimeline, isFalse);
+      expect(session.selectedTimelineEvents, isEmpty);
+    });
+
     test('invalid note-to-chord references are rejected instead of hidden', () {
       const planSection = SongSectionPlan(
         id: 'verse',
