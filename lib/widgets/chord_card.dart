@@ -29,12 +29,41 @@ class ChordCard extends StatefulWidget {
 }
 
 class _ChordCardState extends State<ChordCard> {
+  final AudioPlaybackService _audio = AudioPlaybackService.instance;
   bool _pressed = false;
+  bool _isActive = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _isActive = _audio.isPlaying && _audio.activeChordIndex == widget.index;
+    _audio.addListener(_refresh);
+  }
+
+  @override
+  void didUpdateWidget(covariant ChordCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _isActive = _audio.isPlaying && _audio.activeChordIndex == widget.index;
+  }
+
+  @override
+  void dispose() {
+    _audio.removeListener(_refresh);
+    super.dispose();
+  }
+
+  void _refresh() {
+    final nextIsActive =
+        _audio.isPlaying && _audio.activeChordIndex == widget.index;
+    if (!mounted || nextIsActive == _isActive) return;
+    setState(() => _isActive = nextIsActive);
+  }
 
   @override
   Widget build(BuildContext context) {
     final chordColor = ColorHelper.getChordTypeColor(widget.chord.type);
     final symbol = getChordSymbol(widget.chord);
+    final illuminated = _pressed || _isActive;
 
     return RepaintBoundary(
       child: TweenAnimationBuilder<double>(
@@ -57,12 +86,12 @@ class _ChordCardState extends State<ChordCard> {
             if (widget.onTap != null) {
               widget.onTap!();
             } else {
-              AudioPlaybackService.instance.auditionChord(widget.chord);
+              _audio.auditionChord(widget.chord);
             }
           },
           child: AnimatedScale(
-            scale: _pressed ? 0.965 : 1,
-            duration: const Duration(milliseconds: 90),
+            scale: _pressed ? 0.965 : (_isActive ? 1.025 : 1),
+            duration: const Duration(milliseconds: 100),
             curve: Curves.easeOut,
             child: AnimatedContainer(
               duration: AppTheme.animationFast,
@@ -80,7 +109,7 @@ class _ChordCardState extends State<ChordCard> {
                           AppTheme.bgSecondary,
                         ]
                       : [
-                          chordColor.withValues(alpha: _pressed ? 0.18 : 0.11),
+                          chordColor.withValues(alpha: illuminated ? 0.24 : 0.11),
                           AppTheme.bgTertiary,
                           const Color(0xFF111121),
                         ],
@@ -90,8 +119,8 @@ class _ChordCardState extends State<ChordCard> {
                 border: Border.all(
                   color: widget.isLocked
                       ? AppTheme.success.withValues(alpha: 0.8)
-                      : chordColor.withValues(alpha: _pressed ? 0.85 : 0.42),
-                  width: widget.isLocked || _pressed ? 1.6 : 1,
+                      : chordColor.withValues(alpha: illuminated ? 0.95 : 0.42),
+                  width: widget.isLocked || illuminated ? 1.8 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
@@ -99,11 +128,11 @@ class _ChordCardState extends State<ChordCard> {
                     blurRadius: 16,
                     offset: const Offset(0, 8),
                   ),
-                  if (_pressed)
+                  if (illuminated)
                     BoxShadow(
-                      color: chordColor.withValues(alpha: 0.26),
-                      blurRadius: 22,
-                      spreadRadius: 1,
+                      color: chordColor.withValues(alpha: _isActive ? 0.38 : 0.26),
+                      blurRadius: _isActive ? 28 : 22,
+                      spreadRadius: _isActive ? 2 : 1,
                     ),
                 ],
               ),
@@ -112,20 +141,35 @@ class _ChordCardState extends State<ChordCard> {
                 children: [
                   Row(
                     children: [
-                      Container(
-                        width: 8,
-                        height: 8,
+                      AnimatedContainer(
+                        duration: AppTheme.animationFast,
+                        width: _isActive ? 10 : 8,
+                        height: _isActive ? 10 : 8,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: chordColor,
                           boxShadow: [
                             BoxShadow(
-                              color: chordColor.withValues(alpha: 0.65),
-                              blurRadius: 8,
+                              color: chordColor.withValues(
+                                alpha: _isActive ? 0.95 : 0.65,
+                              ),
+                              blurRadius: _isActive ? 14 : 8,
                             ),
                           ],
                         ),
                       ),
+                      if (_isActive) ...[
+                        const SizedBox(width: 6),
+                        const Text(
+                          'PLAYING',
+                          style: TextStyle(
+                            fontSize: 7,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.8,
+                            color: AppTheme.accentCyan,
+                          ),
+                        ),
+                      ],
                       const Spacer(),
                       if (widget.onLockToggle != null)
                         InkWell(
@@ -199,7 +243,7 @@ class _ChordCardState extends State<ChordCard> {
                       Icon(
                         Icons.graphic_eq_rounded,
                         size: 15,
-                        color: _pressed ? chordColor : AppTheme.textMuted,
+                        color: illuminated ? chordColor : AppTheme.textMuted,
                       ),
                     ],
                   ),
