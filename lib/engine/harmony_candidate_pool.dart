@@ -1,4 +1,5 @@
 import '../models/types.dart';
+import 'harmonic_realizer.dart';
 import 'harmony_engine.dart';
 import 'song_candidate.dart';
 import 'song_request.dart';
@@ -9,10 +10,12 @@ import 'song_request.dart';
 /// its existing chord-construction pipeline while the producer brain evaluates
 /// multiple alternatives before committing one to playback/export.
 class HarmonyCandidatePool {
-  HarmonyCandidatePool({HarmonyEngine? engine})
-      : _engine = engine ?? HarmonyEngine();
+  HarmonyCandidatePool({HarmonyEngine? engine, HarmonicRealizer? realizer})
+      : _engine = engine ?? HarmonyEngine(),
+        _realizer = realizer ?? const HarmonicRealizer();
 
   final HarmonyEngine _engine;
+  final HarmonicRealizer _realizer;
 
   /// Generate [candidateCount] alternatives with [buildCandidate], then select
   /// the strongest progression for the requested song [section].
@@ -77,7 +80,8 @@ class HarmonyCandidatePool {
 
     for (var i = 0; i < request.candidateCount; i++) {
       final candidateSeed = request.candidateSeed(i);
-      final progression = List<Chord>.from(buildCandidate(candidateSeed));
+      final raw = List<Chord>.from(buildCandidate(candidateSeed));
+      final progression = _realizer.repairProgression(raw, request);
       if (progression.length < 2) continue;
 
       scored.add(SongCandidate(
@@ -141,8 +145,8 @@ class HarmonyCandidatePool {
 
     for (var i = 0; i < request.candidateCount; i++) {
       final candidateSeed = request.candidateSeed(i);
-      final progression =
-          List<Chord>.from(buildCandidate(candidateSeed, i));
+      final raw = List<Chord>.from(buildCandidate(candidateSeed, i));
+      final progression = _realizer.repairProgression(raw, request);
       if (progression.length < 2) continue;
       candidates.add(SongCandidate(
         progression: List<Chord>.unmodifiable(progression),
