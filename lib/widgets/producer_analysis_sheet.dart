@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
 
 import '../engine/producer_analysis.dart';
+import '../engine/producer_brain_telemetry.dart';
+import '../engine/song_candidate.dart';
 import '../utils/theme.dart';
 
 class ProducerAnalysisSheet extends StatelessWidget {
   const ProducerAnalysisSheet({
     super.key,
     required this.analysis,
+    this.decision,
   });
 
   final ProducerAnalysis analysis;
+  final ProducerDecisionSnapshot? decision;
 
   static Future<void> open(
     BuildContext context,
-    ProducerAnalysis analysis,
-  ) {
+    ProducerAnalysis analysis, {
+    ProducerDecisionSnapshot? decision,
+  }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => FractionallySizedBox(
-        heightFactor: 0.86,
-        child: ProducerAnalysisSheet(analysis: analysis),
+        heightFactor: 0.90,
+        child: ProducerAnalysisSheet(
+          analysis: analysis,
+          decision: decision,
+        ),
       ),
     );
   }
@@ -58,12 +66,7 @@ class ProducerAnalysisSheet extends StatelessWidget {
                     width: 46,
                     height: 46,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          AppTheme.accentPrimary.withValues(alpha: 0.48),
-                          AppTheme.accentCyan.withValues(alpha: 0.24),
-                        ],
-                      ),
+                      gradient: AppTheme.producerGradient,
                       borderRadius: BorderRadius.circular(15),
                     ),
                     child: const Icon(
@@ -86,7 +89,7 @@ class ProducerAnalysisSheet extends StatelessWidget {
                         ),
                         SizedBox(height: 3),
                         Text(
-                          'Producer Brain 2.0 · multidimensional musical judgment',
+                          'Phase 5.2 · score → diagnose → evolve → rescore',
                           style: TextStyle(
                             color: AppTheme.textMuted,
                             fontSize: 10,
@@ -114,6 +117,10 @@ class ProducerAnalysisSheet extends StatelessWidget {
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(14, 2, 14, 24),
                       children: [
+                        if (decision != null) ...[
+                          _ProducerDecisionCard(decision: decision!),
+                          const SizedBox(height: 10),
+                        ],
                         if (priorities.isNotEmpty)
                           _SummaryCard(
                             title: 'Next moves',
@@ -157,9 +164,260 @@ class ProducerAnalysisSheet extends StatelessWidget {
   }
 }
 
+class _ProducerDecisionCard extends StatelessWidget {
+  const _ProducerDecisionCard({required this.decision});
+
+  final ProducerDecisionSnapshot decision;
+
+  @override
+  Widget build(BuildContext context) {
+    final winner = decision.winner;
+    return Container(
+      key: const ValueKey('producerDecisionCard'),
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppTheme.accentPrimary.withValues(alpha: 0.18),
+            AppTheme.bgSecondary,
+            AppTheme.accentCyan.withValues(alpha: 0.06),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: AppTheme.accentPrimary.withValues(alpha: 0.38),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.auto_fix_high_rounded,
+                size: 17,
+                color: AppTheme.producerGold,
+              ),
+              const SizedBox(width: 7),
+              const Expanded(
+                child: Text(
+                  'PRODUCER EVOLUTION',
+                  style: TextStyle(
+                    color: AppTheme.textPrimary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.7,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppTheme.producerGold.withValues(alpha: 0.11),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  winner.variationStyle.label,
+                  style: const TextStyle(
+                    color: AppTheme.producerGold,
+                    fontSize: 8,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              _ScoreDelta(
+                before: winner.beforeRefineScore ?? winner.score,
+                after: winner.score,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  winner.wasRefined
+                      ? 'Producer Brain accepted this revision only after it beat the original candidate on the full scorecard.'
+                      : 'The raw candidate remained stronger than its attempted revisions, so Producer Brain kept it unchanged.',
+                  style: const TextStyle(
+                    color: AppTheme.textSecondary,
+                    fontSize: 9.5,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (winner.repairs.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            ...winner.repairs.map(
+              (repair) => Padding(
+                padding: const EdgeInsets.only(bottom: 4),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.only(top: 3),
+                      child: Icon(
+                        Icons.check_circle_rounded,
+                        size: 11,
+                        color: AppTheme.accentCyan,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        repair,
+                        style: const TextStyle(
+                          color: AppTheme.textMuted,
+                          fontSize: 9,
+                          height: 1.3,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+          if (decision.variations.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text(
+              'A / B / C PRODUCER OPTIONS',
+              style: TextStyle(
+                color: AppTheme.textMuted,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 0.8,
+              ),
+            ),
+            const SizedBox(height: 7),
+            Row(
+              children: decision.variations.map((candidate) {
+                return Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      right: candidate == decision.variations.last ? 0 : 6,
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+                      decoration: BoxDecoration(
+                        color: AppTheme.bgTertiary.withValues(alpha: 0.72),
+                        borderRadius: BorderRadius.circular(11),
+                        border: Border.all(color: AppTheme.borderColor),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            candidate.variationStyle.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.textSecondary,
+                              fontSize: 7.5,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            candidate.score.round().toString(),
+                            style: TextStyle(
+                              color: _scoreColor(candidate.score),
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          Text(
+                            candidate.scoreDelta >= 0
+                                ? '+${candidate.scoreDelta.toStringAsFixed(1)}'
+                                : candidate.scoreDelta.toStringAsFixed(1),
+                            style: const TextStyle(
+                              color: AppTheme.textMuted,
+                              fontSize: 7.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(growable: false),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ScoreDelta extends StatelessWidget {
+  const _ScoreDelta({required this.before, required this.after});
+
+  final double before;
+  final double after;
+
+  @override
+  Widget build(BuildContext context) {
+    final delta = after - before;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.bgTertiary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            before.round().toString(),
+            style: const TextStyle(
+              color: AppTheme.textMuted,
+              fontSize: 13,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 5),
+            child: Icon(
+              Icons.arrow_forward_rounded,
+              size: 12,
+              color: AppTheme.accentCyan,
+            ),
+          ),
+          Text(
+            after.round().toString(),
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          if (delta > 0.05) ...[
+            const SizedBox(width: 5),
+            Text(
+              '+${delta.toStringAsFixed(1)}',
+              style: const TextStyle(
+                color: AppTheme.success,
+                fontSize: 8,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class _OverallBadge extends StatelessWidget {
   const _OverallBadge({required this.score});
-
   final double score;
 
   @override
@@ -291,14 +549,12 @@ class _SummaryCard extends StatelessWidget {
 
 class _MetricCard extends StatelessWidget {
   const _MetricCard({required this.metric});
-
   final ProducerMetric metric;
 
   @override
   Widget build(BuildContext context) {
     final score = metric.score.clamp(0.0, 100.0).toDouble();
     final color = metric.active ? _scoreColor(score) : AppTheme.textMuted;
-
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -322,11 +578,7 @@ class _MetricCard extends StatelessWidget {
                   color: color.withValues(alpha: 0.11),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(
-                  _metricIcon(metric.dimension),
-                  size: 16,
-                  color: color,
-                ),
+                child: Icon(_metricIcon(metric.dimension), size: 16, color: color),
               ),
               const SizedBox(width: 9),
               Expanded(
@@ -430,7 +682,7 @@ class _EmptyAnalysis extends StatelessWidget {
 
 Color _scoreColor(double score) {
   if (score >= 85) return AppTheme.success;
-  if (score >= 72) return AppTheme.accentSecondary;
+  if (score >= 72) return AppTheme.accentCyan;
   if (score >= 58) return AppTheme.warning;
   return AppTheme.error;
 }
