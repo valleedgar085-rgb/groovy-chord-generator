@@ -4,9 +4,11 @@ import '../models/types.dart';
 import '../utils/music_theory.dart';
 import 'harmonic_realizer.dart';
 import 'performance_profile.dart';
+import 'phrase_composer.dart';
 import 'producer_analysis.dart';
 import 'producer_candidate_refiner.dart';
 import 'seeded_music_generation.dart';
+import 'song_architecture.dart';
 import 'song_candidate.dart';
 import 'song_draft.dart';
 import 'song_request.dart';
@@ -41,27 +43,28 @@ class ProducerSongVariation {
 
 /// Phase 5.4 full-song Producer A/B/C renderer.
 ///
-/// It deliberately starts from the already-generated canonical SongDraft. Each
-/// section is diagnosed, transformed through the same Phase 5.2 Producer
-/// refiner, repaired, then has deterministic melody/bass rebuilt against the
-/// new harmony. The resulting draft is converted by the normal timeline builder
-/// so preview playback uses exactly the same transport path as the active song.
+/// Phase 5.8B keeps these interpretations on the same phrase-first melody path
+/// as canonical full-song generation so A/B/C no longer falls back to the old
+/// chord-by-chord melody writer.
 class ProducerSongVariationEngine {
   ProducerSongVariationEngine({
     ProducerCandidateRefiner? refiner,
     HarmonicRealizer? realizer,
     SeededMusicGeneration? generation,
+    PhraseComposer? phraseComposer,
     ProducerAnalyzer? analyzer,
     SongTimelineBuilder? timelineBuilder,
   })  : _refiner = refiner ?? const ProducerCandidateRefiner(),
         _realizer = realizer ?? const HarmonicRealizer(),
         _generation = generation ?? const SeededMusicGeneration(),
+        _phraseComposer = phraseComposer ?? const PhraseComposer(),
         _analyzer = analyzer ?? ProducerAnalyzer(),
         _timelineBuilder = timelineBuilder ?? const SongTimelineBuilder();
 
   final ProducerCandidateRefiner _refiner;
   final HarmonicRealizer _realizer;
   final SeededMusicGeneration _generation;
+  final PhraseComposer _phraseComposer;
   final ProducerAnalyzer _analyzer;
   final SongTimelineBuilder _timelineBuilder;
 
@@ -172,14 +175,21 @@ class ProducerSongVariationEngine {
         changedSections++;
       }
 
+      final repetitionSource = _priorRepetitionReference(variedDraft, section.plan);
       final melody = request.includeMelody
-          ? _generation.generateMelody(
-              random: Random(sectionRequest.melodySeed),
-              progression: progression,
-              genre: request.genre,
-              rhythm: request.rhythm,
-              key: request.key,
-            )
+          ? _phraseComposer
+              .compose(
+                random: Random(sectionRequest.melodySeed),
+                progression: progression,
+                genre: request.genre,
+                rhythm: request.rhythm,
+                key: request.key,
+                section: section.plan,
+                sourceMelody:
+                    repetitionSource?.melody ?? const <MelodyNote>[],
+                sourceChordCount: repetitionSource?.progression.length ?? 0,
+              )
+              .melody
           : const <MelodyNote>[];
       final bass = request.includeBass
           ? _generation.generateBass(
@@ -245,6 +255,25 @@ class ProducerSongVariationEngine {
       repairs: allRepairs,
       changedSectionCount: changedSections,
     );
+  }
+
+  GeneratedSongSection? _priorRepetitionReference(
+    SongDraft draft,
+    SongSectionPlan target,
+  ) {
+    final group = target.repetitionGroup;
+    if (group == null || draft.sections.isEmpty) return null;
+    final targetIndex =
+        draft.plan.sections.indexWhere((section) => section.id == target.id);
+    if (targetIndex <= 0) return null;
+
+    for (var i = 0; i < targetIndex; i++) {
+      final planSection = draft.plan.sections[i];
+      if (planSection.repetitionGroup != group) continue;
+      final generated = draft.sectionById(planSection.id);
+      if (generated != null && generated.melody.isNotEmpty) return generated;
+    }
+    return null;
   }
 
   double _draftScore(
