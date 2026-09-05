@@ -5,7 +5,7 @@ import '../services/audio_playback_service.dart';
 import '../utils/theme.dart';
 
 /// Musical macro controls for the performance-intent layer.
-class PerformanceControls extends StatelessWidget {
+class PerformanceControls extends StatefulWidget {
   const PerformanceControls({
     super.key,
     required this.session,
@@ -14,10 +14,20 @@ class PerformanceControls extends StatelessWidget {
   final SongSessionController session;
 
   @override
+  State<PerformanceControls> createState() => _PerformanceControlsState();
+}
+
+class _PerformanceControlsState extends State<PerformanceControls> {
+  bool _expanded = false;
+
+  SongSessionController get session => widget.session;
+
+  @override
   Widget build(BuildContext context) {
     final profile = session.performanceProfile;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+    return AnimatedContainer(
+      duration: AppTheme.animationFast,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: AppTheme.bgTertiary.withValues(alpha: 0.46),
         borderRadius: BorderRadius.circular(16),
@@ -28,25 +38,89 @@ class PerformanceControls extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              const Icon(
-                Icons.spatial_audio_off_rounded,
-                size: 15,
-                color: AppTheme.accentSecondary,
+          InkWell(
+            key: const ValueKey<String>('performance-toggle'),
+            onTap: () => setState(() => _expanded = !_expanded),
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 2),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.spatial_audio_off_rounded,
+                    size: 15,
+                    color: AppTheme.accentSecondary,
+                  ),
+                  const SizedBox(width: 7),
+                  const Text(
+                    'PERFORMANCE',
+                    style: TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 9.5,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 0.95,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'T${((1 - profile.looseness) * 100).round()} • P${(profile.punch * 100).round()} • S${(profile.swing * 100).round()}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 7.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                  Icon(
+                    _expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    size: 18,
+                    color: AppTheme.textMuted,
+                  ),
+                ],
               ),
-              const SizedBox(width: 7),
-              const Text(
-                'PERFORMANCE',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 9.5,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.95,
-                ),
-              ),
-              const Spacer(),
-              TextButton(
+            ),
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 5),
+            _PerformanceSlider(
+              key: const ValueKey<String>('performance-looseness'),
+              leftLabel: 'TIGHT',
+              rightLabel: 'LOOSE',
+              value: profile.looseness,
+              onChanged: (value) {
+                session.setPerformanceLooseness(value);
+                // Existing chord preview gets an immediate tactile approximation
+                // until Phase 4.5 schedules the full timeline directly.
+                AudioPlaybackService.instance.setStrumMs((6 + value * 34).round());
+              },
+            ),
+            _PerformanceSlider(
+              key: const ValueKey<String>('performance-punch'),
+              leftLabel: 'SOFT',
+              rightLabel: 'PUNCHY',
+              value: profile.punch,
+              onChanged: (value) {
+                session.setPerformancePunch(value);
+                AudioPlaybackService.instance.setChordVolume(
+                  (0.58 + value * 0.28).clamp(0.0, 1.0).toDouble(),
+                );
+              },
+            ),
+            _PerformanceSlider(
+              key: const ValueKey<String>('performance-swing'),
+              leftLabel: 'STRAIGHT',
+              rightLabel: 'SWING',
+              value: profile.swing,
+              onChanged: session.setPerformanceSwing,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
                 onPressed: () {
                   session.resetPerformance();
                   AudioPlaybackService.instance.setStrumMs(18);
@@ -57,7 +131,7 @@ class PerformanceControls extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                 ),
                 child: const Text(
-                  'RESET',
+                  'RESET FEEL',
                   style: TextStyle(
                     color: AppTheme.textMuted,
                     fontSize: 7.5,
@@ -65,39 +139,8 @@ class PerformanceControls extends StatelessWidget {
                   ),
                 ),
               ),
-            ],
-          ),
-          _PerformanceSlider(
-            key: const ValueKey<String>('performance-looseness'),
-            leftLabel: 'TIGHT',
-            rightLabel: 'LOOSE',
-            value: profile.looseness,
-            onChanged: (value) {
-              session.setPerformanceLooseness(value);
-              // Existing chord preview gets an immediate tactile approximation
-              // until Phase 4.5 schedules the full timeline directly.
-              AudioPlaybackService.instance.setStrumMs((6 + value * 34).round());
-            },
-          ),
-          _PerformanceSlider(
-            key: const ValueKey<String>('performance-punch'),
-            leftLabel: 'SOFT',
-            rightLabel: 'PUNCHY',
-            value: profile.punch,
-            onChanged: (value) {
-              session.setPerformancePunch(value);
-              AudioPlaybackService.instance.setChordVolume(
-                (0.58 + value * 0.28).clamp(0.0, 1.0).toDouble(),
-              );
-            },
-          ),
-          _PerformanceSlider(
-            key: const ValueKey<String>('performance-swing'),
-            leftLabel: 'STRAIGHT',
-            rightLabel: 'SWING',
-            value: profile.swing,
-            onChanged: session.setPerformanceSwing,
-          ),
+            ),
+          ],
         ],
       ),
     );
