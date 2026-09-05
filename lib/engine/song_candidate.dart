@@ -1,10 +1,12 @@
 import '../models/types.dart';
 import 'harmony_engine.dart';
+import 'producer_analysis.dart';
 
 /// Immutable result from one producer-brain candidate pass.
 ///
-/// The candidate keeps the seed and ranking metadata alongside the harmony so
-/// results can be replayed, compared, exported, and evolved by future phases.
+/// Phase 5.1 keeps the multidimensional analysis alongside the seed and ranking
+/// metadata so candidate decisions can be inspected, compared, and evolved
+/// without recomputing the same musical judgment.
 class SongCandidate {
   SongCandidate({
     required List<Chord> progression,
@@ -12,6 +14,7 @@ class SongCandidate {
     required this.seed,
     required this.candidateIndex,
     required this.section,
+    this.producerAnalysis,
   }) : progression = List<Chord>.unmodifiable(progression);
 
   final List<Chord> progression;
@@ -19,4 +22,5 @@ class SongCandidate {
   final int seed;
   final int candidateIndex;
   final HarmonySection section;
+  final ProducerAnalysis? producerAnalysis;
 }
