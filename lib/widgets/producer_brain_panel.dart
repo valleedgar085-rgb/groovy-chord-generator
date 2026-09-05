@@ -11,6 +11,7 @@ import 'producer_analysis_sheet.dart';
 import 'producer_song_variation_sheet.dart';
 import 'producer_variation_sheet.dart';
 import 'song_composer_sheet.dart';
+import 'song_director_sheet.dart';
 
 class ProducerBrainPanel extends StatelessWidget {
   const ProducerBrainPanel({
@@ -338,6 +339,52 @@ class ProducerBrainPanel extends StatelessWidget {
               ),
             ),
           ),
+          if (songSession.hasSong) ...[
+            const SizedBox(width: 5),
+            Tooltip(
+              message: 'Open Song Director',
+              child: InkWell(
+                key: const ValueKey('songDirectorButton'),
+                onTap: () => SongDirectorSheet.open(
+                  context,
+                  songSession: songSession,
+                ),
+                borderRadius: BorderRadius.circular(11),
+                child: Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppTheme.producerGold.withValues(alpha: 0.09),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: AppTheme.producerGold.withValues(alpha: 0.22),
+                    ),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.account_tree_rounded,
+                        size: 14,
+                        color: AppTheme.producerGold,
+                      ),
+                      SizedBox(height: 1),
+                      Text(
+                        'DIR',
+                        style: TextStyle(
+                          fontSize: 5.8,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.45,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           if (songSession.canRegenerateSelected) ...[
             const SizedBox(width: 5),
             Tooltip(
