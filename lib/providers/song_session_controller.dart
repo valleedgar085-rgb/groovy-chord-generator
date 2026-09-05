@@ -2,7 +2,9 @@ import 'package:flutter/foundation.dart';
 
 import '../engine/performance_profile.dart';
 import '../engine/producer_song_composer.dart';
+import '../engine/producer_song_variation_engine.dart';
 import '../engine/song_architecture.dart';
+import '../engine/song_candidate.dart';
 import '../engine/song_development_engine.dart';
 import '../engine/song_draft.dart';
 import '../engine/song_memory.dart';
@@ -19,15 +21,19 @@ class SongSessionController extends ChangeNotifier {
     SongDevelopmentEngine? developmentEngine,
     SongMemoryExtractor? memoryExtractor,
     SongTimelineBuilder? timelineBuilder,
+    ProducerSongVariationEngine? producerVariationEngine,
   })  : _composer = composer ?? ProducerSongComposer(),
         _developmentEngine = developmentEngine ?? SongDevelopmentEngine(),
         _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor(),
-        _timelineBuilder = timelineBuilder ?? const SongTimelineBuilder();
+        _timelineBuilder = timelineBuilder ?? const SongTimelineBuilder(),
+        _producerVariationEngine =
+            producerVariationEngine ?? ProducerSongVariationEngine();
 
   final ProducerSongComposer _composer;
   final SongDevelopmentEngine _developmentEngine;
   final SongMemoryExtractor _memoryExtractor;
   final SongTimelineBuilder _timelineBuilder;
+  final ProducerSongVariationEngine _producerVariationEngine;
 
   SongDraft? _currentDraft;
   SongMemory? _currentMemory;
@@ -39,6 +45,9 @@ class SongSessionController extends ChangeNotifier {
   BassStyle _lastBassStyle = BassStyle.root;
   int _lastBassVariety = 50;
   GrooveTemplate _lastGrooveTemplate = GrooveTemplate.straight;
+  SongDraft? _producerVariationOriginDraft;
+  SongDraft? _producerReplayBaseDraft;
+  ProducerVariationStyle? _activeProducerSongStyle;
   final Map<String, int> _sectionRevisions = <String, int>{};
   final List<_SectionRegenerationOp> _regenerationOps =
       <_SectionRegenerationOp>[];
@@ -49,6 +58,7 @@ class SongSessionController extends ChangeNotifier {
   PerformanceProfile get performanceProfile => _performanceProfile;
   String? get selectedSectionId => _selectedSectionId;
   SongRequest? get lastRequest => _lastRequest;
+  ProducerVariationStyle? get activeProducerSongStyle => _activeProducerSongStyle;
   bool get hasSong => _currentDraft != null && _currentDraft!.sections.isNotEmpty;
   bool get hasMemory => _currentMemory != null && _currentMemory!.sections.isNotEmpty;
   bool get hasTimeline => _currentTimeline != null && _currentTimeline!.sections.isNotEmpty;
@@ -127,6 +137,9 @@ class SongSessionController extends ChangeNotifier {
     _lastBassStyle = bassStyle;
     _lastBassVariety = bassVariety;
     _lastGrooveTemplate = grooveTemplate;
+    _producerVariationOriginDraft = draft;
+    _producerReplayBaseDraft = null;
+    _activeProducerSongStyle = null;
     _sectionRevisions.clear();
     _regenerationOps.clear();
     notifyListeners();
@@ -163,6 +176,7 @@ class SongSessionController extends ChangeNotifier {
     _currentDraft = updatedDraft;
     _refreshDerivedSongState(updatedDraft);
     _selectedSectionId = targetId;
+    _producerVariationOriginDraft = updatedDraft;
     _sectionRevisions[targetId] = revision;
     _regenerationOps.add(_SectionRegenerationOp(targetId, revision));
     notifyListeners();
@@ -177,14 +191,20 @@ class SongSessionController extends ChangeNotifier {
     final previouslySelected = _selectedSectionId;
     final operations = List<_SectionRegenerationOp>.from(_regenerationOps);
 
-    final rawBase = _composer.compose(
-      request: request,
-      plan: plan,
-      bassStyle: _lastBassStyle,
-      bassVariety: _lastBassVariety,
-      grooveTemplate: _lastGrooveTemplate,
-    );
-    var draft = _developmentEngine.develop(rawBase);
+    SongDraft draft;
+    final producerBase = _producerReplayBaseDraft;
+    if (producerBase != null) {
+      draft = producerBase;
+    } else {
+      final rawBase = _composer.compose(
+        request: request,
+        plan: plan,
+        bassStyle: _lastBassStyle,
+        bassVariety: _lastBassVariety,
+        grooveTemplate: _lastGrooveTemplate,
+      );
+      draft = _developmentEngine.develop(rawBase);
+    }
     final rebuiltRevisions = <String, int>{};
 
     for (final operation in operations) {
@@ -231,6 +251,60 @@ class SongSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Lazily builds complete Polished / Creative / Hook interpretations of the
+  /// current song. No live state is changed until [applyProducerSongVariation]
+  /// is called, so opening the chooser is safe for A/B comparison.
+  List<ProducerSongVariation> buildProducerSongVariations({
+    required int tempo,
+    required double swing,
+  }) {
+    final draft = _producerVariationOriginDraft ?? _currentDraft;
+    final request = _lastRequest;
+    if (draft == null || request == null || draft.sections.isEmpty) {
+      return const <ProducerSongVariation>[];
+    }
+    return _producerVariationEngine.build(
+      baseDraft: draft,
+      request: request,
+      performanceProfile: _performanceProfile,
+      bassStyle: _lastBassStyle,
+      bassVariety: _lastBassVariety,
+      grooveTemplate: _lastGrooveTemplate,
+      tempo: tempo,
+      swing: swing,
+    );
+  }
+
+  /// Commits one full-song Producer interpretation as a new deterministic base.
+  /// Later section regeneration is replayed on top of this chosen base.
+  bool applyProducerSongVariation(ProducerSongVariation variation) {
+    final plan = _lastPlan;
+    if (plan == null ||
+        variation.draft.plan.seed != plan.seed ||
+        variation.draft.sections.length != plan.sections.length) {
+      return false;
+    }
+
+    final previouslySelected = _selectedSectionId;
+    _currentDraft = variation.draft;
+    _refreshDerivedSongState(variation.draft);
+    _producerReplayBaseDraft = variation.draft;
+    _activeProducerSongStyle = variation.style;
+    _sectionRevisions.clear();
+    _regenerationOps.clear();
+
+    if (previouslySelected != null &&
+        variation.draft.sectionById(previouslySelected) != null) {
+      _selectedSectionId = previouslySelected;
+    } else {
+      _selectedSectionId = variation.draft.sections.isEmpty
+          ? null
+          : variation.draft.sections.first.plan.id;
+    }
+    notifyListeners();
+    return true;
+  }
+
   bool selectSection(String sectionId) {
     final draft = _currentDraft;
     if (draft == null || draft.sectionById(sectionId) == null) return false;
@@ -263,6 +337,9 @@ class SongSessionController extends ChangeNotifier {
     _selectedSectionId = null;
     _lastRequest = null;
     _lastPlan = null;
+    _producerVariationOriginDraft = null;
+    _producerReplayBaseDraft = null;
+    _activeProducerSongStyle = null;
     _sectionRevisions.clear();
     _regenerationOps.clear();
     notifyListeners();

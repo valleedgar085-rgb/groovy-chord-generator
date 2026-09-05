@@ -8,6 +8,7 @@ import '../providers/app_state.dart';
 import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
 import 'producer_analysis_sheet.dart';
+import 'producer_song_variation_sheet.dart';
 import 'producer_variation_sheet.dart';
 import 'song_composer_sheet.dart';
 
@@ -51,10 +52,13 @@ class ProducerBrainPanel extends StatelessWidget {
     final score = analysis.overallScore.clamp(0.0, 100.0).toDouble();
     final scoreColor = hasProgression ? _scoreColor(score) : AppTheme.textMuted;
     final songSession = context.watch<SongSessionController>();
+    final activeSongStyle = songSession.activeProducerSongStyle;
     final selectedSongSection = songSession.selectedSectionId;
     final selectedRevision = selectedSongSection == null
         ? 0
         : songSession.revisionFor(selectedSongSection);
+    final canOpenVariants = songSession.hasSong ||
+        (decision != null && decision.variations.isNotEmpty);
 
     return Container(
       height: 60,
@@ -134,17 +138,31 @@ class ProducerBrainPanel extends StatelessWidget {
               },
             ),
           ),
-          if (decision != null && decision.variations.isNotEmpty) ...[
+          if (canOpenVariants) ...[
             const SizedBox(width: 7),
             Tooltip(
-              message: 'Preview and choose Producer A/B/C',
+              message: songSession.hasSong
+                  ? 'Preview and choose full-song Producer A/B/C'
+                  : 'Preview and choose progression Producer A/B/C',
               child: InkWell(
                 key: const ValueKey('producerVariantsButton'),
-                onTap: () => ProducerVariationSheet.open(
-                  context,
-                  appState: appState,
-                  decision: decision,
-                ),
+                onTap: () {
+                  if (songSession.hasSong) {
+                    ProducerSongVariationSheet.open(
+                      context,
+                      appState: appState,
+                      songSession: songSession,
+                    );
+                    return;
+                  }
+                  if (decision != null) {
+                    ProducerVariationSheet.open(
+                      context,
+                      appState: appState,
+                      decision: decision,
+                    );
+                  }
+                },
                 borderRadius: BorderRadius.circular(11),
                 child: Container(
                   width: 40,
@@ -156,22 +174,24 @@ class ProducerBrainPanel extends StatelessWidget {
                       color: AppTheme.accentPink.withValues(alpha: 0.25),
                     ),
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(
-                        Icons.compare_arrows_rounded,
+                        songSession.hasSong
+                            ? Icons.library_music_rounded
+                            : Icons.compare_arrows_rounded,
                         size: 14,
                         color: AppTheme.accentPink,
                       ),
-                      SizedBox(height: 1),
+                      const SizedBox(height: 1),
                       Text(
-                        'A/B/C',
-                        style: TextStyle(
-                          fontSize: 5.8,
+                        songSession.hasSong ? 'SONG A/B/C' : 'A/B/C',
+                        style: const TextStyle(
+                          fontSize: 5.3,
                           height: 1,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 0.35,
+                          letterSpacing: 0.20,
                           color: AppTheme.textMuted,
                         ),
                       ),
@@ -228,7 +248,20 @@ class ProducerBrainPanel extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 3),
-                      if (activeCandidate != null)
+                      if (activeSongStyle != null)
+                        Text(
+                          '${activeSongStyle.label} SONG',
+                          maxLines: 1,
+                          overflow: TextOverflow.fade,
+                          softWrap: false,
+                          style: const TextStyle(
+                            color: AppTheme.accentPink,
+                            fontSize: 6.5,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.35,
+                          ),
+                        )
+                      else if (activeCandidate != null)
                         Text(
                           decision!.isSelected(decision.winner)
                               ? (decision.winner.wasRefined
