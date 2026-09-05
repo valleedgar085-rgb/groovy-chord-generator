@@ -235,7 +235,6 @@ class SongSessionController extends ChangeNotifier {
 
     _currentDraft = draft;
     _refreshDerivedSongState(draft);
-    _producerVariationOriginDraft = draft;
     _sectionRevisions
       ..clear()
       ..addAll(rebuiltRevisions);
