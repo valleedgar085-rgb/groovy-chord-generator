@@ -3,6 +3,7 @@ import 'package:groovy_chord_generator/engine/genre_song_architecture.dart';
 import 'package:groovy_chord_generator/engine/harmony_engine.dart';
 import 'package:groovy_chord_generator/engine/phrase_model.dart';
 import 'package:groovy_chord_generator/engine/song_architecture.dart';
+import 'package:groovy_chord_generator/engine/song_memory.dart';
 import 'package:groovy_chord_generator/engine/song_request.dart';
 import 'package:groovy_chord_generator/models/types.dart';
 import 'package:groovy_chord_generator/providers/song_session_controller.dart';
@@ -168,12 +169,12 @@ SongRequest _request(int seed, {GenreKey genre = GenreKey.happyPop}) => SongRequ
       includeBass: true,
     );
 
-String _phraseSignature(dynamic memory) {
+String _phraseSignature(SongMemory memory) {
   final parts = <String>[];
   for (final section in memory.sections.values) {
     for (final phrase in section.phrases) {
       parts.add(
-        '${phrase.id}:${phrase.role.name}:${phrase.cadenceIntent.name}:'
+        '${phrase.id}:${phrase.role}:${phrase.cadenceIntent}:'
         '${phrase.relativePitchPattern.join(',')}:'
         '${phrase.durationTicks.join(',')}:${phrase.accentBuckets.join(',')}:'
         '${phrase.chordIndexPattern.join(',')}:${phrase.pitchRange}:'
@@ -184,11 +185,11 @@ String _phraseSignature(dynamic memory) {
   return parts.join('|');
 }
 
-String _lineageSignature(dynamic memory) {
+String _lineageSignature(SongMemory memory) {
   final keys = memory.phraseLineage.keys.toList()..sort();
   return keys.map((key) {
-    final node = memory.phraseLineage[key];
-    return '$key>${node.sourcePhraseId}:${node.relationship.name}:'
+    final node = memory.phraseLineage[key]!;
+    return '$key>${node.sourcePhraseId}:${node.relationship}:'
         '${node.sourceSimilarity.toStringAsFixed(4)}:'
         '${node.targetWindow.minimum}-${node.targetWindow.maximum}';
   }).join('|');
