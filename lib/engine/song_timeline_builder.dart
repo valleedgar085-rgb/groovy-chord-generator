@@ -1,20 +1,28 @@
 import '../models/types.dart';
 import '../utils/music_theory.dart';
+import 'performance_intelligence_engine.dart';
+import 'performance_profile.dart';
 import 'song_draft.dart';
 import 'song_timeline.dart';
 
 /// Converts generated section-relative music into one absolute beat timeline.
 ///
-/// Chords receive equal windows across their planned section. Melody and bass
-/// preserve their generated duration proportions inside each chord window, so
-/// every section lands exactly on its SongPlan bar count without rewriting the
-/// musical phrase shape.
+/// Structural timing stays canonical. [PerformanceProfile] is applied as a
+/// separate deterministic intent layer so playback can feel human without
+/// mutating section/bar boundaries used by editing and export.
 class SongTimelineBuilder {
-  const SongTimelineBuilder({this.beatsPerBar = 4});
+  const SongTimelineBuilder({
+    this.beatsPerBar = 4,
+    this.performanceEngine = const PerformanceIntelligenceEngine(),
+  });
 
   final int beatsPerBar;
+  final PerformanceIntelligenceEngine performanceEngine;
 
-  SongTimeline build(SongDraft draft) {
+  SongTimeline build(
+    SongDraft draft, {
+    PerformanceProfile performanceProfile = const PerformanceProfile(),
+  }) {
     if (beatsPerBar <= 0) {
       throw ArgumentError.value(beatsPerBar, 'beatsPerBar', 'Must be positive');
     }
@@ -44,6 +52,9 @@ class SongTimelineBuilder {
         for (var chordIndex = 0; chordIndex < chords.length; chordIndex++) {
           final chord = chords[chordIndex];
           final chordStart = songCursor + (chordIndex * chordBeats);
+          final baseVelocity = (0.58 + (plan.targetEnergy * 0.34))
+              .clamp(0.0, 1.0)
+              .toDouble();
           events.add(
             MusicalTimelineEvent(
               track: TimelineTrackType.harmony,
@@ -51,11 +62,20 @@ class SongTimelineBuilder {
               chordIndex: chordIndex,
               startBeat: chordStart,
               durationBeats: chordBeats,
-              velocity: (0.58 + (plan.targetEnergy * 0.34))
-                  .clamp(0.0, 1.0)
-                  .toDouble(),
+              velocity: baseVelocity,
               midiPitches: _chordMidiPitches(chord),
               label: chord.numeral.isNotEmpty ? chord.numeral : chord.root,
+              performance: performanceEngine.intentFor(
+                profile: performanceProfile,
+                seed: draft.plan.seed,
+                track: TimelineTrackType.harmony,
+                sectionId: plan.id,
+                chordIndex: chordIndex,
+                ordinal: chordIndex,
+                startBeat: chordStart,
+                durationBeats: chordBeats,
+                sectionStartBeat: songCursor,
+              ),
             ),
           );
         }
@@ -63,12 +83,16 @@ class SongTimelineBuilder {
         _appendMelodyEvents(
           events,
           generated,
+          seed: draft.plan.seed,
+          profile: performanceProfile,
           sectionStart: songCursor,
           chordBeats: chordBeats,
         );
         _appendBassEvents(
           events,
           generated,
+          seed: draft.plan.seed,
+          profile: performanceProfile,
           sectionStart: songCursor,
           chordBeats: chordBeats,
         );
@@ -87,16 +111,20 @@ class SongTimelineBuilder {
       beatsPerBar: beatsPerBar,
       sections: sections,
       events: events,
+      performanceProfile: performanceProfile,
     );
   }
 
   void _appendMelodyEvents(
     List<MusicalTimelineEvent> target,
     GeneratedSongSection section, {
+    required int seed,
+    required PerformanceProfile profile,
     required double sectionStart,
     required double chordBeats,
   }) {
     final chordCount = section.progression.length;
+    var ordinal = 0;
     for (var chordIndex = 0; chordIndex < chordCount; chordIndex++) {
       final notes = section.melody
           .where((note) => note.chordIndex == chordIndex)
@@ -127,8 +155,20 @@ class SongTimelineBuilder {
             velocity: note.velocity.clamp(0.0, 1.0).toDouble(),
             midiPitches: <int>[noteToPitch(note.note, note.octave)],
             label: note.note,
+            performance: performanceEngine.intentFor(
+              profile: profile,
+              seed: seed,
+              track: TimelineTrackType.melody,
+              sectionId: section.plan.id,
+              chordIndex: chordIndex,
+              ordinal: ordinal,
+              startBeat: cursor,
+              durationBeats: duration,
+              sectionStartBeat: sectionStart,
+            ),
           ),
         );
+        ordinal++;
         cursor += duration;
       }
     }
@@ -137,10 +177,13 @@ class SongTimelineBuilder {
   void _appendBassEvents(
     List<MusicalTimelineEvent> target,
     GeneratedSongSection section, {
+    required int seed,
+    required PerformanceProfile profile,
     required double sectionStart,
     required double chordBeats,
   }) {
     final chordCount = section.progression.length;
+    var ordinal = 0;
     for (var chordIndex = 0; chordIndex < chordCount; chordIndex++) {
       final notes = section.bass
           .where((note) => note.chordIndex == chordIndex)
@@ -171,8 +214,20 @@ class SongTimelineBuilder {
             velocity: note.velocity.clamp(0.0, 1.0).toDouble(),
             midiPitches: <int>[noteToPitch(note.note, note.octave)],
             label: note.note,
+            performance: performanceEngine.intentFor(
+              profile: profile,
+              seed: seed,
+              track: TimelineTrackType.bass,
+              sectionId: section.plan.id,
+              chordIndex: chordIndex,
+              ordinal: ordinal,
+              startBeat: cursor,
+              durationBeats: duration,
+              sectionStartBeat: sectionStart,
+            ),
           ),
         );
+        ordinal++;
         cursor += duration;
       }
     }

@@ -1,3 +1,4 @@
+import 'performance_profile.dart';
 import 'song_architecture.dart';
 
 /// Canonical track identities used by playback, editing and export.
@@ -14,6 +15,7 @@ class MusicalTimelineEvent {
     required this.velocity,
     required List<int> midiPitches,
     required this.label,
+    this.performance = PerformanceIntent.neutral,
   }) : midiPitches = List<int>.unmodifiable(midiPitches) {
     if (startBeat < 0) {
       throw ArgumentError.value(startBeat, 'startBeat', 'Must be non-negative');
@@ -38,8 +40,13 @@ class MusicalTimelineEvent {
   final double velocity;
   final List<int> midiPitches;
   final String label;
+  final PerformanceIntent performance;
 
   double get endBeat => startBeat + durationBeats;
+  double get performedStartBeat => startBeat + performance.timingOffsetBeats;
+  double get performedDurationBeats => durationBeats * performance.gateRatio;
+  double get performedVelocity =>
+      (velocity * performance.velocityScale).clamp(0.0, 1.0).toDouble();
 }
 
 /// Beat-range metadata for one arrangement section.
@@ -73,6 +80,7 @@ class SongTimeline {
     required this.beatsPerBar,
     required List<TimelineSection> sections,
     required List<MusicalTimelineEvent> events,
+    this.performanceProfile = const PerformanceProfile(),
   })  : sections = List<TimelineSection>.unmodifiable(sections),
         events = List<MusicalTimelineEvent>.unmodifiable(events) {
     if (beatsPerBar <= 0) {
@@ -83,6 +91,7 @@ class SongTimeline {
   final int beatsPerBar;
   final List<TimelineSection> sections;
   final List<MusicalTimelineEvent> events;
+  final PerformanceProfile performanceProfile;
 
   double get totalBeats => sections.isEmpty ? 0.0 : sections.last.endBeat;
   double get totalBars => totalBeats / beatsPerBar;
