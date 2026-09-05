@@ -1,4 +1,5 @@
 import '../models/types.dart';
+import 'phrase_model.dart';
 
 /// Cadential identity retained as part of a section's harmonic memory.
 enum CadenceIdentity {
@@ -33,8 +34,6 @@ class HarmonicFingerprint {
 
   int get chordCount => degreePattern.length;
 
-  /// Arrangement-level harmonic density, useful later when a transformation
-  /// wants to make a section busier or simpler without changing its duration.
   double get chordsPerBar =>
       sectionBars <= 0 ? 0.0 : chordCount / sectionBars.toDouble();
 
@@ -74,10 +73,6 @@ class HarmonicFingerprint {
 }
 
 /// Short relative melodic idea extracted from the beginning of a section.
-///
-/// [intervalContour] stores semitone movement between adjacent notes rather
-/// than absolute pitches, so the identity can be reused over new harmony or in
-/// another key. Rhythm and accent are retained as separate dimensions.
 class MelodicMotif {
   MelodicMotif({
     required List<int> intervalContour,
@@ -158,7 +153,7 @@ class BassContour {
 
 /// Captured identity for one generated section.
 class SectionMemory {
-  const SectionMemory({
+  SectionMemory({
     required this.sectionId,
     required this.repetitionGroup,
     required this.sourceSectionId,
@@ -166,18 +161,25 @@ class SectionMemory {
     required this.melody,
     required this.rhythm,
     required this.bass,
-  });
+    List<PhraseFingerprint> phrases = const <PhraseFingerprint>[],
+  }) : phrases = List<PhraseFingerprint>.unmodifiable(phrases);
 
   final String sectionId;
   final String? repetitionGroup;
-
-  /// Earliest section in this repetition family. Verse 2, for example, points
-  /// to Verse 1. A source section points to itself.
   final String sourceSectionId;
   final HarmonicFingerprint harmony;
   final MelodicMotif melody;
   final RhythmFingerprint rhythm;
   final BassContour bass;
+
+  /// Multiple phrase-sized memories across the complete section. Legacy motif
+  /// fields remain for compatibility while 5.8+ reasoning uses this richer map.
+  final List<PhraseFingerprint> phrases;
+
+  PhraseFingerprint? phrase(int index) {
+    if (index < 0 || index >= phrases.length) return null;
+    return phrases[index];
+  }
 
   double identitySimilarityTo(SectionMemory other) {
     return (harmony.similarityTo(other.harmony) * 0.45 +
@@ -195,14 +197,34 @@ class SongMemory {
     required this.songSeed,
     required Map<String, SectionMemory> sections,
     required Map<String, String> repetitionSources,
+    SongMusicalDna? musicalDna,
+    Map<String, PhraseLineageNode> phraseLineage =
+        const <String, PhraseLineageNode>{},
   })  : sections = Map<String, SectionMemory>.unmodifiable(sections),
-        repetitionSources = Map<String, String>.unmodifiable(repetitionSources);
+        repetitionSources = Map<String, String>.unmodifiable(repetitionSources),
+        musicalDna = musicalDna ??
+            SongMusicalDna(
+              songSeed: songSeed,
+              primaryPhraseId: null,
+              secondaryPhraseId: null,
+              hookSectionId: null,
+              hookPhraseId: null,
+              signatureInterval: null,
+              typicalPhraseBars: 4,
+              primaryRhythmCell: RhythmCell(
+                durationTicks: const <int>[],
+                accentBuckets: const <int>[],
+              ),
+              melodicRange: 0,
+              confidence: 0.0,
+            ),
+        phraseLineage = Map<String, PhraseLineageNode>.unmodifiable(phraseLineage);
 
   final int songSeed;
   final Map<String, SectionMemory> sections;
-
-  /// repetitionGroup -> canonical source section id.
   final Map<String, String> repetitionSources;
+  final SongMusicalDna musicalDna;
+  final Map<String, PhraseLineageNode> phraseLineage;
 
   SectionMemory? section(String sectionId) => sections[sectionId];
 
@@ -210,6 +232,27 @@ class SongMemory {
     final memory = sections[sectionId];
     if (memory == null) return null;
     return sections[memory.sourceSectionId];
+  }
+
+  PhraseFingerprint? phrase(String phraseId) {
+    for (final section in sections.values) {
+      for (final phrase in section.phrases) {
+        if (phrase.id == phraseId) return phrase;
+      }
+    }
+    return null;
+  }
+
+  PhraseLineageNode? lineageFor(String phraseId) => phraseLineage[phraseId];
+
+  PhraseFingerprint? get primaryPhrase {
+    final id = musicalDna.primaryPhraseId;
+    return id == null ? null : phrase(id);
+  }
+
+  PhraseFingerprint? get secondaryPhrase {
+    final id = musicalDna.secondaryPhraseId;
+    return id == null ? null : phrase(id);
   }
 
   double similarity(String firstSectionId, String secondSectionId) {
