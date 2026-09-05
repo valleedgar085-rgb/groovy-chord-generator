@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 
+import '../engine/performance_profile.dart';
 import '../engine/producer_song_composer.dart';
 import '../engine/song_architecture.dart';
 import '../engine/song_development_engine.dart';
@@ -12,11 +13,6 @@ import '../engine/song_timeline_builder.dart';
 import '../models/types.dart';
 
 /// Live full-song state for the application.
-///
-/// AppState remains the compatibility/settings provider for the existing
-/// single-progression UI. Full-song composition gets its own focused state
-/// object so Song Memory, section regeneration, timeline editing, and export can
-/// grow without turning AppState into another monolith.
 class SongSessionController extends ChangeNotifier {
   SongSessionController({
     ProducerSongComposer? composer,
@@ -36,6 +32,7 @@ class SongSessionController extends ChangeNotifier {
   SongDraft? _currentDraft;
   SongMemory? _currentMemory;
   SongTimeline? _currentTimeline;
+  PerformanceProfile _performanceProfile = const PerformanceProfile();
   String? _selectedSectionId;
   SongRequest? _lastRequest;
   SongPlan? _lastPlan;
@@ -49,6 +46,7 @@ class SongSessionController extends ChangeNotifier {
   SongDraft? get currentDraft => _currentDraft;
   SongMemory? get currentMemory => _currentMemory;
   SongTimeline? get currentTimeline => _currentTimeline;
+  PerformanceProfile get performanceProfile => _performanceProfile;
   String? get selectedSectionId => _selectedSectionId;
   SongRequest? get lastRequest => _lastRequest;
   bool get hasSong => _currentDraft != null && _currentDraft!.sections.isNotEmpty;
@@ -91,8 +89,6 @@ class SongSessionController extends ChangeNotifier {
     return memory.sourceFor(id);
   }
 
-  /// Similarity between the selected section and its canonical repetition
-  /// source. Source sections naturally score 1.0 against themselves.
   double get selectedIdentitySimilarity {
     final selected = selectedSectionMemory;
     final source = selectedSourceMemory;
@@ -106,7 +102,6 @@ class SongSessionController extends ChangeNotifier {
       selectedSection?.melody ?? const <MelodyNote>[];
   List<BassNote> get selectedBass => selectedSection?.bass ?? const <BassNote>[];
 
-  /// Generates an entire deterministic song and selects its first section.
   void generate({
     required SongRequest request,
     SongPlan? plan,
@@ -137,13 +132,6 @@ class SongSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Generates a deterministic new revision of one section while preserving
-  /// every unrelated section in the current draft.
-  ///
-  /// If the regenerated section is a canonical repetition source (Verse 1,
-  /// Chorus 1, etc.), later A′ / A″ dependents are re-derived automatically.
-  /// Revisions are recorded as operations so [replay] reconstructs the exact
-  /// sequence of local edits.
   bool regenerateSection([String? sectionId]) {
     final request = _lastRequest;
     final draft = _currentDraft;
@@ -166,16 +154,10 @@ class SongSessionController extends ChangeNotifier {
     final rawUpdatedDraft = draft.withSection(rawReplacement);
     final SongDraft updatedDraft;
     if (existing.plan.variation > 0) {
-      final replacement = _developmentEngine.developSection(
-        rawUpdatedDraft,
-        targetId,
-      );
+      final replacement = _developmentEngine.developSection(rawUpdatedDraft, targetId);
       updatedDraft = draft.withSection(replacement);
     } else {
-      updatedDraft = _developmentEngine.redevelopDependents(
-        rawUpdatedDraft,
-        targetId,
-      );
+      updatedDraft = _developmentEngine.redevelopDependents(rawUpdatedDraft, targetId);
     }
 
     _currentDraft = updatedDraft;
@@ -187,8 +169,6 @@ class SongSessionController extends ChangeNotifier {
     return true;
   }
 
-  /// Rebuilds the exact same song, including every section-regeneration edit,
-  /// from the stored request, plan and deterministic operation log.
   void replay() {
     final request = _lastRequest;
     final plan = _lastPlan;
@@ -221,10 +201,8 @@ class SongSessionController extends ChangeNotifier {
       );
       final rawUpdatedDraft = draft.withSection(rawReplacement);
       if (existing.plan.variation > 0) {
-        final replacement = _developmentEngine.developSection(
-          rawUpdatedDraft,
-          operation.sectionId,
-        );
+        final replacement =
+            _developmentEngine.developSection(rawUpdatedDraft, operation.sectionId);
         draft = draft.withSection(replacement);
       } else {
         draft = _developmentEngine.redevelopDependents(
@@ -240,7 +218,6 @@ class SongSessionController extends ChangeNotifier {
     _sectionRevisions
       ..clear()
       ..addAll(rebuiltRevisions);
-    // Keep the original operation order; it is part of the replay contract.
     _regenerationOps
       ..clear()
       ..addAll(operations);
@@ -263,11 +240,26 @@ class SongSessionController extends ChangeNotifier {
     return true;
   }
 
+  void setPerformanceLooseness(double value) => _setPerformance(
+        _performanceProfile.copyWith(looseness: value.clamp(0.0, 1.0).toDouble()),
+      );
+
+  void setPerformancePunch(double value) => _setPerformance(
+        _performanceProfile.copyWith(punch: value.clamp(0.0, 1.0).toDouble()),
+      );
+
+  void setPerformanceSwing(double value) => _setPerformance(
+        _performanceProfile.copyWith(swing: value.clamp(0.0, 1.0).toDouble()),
+      );
+
+  void resetPerformance() => _setPerformance(const PerformanceProfile());
+
   void clear() {
     if (_currentDraft == null && _selectedSectionId == null) return;
     _currentDraft = null;
     _currentMemory = null;
     _currentTimeline = null;
+    _performanceProfile = const PerformanceProfile();
     _selectedSectionId = null;
     _lastRequest = null;
     _lastPlan = null;
@@ -276,9 +268,24 @@ class SongSessionController extends ChangeNotifier {
     notifyListeners();
   }
 
+  void _setPerformance(PerformanceProfile profile) {
+    _performanceProfile = profile;
+    final draft = _currentDraft;
+    if (draft != null) {
+      _currentTimeline = _timelineBuilder.build(
+        draft,
+        performanceProfile: _performanceProfile,
+      );
+    }
+    notifyListeners();
+  }
+
   void _refreshDerivedSongState(SongDraft draft) {
     _currentMemory = _memoryExtractor.capture(draft);
-    _currentTimeline = _timelineBuilder.build(draft);
+    _currentTimeline = _timelineBuilder.build(
+      draft,
+      performanceProfile: _performanceProfile,
+    );
   }
 }
 
