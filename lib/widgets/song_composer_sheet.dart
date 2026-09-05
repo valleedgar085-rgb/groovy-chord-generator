@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/genre_song_architecture.dart';
 import '../engine/motif_transformation_engine.dart';
 import '../engine/section_development_metadata.dart';
 import '../engine/song_architecture.dart';
@@ -79,6 +80,13 @@ class SongComposerSheet extends StatelessWidget {
     AppState appState,
     SongSessionController session,
   ) {
+    final draft = session.currentDraft;
+    final genre = session.lastRequest?.genre ?? appState.genre;
+    final form = GenreSongArchitecture.labelFor(genre);
+    final subtitle = draft == null
+        ? '$form • genre-aware arrangement'
+        : '$form • ${draft.sections.length} sections • ${GenreSongArchitecture.totalBars(draft.plan)} bars • seed ${session.lastRequest?.seed ?? '--'}';
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(18, 14, 18, 12),
       child: Row(
@@ -117,9 +125,7 @@ class SongComposerSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  session.hasSong
-                      ? '10-section arrangement • seed ${session.lastRequest?.seed ?? '--'}'
-                      : 'Build a complete arrangement from the current setup',
+                  subtitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -148,10 +154,17 @@ class SongComposerSheet extends StatelessWidget {
     AppState appState,
     SongSessionController session,
   ) {
+    final preview = GenreSongArchitecture.build(
+      genre: appState.genre,
+      seed: 0,
+    );
+    final form = GenreSongArchitecture.labelFor(appState.genre);
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(18, 10, 18, 24),
       children: [
         Container(
+          key: const ValueKey('genreArchitecturePreview'),
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: AppTheme.bgTertiary.withValues(alpha: 0.72),
@@ -160,26 +173,71 @@ class SongComposerSheet extends StatelessWidget {
               color: AppTheme.borderColor.withValues(alpha: 0.72),
             ),
           ),
-          child: const Column(
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      form.toUpperCase(),
+                      key: const ValueKey('genreArchitectureLabel'),
+                      style: const TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 0.9,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    '${preview.sections.length} sections • ${GenreSongArchitecture.totalBars(preview)} bars',
+                    style: const TextStyle(
+                      color: AppTheme.accentCyan,
+                      fontSize: 8,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 9),
               Text(
-                'FROM LOOP TO SONG',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 0.9,
+                GenreSongArchitecture.descriptionFor(appState.genre),
+                style: const TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 11,
+                  height: 1.4,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
-              SizedBox(height: 9),
-              Text(
-                'Chord Flow will build Intro, Verse, Pre-Chorus, Chorus, Verse 2, Pre 2, Chorus 2, Bridge, Final Chorus and Outro from one deterministic producer seed.',
-                style: TextStyle(
-                  color: AppTheme.textSecondary,
-                  fontSize: 12,
-                  height: 1.45,
-                ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: preview.sections
+                    .map(
+                      (section) => Container(
+                        key: ValueKey('architectureSection-${section.id}'),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.bgElevated,
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: Text(
+                          '${_shortSectionLabel(section.id)} • ${section.bars}',
+                          style: const TextStyle(
+                            color: AppTheme.textSecondary,
+                            fontSize: 7,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 0.25,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(growable: false),
               ),
             ],
           ),
@@ -367,7 +425,7 @@ class SongComposerSheet extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _sectionLabel(plan.type),
+                      GenreSongArchitecture.displaySectionId(plan.id).toUpperCase(),
                       style: const TextStyle(
                         color: AppTheme.textPrimary,
                         fontSize: 15,
@@ -599,8 +657,13 @@ class SongComposerSheet extends StatelessWidget {
     return FilledButton.icon(
       onPressed: () {
         final request = SongRequestAdapter.fromAppState(appState);
+        final plan = GenreSongArchitecture.build(
+          genre: appState.genre,
+          seed: request.seed,
+        );
         session.generate(
           request: request,
+          plan: plan,
           bassStyle: appState.bassStyle,
           bassVariety: appState.bassVariety,
           grooveTemplate: appState.grooveTemplate,
