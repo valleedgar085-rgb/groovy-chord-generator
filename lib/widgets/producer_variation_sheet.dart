@@ -297,8 +297,15 @@ class _VariationCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   key: ValueKey('preview-${candidate.variationStyle.name}'),
                   onPressed: () {
-                    AudioPlaybackService.instance
-                        .playProgression(candidate.progression);
+                    var preview = List.from(candidate.progression);
+                    if (appState.useVoiceLeading) {
+                      preview = applyVoiceLeading(preview);
+                    }
+                    preview = applyGrooveToProgression(
+                      preview,
+                      appState.grooveTemplate,
+                    );
+                    AudioPlaybackService.instance.playProgression(preview);
                   },
                   icon: const Icon(Icons.play_arrow_rounded, size: 17),
                   label: const Text('Preview'),
