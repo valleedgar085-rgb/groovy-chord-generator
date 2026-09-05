@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../engine/harmony_engine.dart';
 import '../engine/producer_analysis.dart';
 import '../engine/producer_brain_telemetry.dart';
+import '../engine/song_director.dart';
 import '../providers/app_state.dart';
 import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
@@ -12,6 +13,7 @@ import 'producer_song_variation_sheet.dart';
 import 'producer_variation_sheet.dart';
 import 'song_composer_sheet.dart';
 import 'song_director_sheet.dart';
+import 'transition_repair_sheet.dart';
 
 class ProducerBrainPanel extends StatelessWidget {
   const ProducerBrainPanel({
@@ -22,6 +24,7 @@ class ProducerBrainPanel extends StatelessWidget {
   final AppState appState;
 
   static final ProducerAnalyzer _producerAnalyzer = ProducerAnalyzer();
+  static const SongDirectorAnalyzer _songDirectorAnalyzer = SongDirectorAnalyzer();
 
   static const _sectionLabels = <HarmonySection, String>{
     HarmonySection.neutral: 'AUTO',
@@ -60,6 +63,13 @@ class ProducerBrainPanel extends StatelessWidget {
         : songSession.revisionFor(selectedSongSection);
     final canOpenVariants = songSession.hasSong ||
         (decision != null && decision.variations.isNotEmpty);
+    final directorAnalysis = songSession.hasSong
+        ? _songDirectorAnalyzer.analyze(
+            draft: songSession.currentDraft!,
+            memory: songSession.currentMemory,
+          )
+        : null;
+    final weakestTransition = directorAnalysis?.weakestTransition;
 
     return Container(
       height: 60,
@@ -384,6 +394,56 @@ class ProducerBrainPanel extends StatelessWidget {
                 ),
               ),
             ),
+            if (weakestTransition != null) ...[
+              const SizedBox(width: 5),
+              Tooltip(
+                message:
+                    'Repair weakest transition: ${weakestTransition.label} (${weakestTransition.score.round()})',
+                child: InkWell(
+                  key: const ValueKey('transitionRepairButton'),
+                  onTap: () => TransitionRepairSheet.open(
+                    context,
+                    appState: appState,
+                    songSession: songSession,
+                    fromSectionId: weakestTransition.fromSectionId,
+                    toSectionId: weakestTransition.toSectionId,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppTheme.warning.withValues(alpha: 0.09),
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(
+                        color: AppTheme.warning.withValues(alpha: 0.24),
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.swap_calls_rounded,
+                          size: 14,
+                          color: AppTheme.warning,
+                        ),
+                        SizedBox(height: 1),
+                        Text(
+                          'FIX',
+                          style: TextStyle(
+                            fontSize: 5.8,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.45,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
           if (songSession.canRegenerateSelected) ...[
             const SizedBox(width: 5),
