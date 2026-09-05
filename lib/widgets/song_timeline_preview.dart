@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/song_timeline.dart';
 import '../providers/song_session_controller.dart';
+import '../services/audio_playback_service.dart';
 import '../utils/theme.dart';
 
 /// Compact arrangement visualization backed by the canonical SongTimeline.
@@ -17,139 +18,163 @@ class SongTimelinePreview extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final timeline = session.currentTimeline;
-    if (timeline == null || timeline.sections.isEmpty) {
-      return const SizedBox.shrink();
-    }
+    final audio = AudioPlaybackService.instance;
+    return AnimatedBuilder(
+      animation: audio,
+      builder: (context, _) {
+        final timeline = session.currentTimeline;
+        if (timeline == null || timeline.sections.isEmpty) {
+          return const SizedBox.shrink();
+        }
 
-    final totalBars = timeline.totalBars;
-    final barsLabel = totalBars == totalBars.roundToDouble()
-        ? totalBars.round().toString()
-        : totalBars.toStringAsFixed(1);
+        final totalBars = timeline.totalBars;
+        final barsLabel = totalBars == totalBars.roundToDouble()
+            ? totalBars.round().toString()
+            : totalBars.toStringAsFixed(1);
+        final hasPlayhead = audio.isTimelinePlayback || audio.songBeat > 0;
+        final playheadBeat = hasPlayhead
+            ? audio.songBeat.clamp(0.0, timeline.totalBeats).toDouble()
+            : null;
 
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-      decoration: BoxDecoration(
-        color: AppTheme.bgTertiary.withValues(alpha: 0.54),
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(
-          color: AppTheme.borderColor.withValues(alpha: 0.66),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+        return Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+          decoration: BoxDecoration(
+            color: AppTheme.bgTertiary.withValues(alpha: 0.54),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: AppTheme.borderColor.withValues(alpha: 0.66),
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(
-                Icons.timeline_rounded,
-                color: AppTheme.accentCyan,
-                size: 16,
+              Row(
+                children: [
+                  Icon(
+                    audio.isTimelinePlayback && audio.isPlaying
+                        ? Icons.graphic_eq_rounded
+                        : Icons.timeline_rounded,
+                    color: audio.isTimelinePlayback && audio.isPlaying
+                        ? AppTheme.success
+                        : AppTheme.accentCyan,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    audio.isTimelinePlayback && audio.isPlaying
+                        ? 'SONG PLAYBACK'
+                        : 'TIMELINE',
+                    style: const TextStyle(
+                      color: AppTheme.textPrimary,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '$barsLabel BARS • ${timeline.totalBeats.round()} BEATS',
+                    style: const TextStyle(
+                      color: AppTheme.textMuted,
+                      fontSize: 8.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 7),
-              const Text(
-                'TIMELINE',
-                style: TextStyle(
-                  color: AppTheme.textPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.0,
-                ),
+              const SizedBox(height: 10),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  const labelWidth = 54.0;
+                  final laneWidth = math.max(
+                    constraints.maxWidth - labelWidth,
+                    timeline.totalBars * 13.0,
+                  );
+                  final fullWidth = laneWidth + labelWidth;
+                  return SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
+                      width: fullWidth,
+                      child: Column(
+                        children: [
+                          _SectionRuler(
+                            session: session,
+                            timeline: timeline,
+                            laneWidth: laneWidth,
+                            labelWidth: labelWidth,
+                            playheadBeat: playheadBeat,
+                          ),
+                          const SizedBox(height: 5),
+                          _TimelineLane(
+                            label: 'HARMONY',
+                            timeline: timeline,
+                            track: TimelineTrackType.harmony,
+                            laneWidth: laneWidth,
+                            labelWidth: labelWidth,
+                            focusBeat: session.selectedTimelineSection?.startBeat,
+                            playheadBeat: playheadBeat,
+                          ),
+                          const SizedBox(height: 4),
+                          _TimelineLane(
+                            label: 'MELODY',
+                            timeline: timeline,
+                            track: TimelineTrackType.melody,
+                            laneWidth: laneWidth,
+                            labelWidth: labelWidth,
+                            focusBeat: session.selectedTimelineSection?.startBeat,
+                            playheadBeat: playheadBeat,
+                          ),
+                          const SizedBox(height: 4),
+                          _TimelineLane(
+                            label: 'BASS',
+                            timeline: timeline,
+                            track: TimelineTrackType.bass,
+                            laneWidth: laneWidth,
+                            labelWidth: labelWidth,
+                            focusBeat: session.selectedTimelineSection?.startBeat,
+                            playheadBeat: playheadBeat,
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
               ),
-              const Spacer(),
-              Text(
-                '$barsLabel BARS • ${timeline.totalBeats.round()} BEATS',
-                style: const TextStyle(
-                  color: AppTheme.textMuted,
-                  fontSize: 8.5,
-                  fontWeight: FontWeight.w700,
-                ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: audio.isTimelinePlayback && audio.isPlaying
+                          ? AppTheme.success
+                          : AppTheme.accentSecondary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      audio.isTimelinePlayback && audio.isPlaying
+                          ? 'PLAYHEAD • ${_sectionLabel(audio.activeSectionId ?? session.selectedSectionId ?? timeline.sections.first.id)} • BEAT ${audio.songBeat.toStringAsFixed(1)}'
+                          : 'SECTION FOCUS • ${_sectionLabel(session.selectedSectionId ?? timeline.sections.first.id)}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.textMuted,
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.35,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 10),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const labelWidth = 54.0;
-              final laneWidth = math.max(
-                constraints.maxWidth - labelWidth,
-                timeline.totalBars * 13.0,
-              );
-              final fullWidth = laneWidth + labelWidth;
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: SizedBox(
-                  width: fullWidth,
-                  child: Column(
-                    children: [
-                      _SectionRuler(
-                        session: session,
-                        timeline: timeline,
-                        laneWidth: laneWidth,
-                        labelWidth: labelWidth,
-                      ),
-                      const SizedBox(height: 5),
-                      _TimelineLane(
-                        label: 'HARMONY',
-                        timeline: timeline,
-                        track: TimelineTrackType.harmony,
-                        laneWidth: laneWidth,
-                        labelWidth: labelWidth,
-                        focusBeat: session.selectedTimelineSection?.startBeat,
-                      ),
-                      const SizedBox(height: 4),
-                      _TimelineLane(
-                        label: 'MELODY',
-                        timeline: timeline,
-                        track: TimelineTrackType.melody,
-                        laneWidth: laneWidth,
-                        labelWidth: labelWidth,
-                        focusBeat: session.selectedTimelineSection?.startBeat,
-                      ),
-                      const SizedBox(height: 4),
-                      _TimelineLane(
-                        label: 'BASS',
-                        timeline: timeline,
-                        track: TimelineTrackType.bass,
-                        laneWidth: laneWidth,
-                        labelWidth: labelWidth,
-                        focusBeat: session.selectedTimelineSection?.startBeat,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: AppTheme.accentSecondary,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  'SECTION FOCUS • ${_sectionLabel(session.selectedSectionId ?? timeline.sections.first.id)}',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: AppTheme.textMuted,
-                    fontSize: 8.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.35,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -160,12 +185,14 @@ class _SectionRuler extends StatelessWidget {
     required this.timeline,
     required this.laneWidth,
     required this.labelWidth,
+    required this.playheadBeat,
   });
 
   final SongSessionController session;
   final SongTimeline timeline;
   final double laneWidth;
   final double labelWidth;
+  final double? playheadBeat;
 
   @override
   Widget build(BuildContext context) {
@@ -192,54 +219,76 @@ class _SectionRuler extends StatelessWidget {
           SizedBox(
             width: laneWidth,
             child: Stack(
-              children: timeline.sections.map((section) {
-                final left = section.startBeat / timeline.totalBeats * laneWidth;
-                final width = math.max(
-                  28.0,
-                  section.durationBeats / timeline.totalBeats * laneWidth - 2,
-                );
-                final selected = session.selectedSectionId == section.id;
-                return Positioned(
-                  left: left,
-                  top: 0,
-                  width: width,
-                  bottom: 0,
-                  child: InkWell(
-                    key: ValueKey<String>('timeline-section-${section.id}'),
-                    onTap: () => session.selectSection(section.id),
-                    borderRadius: BorderRadius.circular(8),
-                    child: AnimatedContainer(
-                      duration: AppTheme.animationFast,
-                      padding: const EdgeInsets.symmetric(horizontal: 5),
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? AppTheme.accentPrimary.withValues(alpha: 0.28)
-                            : AppTheme.bgElevated.withValues(alpha: 0.78),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
+              children: [
+                ...timeline.sections.map((section) {
+                  final left = section.startBeat / timeline.totalBeats * laneWidth;
+                  final width = math.max(
+                    28.0,
+                    section.durationBeats / timeline.totalBeats * laneWidth - 2,
+                  );
+                  final selected = session.selectedSectionId == section.id;
+                  return Positioned(
+                    left: left,
+                    top: 0,
+                    width: width,
+                    bottom: 0,
+                    child: InkWell(
+                      key: ValueKey<String>('timeline-section-${section.id}'),
+                      onTap: () => session.selectSection(section.id),
+                      borderRadius: BorderRadius.circular(8),
+                      child: AnimatedContainer(
+                        duration: AppTheme.animationFast,
+                        padding: const EdgeInsets.symmetric(horizontal: 5),
+                        decoration: BoxDecoration(
                           color: selected
-                              ? AppTheme.accentSecondary.withValues(alpha: 0.82)
-                              : AppTheme.borderColor.withValues(alpha: 0.42),
-                        ),
-                      ),
-                      child: Center(
-                        child: Text(
-                          _sectionLabel(section.id),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
+                              ? AppTheme.accentPrimary.withValues(alpha: 0.28)
+                              : AppTheme.bgElevated.withValues(alpha: 0.78),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
                             color: selected
-                                ? AppTheme.textPrimary
-                                : AppTheme.textSecondary,
-                            fontSize: 7.5,
-                            fontWeight: FontWeight.w900,
+                                ? AppTheme.accentSecondary.withValues(alpha: 0.82)
+                                : AppTheme.borderColor.withValues(alpha: 0.42),
+                          ),
+                        ),
+                        child: Center(
+                          child: Text(
+                            _sectionLabel(section.id),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: selected
+                                  ? AppTheme.textPrimary
+                                  : AppTheme.textSecondary,
+                              fontSize: 7.5,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
                         ),
                       ),
                     ),
+                  );
+                }),
+                if (playheadBeat != null && timeline.totalBeats > 0)
+                  Positioned(
+                    left: (playheadBeat! / timeline.totalBeats * laneWidth)
+                        .clamp(0.0, laneWidth - 2)
+                        .toDouble(),
+                    top: 0,
+                    bottom: 0,
+                    child: Container(
+                      width: 2,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.94),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.accentCyan.withValues(alpha: 0.7),
+                            blurRadius: 6,
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
-                );
-              }).toList(growable: false),
+              ],
             ),
           ),
         ],
@@ -256,6 +305,7 @@ class _TimelineLane extends StatelessWidget {
     required this.laneWidth,
     required this.labelWidth,
     required this.focusBeat,
+    required this.playheadBeat,
   });
 
   final String label;
@@ -264,6 +314,7 @@ class _TimelineLane extends StatelessWidget {
   final double laneWidth;
   final double labelWidth;
   final double? focusBeat;
+  final double? playheadBeat;
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +342,7 @@ class _TimelineLane extends StatelessWidget {
                 events: timeline.eventsForTrack(track),
                 totalBeats: timeline.totalBeats,
                 focusBeat: focusBeat,
+                playheadBeat: playheadBeat,
                 track: track,
               ),
             ),
@@ -306,12 +358,14 @@ class _TimelineLanePainter extends CustomPainter {
     required this.events,
     required this.totalBeats,
     required this.focusBeat,
+    required this.playheadBeat,
     required this.track,
   });
 
   final List<MusicalTimelineEvent> events;
   final double totalBeats;
   final double? focusBeat;
+  final double? playheadBeat;
   final TimelineTrackType track;
 
   @override
@@ -353,9 +407,22 @@ class _TimelineLanePainter extends CustomPainter {
     if (focus != null && totalBeats > 0) {
       final x = focus / totalBeats * size.width;
       final focusPaint = Paint()
-        ..color = AppTheme.accentSecondary.withValues(alpha: 0.92)
-        ..strokeWidth = 1.4;
+        ..color = AppTheme.accentSecondary.withValues(alpha: 0.58)
+        ..strokeWidth = 1.0;
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), focusPaint);
+    }
+
+    final playhead = playheadBeat;
+    if (playhead != null && totalBeats > 0) {
+      final x = (playhead / totalBeats * size.width).clamp(0.0, size.width);
+      final glowPaint = Paint()
+        ..color = AppTheme.accentCyan.withValues(alpha: 0.28)
+        ..strokeWidth = 5;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), glowPaint);
+      final playheadPaint = Paint()
+        ..color = Colors.white.withValues(alpha: 0.96)
+        ..strokeWidth = 1.8;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), playheadPaint);
     }
   }
 
@@ -364,6 +431,7 @@ class _TimelineLanePainter extends CustomPainter {
     return oldDelegate.events != events ||
         oldDelegate.totalBeats != totalBeats ||
         oldDelegate.focusBeat != focusBeat ||
+        oldDelegate.playheadBeat != playheadBeat ||
         oldDelegate.track != track;
   }
 }
