@@ -46,9 +46,9 @@ class ProducerSongVariationSheet extends StatefulWidget {
 
 class _ProducerSongVariationSheetState
     extends State<ProducerSongVariationSheet> {
-  final AudioPlaybackService _audio = AudioPlaybackService.instance;
   final ProducerPreferenceStore _preferences = ProducerPreferenceStore.instance;
 
+  AudioPlaybackService? _audio;
   late final List<ProducerSongVariation> _variations;
   ProducerPreferenceSnapshot _preferenceSnapshot =
       const ProducerPreferenceSnapshot(<ProducerVariationStyle, int>{});
@@ -72,6 +72,7 @@ class _ProducerSongVariationSheetState
 
   @override
   Widget build(BuildContext context) {
+    final audio = _audio;
     return SafeArea(
       top: false,
       child: Container(
@@ -133,26 +134,27 @@ class _ProducerSongVariationSheetState
                       ],
                     ),
                   ),
-                  AnimatedBuilder(
-                    animation: _audio,
-                    builder: (context, _) {
-                      if (!_audio.isTimelinePlayback || !_audio.isPlaying) {
-                        return const SizedBox.shrink();
-                      }
-                      return IconButton(
-                        key: const ValueKey('stopProducerSongPreview'),
-                        tooltip: 'Stop preview',
-                        onPressed: _audio.stop,
-                        icon: const Icon(
-                          Icons.stop_circle_rounded,
-                          color: AppTheme.accentPink,
-                        ),
-                      );
-                    },
-                  ),
+                  if (audio != null)
+                    AnimatedBuilder(
+                      animation: audio,
+                      builder: (context, _) {
+                        if (!audio.isTimelinePlayback || !audio.isPlaying) {
+                          return const SizedBox.shrink();
+                        }
+                        return IconButton(
+                          key: const ValueKey('stopProducerSongPreview'),
+                          tooltip: 'Stop preview',
+                          onPressed: _stopPreview,
+                          icon: const Icon(
+                            Icons.stop_circle_rounded,
+                            color: AppTheme.accentPink,
+                          ),
+                        );
+                      },
+                    ),
                   IconButton(
                     tooltip: 'Close',
-                    onPressed: () => Navigator.of(context).pop(),
+                    onPressed: _close,
                     icon: const Icon(
                       Icons.close_rounded,
                       color: AppTheme.textSecondary,
@@ -180,13 +182,14 @@ class _ProducerSongVariationSheetState
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
                       itemBuilder: (context, index) {
                         final variation = _variations[index];
+                        final previewing = _previewStyle == variation.style &&
+                            (audio?.isTimelinePlayback ?? false) &&
+                            (audio?.isPlaying ?? false);
                         return _SongVariationCard(
                           variation: variation,
                           selected: widget.songSession.activeProducerSongStyle ==
                               variation.style,
-                          previewing: _previewStyle == variation.style &&
-                              _audio.isTimelinePlayback &&
-                              _audio.isPlaying,
+                          previewing: previewing,
                           tasteCount:
                               _preferenceSnapshot.countFor(variation.style),
                           tasteLeader:
@@ -204,18 +207,36 @@ class _ProducerSongVariationSheetState
   }
 
   Future<void> _preview(ProducerSongVariation variation) async {
-    final switching = _audio.isTimelinePlayback && _audio.isPlaying;
-    final currentBeat = switching ? _audio.songBeat : 0.0;
+    final audio = _audio ??= AudioPlaybackService.instance;
+    final switching = audio.isTimelinePlayback && audio.isPlaying;
+    final currentBeat = switching ? audio.songBeat : 0.0;
     final startBeat = currentBeat
         .clamp(0.0, variation.timeline.totalBeats)
         .toDouble();
-    _audio.setBpm(widget.appState.tempo);
-    await _audio.playFullSong(
+    audio.setBpm(widget.appState.tempo);
+    await audio.playFullSong(
       variation.timeline,
       startBeat: startBeat,
     );
     if (!mounted) return;
     setState(() => _previewStyle = variation.style);
+  }
+
+  Future<void> _stopPreview() async {
+    final audio = _audio;
+    if (audio == null) return;
+    await audio.stop();
+    if (!mounted) return;
+    setState(() => _previewStyle = null);
+  }
+
+  Future<void> _close() async {
+    final audio = _audio;
+    if (audio != null && audio.isPlaying) {
+      await audio.stop();
+    }
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   Future<void> _use(ProducerSongVariation variation) async {
@@ -274,7 +295,8 @@ class _SongVariationCard extends StatelessWidget {
                 ? AppTheme.accentPrimary.withValues(alpha: 0.17)
                 : AppTheme.bgSecondary,
             AppTheme.bgSecondary,
-            _styleColor(variation.style).withValues(alpha: selected ? 0.08 : 0.025),
+            _styleColor(variation.style)
+                .withValues(alpha: selected ? 0.08 : 0.025),
           ],
         ),
         borderRadius: BorderRadius.circular(18),
@@ -394,7 +416,9 @@ class _SongVariationCard extends StatelessWidget {
                   key: ValueKey('previewSong-${variation.style.name}'),
                   onPressed: onPreview,
                   icon: Icon(
-                    previewing ? Icons.graphic_eq_rounded : Icons.play_arrow_rounded,
+                    previewing
+                        ? Icons.graphic_eq_rounded
+                        : Icons.play_arrow_rounded,
                     size: 17,
                   ),
                   label: Text(previewing ? 'Playing' : 'Preview'),
