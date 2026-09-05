@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -6,7 +7,7 @@ import 'package:groovy_chord_generator/engine/song_timeline.dart';
 import 'package:groovy_chord_generator/engine/timeline_playback_plan.dart';
 import 'package:groovy_chord_generator/models/types.dart';
 import 'package:groovy_chord_generator/providers/song_session_controller.dart';
-import 'package:groovy_chord_generator/services/audio_playback_service.dart';
+import 'package:groovy_chord_generator/services/timeline_transport.dart';
 import 'package:groovy_chord_generator/widgets/full_song_transport.dart';
 
 SongRequest _request({int seed = 450001}) => SongRequest(
@@ -26,6 +27,141 @@ SongRequest _request({int seed = 450001}) => SongRequest(
       includeMelody: true,
       includeBass: true,
     );
+
+class _FakeTimelineTransport extends ChangeNotifier
+    implements TimelineTransport {
+  bool _isPlaying = false;
+  bool _isTimelinePlayback = false;
+  bool _looping = false;
+  int _bpm = 96;
+  double _songBeat = 0;
+  double _rangeStart = 0;
+  double _rangeEnd = 0;
+  String? _activeSectionId;
+  final Set<TimelineTrackType> _muted = <TimelineTrackType>{};
+  final Set<TimelineTrackType> _solo = <TimelineTrackType>{};
+
+  @override
+  bool get isPlaying => _isPlaying;
+  @override
+  bool get isTimelinePlayback => _isTimelinePlayback;
+  @override
+  bool get looping => _looping;
+  @override
+  int get bpm => _bpm;
+  @override
+  double get songBeat => _songBeat;
+  @override
+  double get timelineRangeStart => _rangeStart;
+  @override
+  double get timelineRangeEnd => _rangeEnd;
+  @override
+  String? get activeSectionId => _activeSectionId;
+
+  @override
+  bool isTrackMuted(TimelineTrackType track) => _muted.contains(track);
+  @override
+  bool isTrackSoloed(TimelineTrackType track) => _solo.contains(track);
+
+  @override
+  void setBpm(int value) {
+    _bpm = value.clamp(55, 180);
+    notifyListeners();
+  }
+
+  @override
+  void setLooping(bool value) {
+    _looping = value;
+    notifyListeners();
+  }
+
+  @override
+  void setTrackMuted(TimelineTrackType track, bool muted) {
+    muted ? _muted.add(track) : _muted.remove(track);
+    notifyListeners();
+  }
+
+  @override
+  void setTrackSoloed(TimelineTrackType track, bool soloed) {
+    soloed ? _solo.add(track) : _solo.remove(track);
+    notifyListeners();
+  }
+
+  @override
+  void clearTrackMix() {
+    _muted.clear();
+    _solo.clear();
+    notifyListeners();
+  }
+
+  @override
+  Future<void> playFullSong(
+    SongTimeline timeline, {
+    double startBeat = 0,
+  }) async {
+    _isPlaying = true;
+    _isTimelinePlayback = true;
+    _looping = false;
+    _songBeat = startBeat;
+    _rangeStart = 0;
+    _rangeEnd = timeline.totalBeats;
+    _activeSectionId = timeline.sectionAtBeat(startBeat)?.id;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> playSection(
+    SongTimeline timeline,
+    String sectionId, {
+    bool loop = false,
+    double? startBeat,
+  }) async {
+    final section = timeline.sectionById(sectionId);
+    if (section == null) return;
+    _isPlaying = true;
+    _isTimelinePlayback = true;
+    _looping = loop;
+    _rangeStart = section.startBeat;
+    _rangeEnd = section.endBeat;
+    _songBeat = startBeat ?? section.startBeat;
+    _activeSectionId = section.id;
+    notifyListeners();
+  }
+
+  @override
+  Future<void> seekTimeline(
+    SongTimeline timeline,
+    double beat, {
+    bool resume = true,
+  }) async {
+    _songBeat = beat.clamp(0.0, timeline.totalBeats).toDouble();
+    _activeSectionId = timeline.sectionAtBeat(
+      _songBeat == timeline.totalBeats && _songBeat > 0
+          ? _songBeat - 0.000001
+          : _songBeat,
+    )?.id;
+    if (resume) {
+      _isPlaying = true;
+      _isTimelinePlayback = true;
+      _rangeStart = 0;
+      _rangeEnd = timeline.totalBeats;
+    }
+    notifyListeners();
+  }
+
+  @override
+  Future<void> stop({bool resetTimelinePosition = true}) async {
+    _isPlaying = false;
+    _isTimelinePlayback = false;
+    _activeSectionId = null;
+    if (resetTimelinePosition) {
+      _songBeat = 0;
+      _rangeStart = 0;
+      _rangeEnd = 0;
+    }
+    notifyListeners();
+  }
+}
 
 void main() {
   group('Phase 4.5 full-song playback planning', () {
@@ -50,7 +186,8 @@ void main() {
     });
 
     test('mute and solo filtering follow mixer semantics', () {
-      final session = SongSessionController()..generate(request: _request(seed: 450002));
+      final session = SongSessionController()
+        ..generate(request: _request(seed: 450002));
       final timeline = session.currentTimeline!;
       const planner = TimelinePlaybackPlanner();
 
@@ -73,11 +210,13 @@ void main() {
     });
 
     test('seeking into a sustained event clips only the playback manifest', () {
-      final session = SongSessionController()..generate(request: _request(seed: 450003));
+      final session = SongSessionController()
+        ..generate(request: _request(seed: 450003));
       final timeline = session.currentTimeline!;
       const planner = TimelinePlaybackPlanner();
       final source = timeline.eventsForTrack(TimelineTrackType.harmony).first;
-      final performedStart = source.performedStartBeat.clamp(0.0, timeline.totalBeats);
+      final performedStart =
+          source.performedStartBeat.clamp(0.0, timeline.totalBeats);
       final seekBeat = performedStart + (source.performedDurationBeats * 0.5);
 
       final plan = planner.build(
@@ -85,17 +224,18 @@ void main() {
         startBeat: seekBeat,
         endBeat: seekBeat + 1,
       );
-      final clipped = plan.events.where((event) => identical(event.source, source)).first;
+      final clipped =
+          plan.events.where((event) => identical(event.source, source)).first;
 
       expect(clipped.startBeat, closeTo(seekBeat, 0.000001));
       expect(clipped.durationBeats, lessThan(source.performedDurationBeats));
-      // Canonical composition data must remain untouched by seeking.
       expect(source.startBeat, 0);
       expect(source.durationBeats, greaterThan(0));
     });
 
     test('section playback plan never escapes the selected section', () {
-      final session = SongSessionController()..generate(request: _request(seed: 450004));
+      final session = SongSessionController()
+        ..generate(request: _request(seed: 450004));
       final timeline = session.currentTimeline!;
       const planner = TimelinePlaybackPlanner();
       final section = timeline.sectionById('chorus-1')!;
@@ -113,10 +253,9 @@ void main() {
 
     testWidgets('full-song transport stays compact and navigates sections',
         (tester) async {
-      final session = SongSessionController()..generate(request: _request(seed: 450005));
-      final audio = AudioPlaybackService.instance;
-      audio.setLooping(false);
-      audio.clearTrackMix();
+      final session = SongSessionController()
+        ..generate(request: _request(seed: 450005));
+      final transport = _FakeTimelineTransport();
 
       await tester.pumpWidget(
         MaterialApp(
@@ -124,7 +263,10 @@ void main() {
             body: Center(
               child: SizedBox(
                 width: 360,
-                child: FullSongTransport(session: session),
+                child: FullSongTransport(
+                  session: session,
+                  transport: transport,
+                ),
               ),
             ),
           ),
@@ -132,7 +274,10 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.byKey(const ValueKey<String>('full-song-transport')), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey<String>('full-song-transport')),
+        findsOneWidget,
+      );
       expect(find.byKey(const ValueKey<String>('song-seek-slider')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('song-play-stop')), findsOneWidget);
       expect(find.byKey(const ValueKey<String>('song-play-section')), findsOneWidget);
@@ -145,13 +290,11 @@ void main() {
       await tester.tap(find.byKey(const ValueKey<String>('song-next-section')));
       await tester.pumpAndSettle();
       expect(session.selectedSectionId, 'verse-1');
+      expect(transport.songBeat, 16);
 
       await tester.tap(find.byKey(const ValueKey<String>('song-section-loop')));
       await tester.pumpAndSettle();
-      expect(audio.looping, isTrue);
-
-      audio.setLooping(false);
-      audio.clearTrackMix();
+      expect(transport.looping, isTrue);
     });
   });
 }
