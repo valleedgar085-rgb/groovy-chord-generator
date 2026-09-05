@@ -8,6 +8,7 @@ import '../providers/app_state.dart';
 import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
 import 'producer_analysis_sheet.dart';
+import 'producer_variation_sheet.dart';
 import 'song_composer_sheet.dart';
 
 class ProducerBrainPanel extends StatelessWidget {
@@ -46,6 +47,7 @@ class ProducerBrainPanel extends StatelessWidget {
           )
         : ProducerAnalysis.empty();
     final decision = hasProgression ? ProducerBrainTelemetry.instance.latest : null;
+    final activeCandidate = decision?.activeCandidate;
     final score = analysis.overallScore.clamp(0.0, 100.0).toDouble();
     final scoreColor = hasProgression ? _scoreColor(score) : AppTheme.textMuted;
     final songSession = context.watch<SongSessionController>();
@@ -132,6 +134,53 @@ class ProducerBrainPanel extends StatelessWidget {
               },
             ),
           ),
+          if (decision != null && decision.variations.isNotEmpty) ...[
+            const SizedBox(width: 7),
+            Tooltip(
+              message: 'Preview and choose Producer A/B/C',
+              child: InkWell(
+                key: const ValueKey('producerVariantsButton'),
+                onTap: () => ProducerVariationSheet.open(
+                  context,
+                  appState: appState,
+                  decision: decision,
+                ),
+                borderRadius: BorderRadius.circular(11),
+                child: Container(
+                  width: 40,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentPink.withValues(alpha: 0.10),
+                    borderRadius: BorderRadius.circular(11),
+                    border: Border.all(
+                      color: AppTheme.accentPink.withValues(alpha: 0.25),
+                    ),
+                  ),
+                  child: const Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.compare_arrows_rounded,
+                        size: 14,
+                        color: AppTheme.accentPink,
+                      ),
+                      SizedBox(height: 1),
+                      Text(
+                        'A/B/C',
+                        style: TextStyle(
+                          fontSize: 5.8,
+                          height: 1,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.35,
+                          color: AppTheme.textMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
           const SizedBox(width: 8),
           Tooltip(
             message: hasProgression
@@ -179,18 +228,22 @@ class ProducerBrainPanel extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 3),
-                      if (decision != null)
+                      if (activeCandidate != null)
                         Text(
-                          decision.winner.wasRefined
-                              ? '${decision.winner.variationStyle.label} +${decision.scoreDelta.toStringAsFixed(1)}'
-                              : 'RAW WIN',
+                          decision!.isSelected(decision.winner)
+                              ? (decision.winner.wasRefined
+                                  ? '${decision.winner.variationStyle.label} +${decision.scoreDelta.toStringAsFixed(1)}'
+                                  : 'BRAIN PICK')
+                              : '${activeCandidate.variationStyle.label} PICK',
                           maxLines: 1,
                           overflow: TextOverflow.fade,
                           softWrap: false,
                           style: TextStyle(
-                            color: decision.improved
-                                ? AppTheme.accentCyan
-                                : AppTheme.textMuted,
+                            color: decision.isSelected(decision.winner)
+                                ? (decision.improved
+                                    ? AppTheme.accentCyan
+                                    : AppTheme.textMuted)
+                                : AppTheme.accentPink,
                             fontSize: 6.5,
                             fontWeight: FontWeight.w900,
                             letterSpacing: 0.35,
