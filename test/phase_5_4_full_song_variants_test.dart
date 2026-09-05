@@ -188,10 +188,10 @@ SongSessionController _session() {
 
 String _songSignature(ProducerSongVariation variation) => variation.draft.sections
     .map((section) =>
-        '${section.plan.id}:${section.progression.map((chord) => '${chord.root}/${chord.type.name}/${chord.degree}').join(',')}:${section.melody.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}:${section.bass.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}')
+        '${section.plan.id}:${section.progression.map((chord) => '${chord.root}/${chord.type}/${chord.degree}').join(',')}:${section.melody.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}:${section.bass.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}')
     .join('|');
 
 String _draftSignature(SongSessionController session) => session.currentDraft!.sections
     .map((section) =>
-        '${section.plan.id}:${section.progression.map((chord) => '${chord.root}/${chord.type.name}/${chord.degree}').join(',')}:${section.melody.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}:${section.bass.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}')
+        '${section.plan.id}:${section.progression.map((chord) => '${chord.root}/${chord.type}/${chord.degree}').join(',')}:${section.melody.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}:${section.bass.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}')
     .join('|');
