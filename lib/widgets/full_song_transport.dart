@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../engine/song_timeline.dart';
 import '../providers/song_session_controller.dart';
-import '../services/audio_playback_service.dart';
+import '../services/timeline_transport.dart';
 import '../utils/theme.dart';
 import 'studio_sound_sheet.dart';
 
@@ -13,25 +13,36 @@ class FullSongTransport extends StatefulWidget {
   const FullSongTransport({
     super.key,
     required this.session,
+    required this.transport,
   });
 
   final SongSessionController session;
+  final TimelineTransport transport;
 
   @override
   State<FullSongTransport> createState() => _FullSongTransportState();
 }
 
 class _FullSongTransportState extends State<FullSongTransport> {
-  final AudioPlaybackService _audio = AudioPlaybackService.instance;
   double? _scrubBeat;
   String? _lastSyncedSection;
 
   SongSessionController get session => widget.session;
+  TimelineTransport get _audio => widget.transport;
 
   @override
   void initState() {
     super.initState();
     _audio.addListener(_refresh);
+  }
+
+  @override
+  void didUpdateWidget(covariant FullSongTransport oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.transport, widget.transport)) {
+      oldWidget.transport.removeListener(_refresh);
+      widget.transport.addListener(_refresh);
+    }
   }
 
   @override
@@ -430,7 +441,7 @@ class _TrackMixControl extends StatelessWidget {
 
   final String label;
   final TimelineTrackType track;
-  final AudioPlaybackService audio;
+  final TimelineTransport audio;
 
   @override
   Widget build(BuildContext context) {
