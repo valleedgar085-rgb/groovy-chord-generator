@@ -9,8 +9,9 @@ import 'song_memory.dart';
 ///
 /// Phase 5.8A extends the original section-level memory with phrase-sized
 /// fingerprints across the full section, explicit ancestry, similarity
-/// guardrails and a song-level Musical DNA profile. It remains a pure observer:
-/// capture never mutates generated music.
+/// guardrails and a song-level Musical DNA profile. Phase 5.8B aligns phrase
+/// windows to harmonic/timeline position so composition and analysis agree on
+/// the exact musical sentence boundaries.
 class SongMemoryExtractor {
   const SongMemoryExtractor({
     this.motifNoteLimit = 8,
@@ -105,25 +106,30 @@ class SongMemoryExtractor {
     final phraseCount =
         ((section.plan.bars + barsPerPhrase - 1) ~/ barsPerPhrase).clamp(1, 64);
     final melody = section.melody;
-    final totalDuration = melody.fold<double>(
-      0.0,
-      (sum, note) => sum + note.duration.clamp(0.0, 64.0),
-    );
+    final chordCount = section.progression.length;
     final buckets = List<List<MelodyNote>>.generate(
       phraseCount,
       (_) => <MelodyNote>[],
       growable: false,
     );
 
-    if (melody.isNotEmpty && totalDuration > 0.0) {
-      var cursor = 0.0;
+    // Timeline playback gives every harmony slot an equal share of the section
+    // and then normalizes note durations inside that slot. Phrase memory must
+    // therefore use harmonic position, not the raw sum of note.duration values.
+    // This keeps Phrase Composer, Song Memory, playback and future repair on the
+    // same exact sentence boundaries.
+    if (melody.isNotEmpty) {
       for (final note in melody) {
-        final safeDuration = note.duration.clamp(0.0, 64.0).toDouble();
-        final midpoint = cursor + safeDuration * 0.5;
-        final normalized = (midpoint / totalDuration).clamp(0.0, 0.999999);
-        final bucketIndex = (normalized * phraseCount).floor().clamp(0, phraseCount - 1);
+        if (chordCount <= 0) {
+          buckets.first.add(note);
+          continue;
+        }
+        final safeChord = note.chordIndex.clamp(0, chordCount - 1).toInt();
+        final normalized =
+            ((safeChord + 0.5) / chordCount.toDouble()).clamp(0.0, 0.999999);
+        final bucketIndex =
+            (normalized * phraseCount).floor().clamp(0, phraseCount - 1).toInt();
         buckets[bucketIndex].add(note);
-        cursor += safeDuration;
       }
     }
 

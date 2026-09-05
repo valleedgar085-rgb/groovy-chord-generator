@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../models/types.dart';
 import '../utils/music_theory.dart';
+import 'phrase_composer.dart';
 import 'seeded_harmony_builder.dart';
 import 'seeded_music_generation.dart';
 import 'song_architect.dart';
@@ -16,22 +17,26 @@ import 'song_section_candidate_pool.dart';
 /// This class deliberately has no Flutter/provider dependency. It composes the
 /// arrangement with [SongArchitect], builds harmony through the same
 /// [SeededHarmonyBuilder] used by single-progression generation, then attaches
-/// deterministic melody, bass, and performance metadata per section.
+/// deterministic phrase-first melody, bass, and performance metadata per
+/// section.
 class ProducerSongComposer {
   ProducerSongComposer({
     SongArchitect? architect,
     SongSectionCandidatePool? candidatePool,
     SeededHarmonyBuilder? harmonyBuilder,
     SeededMusicGeneration? generation,
+    PhraseComposer? phraseComposer,
   })  : _architect = architect ?? SongArchitect(),
         _candidatePool = candidatePool ?? SongSectionCandidatePool(),
         _harmonyBuilder = harmonyBuilder ?? const SeededHarmonyBuilder(),
-        _generation = generation ?? const SeededMusicGeneration();
+        _generation = generation ?? const SeededMusicGeneration(),
+        _phraseComposer = phraseComposer ?? const PhraseComposer();
 
   final SongArchitect _architect;
   final SongSectionCandidatePool _candidatePool;
   final SeededHarmonyBuilder _harmonyBuilder;
   final SeededMusicGeneration _generation;
+  final PhraseComposer _phraseComposer;
 
   SongDraft compose({
     required SongRequest request,
@@ -64,6 +69,7 @@ class ProducerSongComposer {
 
     var completed = harmonyDraft;
     for (final section in harmonyDraft.sections) {
+      final repetitionSource = _priorRepetitionReference(completed, section.plan);
       completed = completed.withSection(
         _decorateSection(
           request: request,
@@ -72,6 +78,7 @@ class ProducerSongComposer {
           bassStyle: bassStyle,
           bassVariety: bassVariety,
           grooveTemplate: grooveTemplate,
+          repetitionSource: repetitionSource,
         ),
       );
     }
@@ -111,9 +118,9 @@ class ProducerSongComposer {
     );
     final sectionSeed = regenerationPlan.sectionSeed(sectionId);
     final previousProgression = draft.previousProgressionFor(sectionId);
+    final repetitionSource = _priorRepetitionReference(draft, sectionPlan);
     final repetitionReference =
-        _priorRepetitionReference(draft, sectionPlan)?.progression ??
-            const <Chord>[];
+        repetitionSource?.progression ?? const <Chord>[];
 
     final winner = _candidatePool.generateBest(
       request: request,
@@ -145,6 +152,7 @@ class ProducerSongComposer {
       bassStyle: bassStyle,
       bassVariety: bassVariety,
       grooveTemplate: grooveTemplate,
+      repetitionSource: repetitionSource,
     );
   }
 
@@ -155,6 +163,7 @@ class ProducerSongComposer {
     required BassStyle bassStyle,
     required int bassVariety,
     required GrooveTemplate grooveTemplate,
+    GeneratedSongSection? repetitionSource,
   }) {
     final sectionRequest = request.copyWith(
       seed: sectionSeed,
@@ -173,13 +182,19 @@ class ProducerSongComposer {
     );
 
     final melody = request.includeMelody
-        ? _generation.generateMelody(
-            random: Random(sectionRequest.melodySeed),
-            progression: progression,
-            genre: request.genre,
-            rhythm: request.rhythm,
-            key: request.key,
-          )
+        ? _phraseComposer
+            .compose(
+              random: Random(sectionRequest.melodySeed),
+              progression: progression,
+              genre: request.genre,
+              rhythm: request.rhythm,
+              key: request.key,
+              section: section.plan,
+              sourceMelody:
+                  repetitionSource?.melody ?? const <MelodyNote>[],
+              sourceChordCount: repetitionSource?.progression.length ?? 0,
+            )
+            .melody
         : const <MelodyNote>[];
     final bass = request.includeBass
         ? _generation.generateBass(
@@ -216,7 +231,7 @@ class ProducerSongComposer {
       final planSection = draft.plan.sections[i];
       if (planSection.repetitionGroup != group) continue;
       final generated = draft.sectionById(planSection.id);
-      if (generated != null) return generated;
+      if (generated != null && generated.melody.isNotEmpty) return generated;
     }
     return null;
   }
