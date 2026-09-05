@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/app_state.dart';
+import 'providers/create_mode_controller.dart';
 import 'providers/song_session_controller.dart';
 import 'screens/home_screen.dart';
 import 'services/auth_service.dart';
@@ -16,7 +17,6 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await FullscreenService.enableImmersive();
 
-  // Initialize Firebase with web-specific handling.
   try {
     await FirebaseService.initialize();
     await AuthService.signInAnonymously();
@@ -45,6 +45,9 @@ class GroovyChordGeneratorApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (_) => SongSessionController(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => CreateModeController(),
         ),
       ],
       child: FullscreenLifecycle(

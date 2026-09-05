@@ -6,10 +6,13 @@ import 'package:provider/provider.dart';
 
 import '../models/types.dart';
 import '../providers/app_state.dart';
+import '../providers/create_mode_controller.dart';
 import '../providers/song_session_controller.dart';
+import '../services/audio_timeline_transport.dart';
 import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
+import '../widgets/full_song_transport.dart';
 import '../widgets/header.dart';
 import '../widgets/performance_controls.dart';
 import '../widgets/producer_brain_panel.dart';
@@ -28,6 +31,9 @@ class HomeScreen extends StatelessWidget {
     return Consumer<AppState>(
       builder: (context, appState, child) {
         final isGenerator = appState.currentTab == TabName.generator;
+        final createMode = context.watch<CreateModeController>();
+        final showSongWorkspace = isGenerator && createMode.isFullSong;
+        final transport = isGenerator ? AudioTimelineTransport.instance : null;
 
         return Scaffold(
           extendBody: true,
@@ -68,28 +74,38 @@ class HomeScreen extends StatelessWidget {
                     children: [
                       const AppHeader(),
                       if (isGenerator) ...[
-                        const CreateModePanel(),
+                        CreateModePanel(transport: transport),
                         ProducerBrainPanel(appState: appState),
-                        Consumer<SongSessionController>(
-                          builder: (context, session, _) {
-                            if (!session.hasTimeline) {
-                              return const SizedBox.shrink();
-                            }
-                            return Padding(
-                              padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-                              child: Column(
-                                children: [
-                                  SongTimelinePreview(session: session),
-                                  const SizedBox(height: 6),
-                                  PerformanceControls(session: session),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
+                        if (showSongWorkspace)
+                          Consumer<SongSessionController>(
+                            builder: (context, session, _) {
+                              if (!session.hasTimeline || transport == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Padding(
+                                padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
+                                child: Column(
+                                  children: [
+                                    SongTimelinePreview(
+                                      session: session,
+                                      transport: transport,
+                                    ),
+                                    const SizedBox(height: 6),
+                                    PerformanceControls(session: session),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                       ],
                       Expanded(child: _buildCurrentTab(appState.currentTab)),
-                      const SizedBox(height: 150),
+                      Consumer<SongSessionController>(
+                        builder: (context, session, _) => SizedBox(
+                          height: showSongWorkspace && session.hasTimeline
+                              ? 218
+                              : 150,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -102,7 +118,21 @@ class HomeScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isGenerator)
-                  StudioTransport(progression: appState.currentProgression),
+                  Consumer<SongSessionController>(
+                    builder: (context, session, _) {
+                      if (showSongWorkspace &&
+                          session.hasTimeline &&
+                          transport != null) {
+                        return FullSongTransport(
+                          session: session,
+                          transport: transport,
+                        );
+                      }
+                      return StudioTransport(
+                        progression: appState.currentProgression,
+                      );
+                    },
+                  ),
                 const AppBottomNavigation(),
               ],
             ),

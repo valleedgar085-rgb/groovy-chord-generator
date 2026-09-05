@@ -1,36 +1,38 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../models/constants.dart';
 import '../models/types.dart';
 import '../providers/app_state.dart';
+import '../providers/create_mode_controller.dart';
 import '../providers/song_request_adapter.dart';
 import '../providers/song_session_controller.dart';
+import '../services/timeline_transport.dart';
 import '../utils/music_theory.dart';
 import '../utils/theme.dart';
 import 'song_composer_sheet.dart';
 
-enum CreateMode { progression, fullSong }
-
-/// Primary creation surface for Phase 3.75.
+/// Primary creation surface shared with the app shell.
 ///
-/// The existing Generator remains available underneath while this becomes the
-/// canonical entry point for both quick loops and complete Song Architect runs.
-class CreateModePanel extends StatefulWidget {
-  const CreateModePanel({super.key});
+/// Progression / Full Song mode now lives in [CreateModeController], so the
+/// bottom transport and timeline workspace always match the mode shown here.
+class CreateModePanel extends StatelessWidget {
+  const CreateModePanel({
+    super.key,
+    this.transport,
+  });
 
-  @override
-  State<CreateModePanel> createState() => _CreateModePanelState();
-}
-
-class _CreateModePanelState extends State<CreateModePanel> {
-  CreateMode _mode = CreateMode.progression;
+  /// Optional in tests; production passes the native timeline adapter.
+  final TimelineTransport? transport;
 
   @override
   Widget build(BuildContext context) {
     final appState = context.watch<AppState>();
     final songSession = context.watch<SongSessionController>();
-    final isSong = _mode == CreateMode.fullSong;
+    final modeController = context.watch<CreateModeController>();
+    final isSong = modeController.isFullSong;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(12, 8, 12, 0),
@@ -53,7 +55,10 @@ class _CreateModePanelState extends State<CreateModePanel> {
                   label: 'PROGRESSION',
                   icon: Icons.grid_view_rounded,
                   selected: !isSong,
-                  onTap: () => setState(() => _mode = CreateMode.progression),
+                  onTap: () => _setMode(
+                    modeController,
+                    CreateMode.progression,
+                  ),
                 ),
               ),
               const SizedBox(width: 7),
@@ -63,7 +68,10 @@ class _CreateModePanelState extends State<CreateModePanel> {
                   label: 'FULL SONG',
                   icon: Icons.view_timeline_rounded,
                   selected: isSong,
-                  onTap: () => setState(() => _mode = CreateMode.fullSong),
+                  onTap: () => _setMode(
+                    modeController,
+                    CreateMode.fullSong,
+                  ),
                 ),
               ),
             ],
@@ -110,6 +118,7 @@ class _CreateModePanelState extends State<CreateModePanel> {
                     context,
                     appState,
                     songSession,
+                    isSong: isSong,
                   ),
                   icon: Icon(
                     isSong
@@ -151,6 +160,7 @@ class _CreateModePanelState extends State<CreateModePanel> {
                   child: IconButton.filledTonal(
                     key: const Key('create-new-song-take'),
                     onPressed: () {
+                      _cancelPlayback();
                       _generateSong(appState, songSession);
                       SongComposerSheet.open(context);
                     },
@@ -171,20 +181,36 @@ class _CreateModePanelState extends State<CreateModePanel> {
     );
   }
 
+  void _setMode(CreateModeController controller, CreateMode mode) {
+    if (controller.mode == mode) return;
+    _cancelPlayback();
+    controller.setMode(mode);
+  }
+
   void _runPrimaryAction(
     BuildContext context,
     AppState appState,
-    SongSessionController songSession,
-  ) {
-    if (_mode == CreateMode.progression) {
+    SongSessionController songSession, {
+    required bool isSong,
+  }) {
+    if (!isSong) {
+      _cancelPlayback();
       appState.generateProgression();
       return;
     }
 
     if (!songSession.hasSong) {
+      _cancelPlayback();
       _generateSong(appState, songSession);
     }
     SongComposerSheet.open(context);
+  }
+
+  void _cancelPlayback() {
+    final liveTransport = transport;
+    if (liveTransport != null && liveTransport.isPlaying) {
+      unawaited(liveTransport.stop());
+    }
   }
 
   void _generateSong(
