@@ -1,7 +1,7 @@
 name: groovy_chord_generator
 description: Create amazing chord progressions for any genre - A mobile-optimized music creation tool
 publish_to: 'none'
-version: 2.9.0+8
+version: 2.9.1+9
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
