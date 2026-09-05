@@ -1,6 +1,5 @@
-// Groovy Chord Generator
-// Control Dropdown Widget
-// Version 2.5
+// Chord Flow
+// Crash-safe control dropdown
 
 import 'package:flutter/material.dart';
 import '../utils/theme.dart';
@@ -21,6 +20,9 @@ class ControlDropdown<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final matches = items.where((item) => item.value == value).length;
+    final safeValue = matches == 1 ? value : null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -28,36 +30,44 @@ class ControlDropdown<T> extends StatelessWidget {
           label.toUpperCase(),
           style: const TextStyle(
             fontSize: 10,
-            fontWeight: FontWeight.w500,
+            fontWeight: FontWeight.w700,
             color: AppTheme.textMuted,
-            letterSpacing: 0.5,
+            letterSpacing: 0.65,
           ),
         ),
         const SizedBox(height: AppTheme.spacingXs),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppTheme.spacingMd,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             color: AppTheme.bgTertiary,
-            borderRadius: BorderRadius.circular(AppTheme.borderRadiusSm),
-            border: Border.all(color: AppTheme.borderColor),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: safeValue == null
+                  ? AppTheme.warning.withValues(alpha: 0.65)
+                  : AppTheme.borderColor,
+            ),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<T>(
-              value: value,
+              value: safeValue,
+              hint: Text(
+                'Select $label',
+                style: const TextStyle(color: AppTheme.textMuted),
+              ),
               items: items,
               onChanged: onChanged,
               isExpanded: true,
-              dropdownColor: AppTheme.bgTertiary,
+              borderRadius: BorderRadius.circular(14),
+              dropdownColor: AppTheme.bgElevated,
               style: const TextStyle(
                 fontSize: 14,
+                fontWeight: FontWeight.w700,
                 color: AppTheme.textPrimary,
               ),
               icon: const Icon(
-                Icons.arrow_drop_down,
-                color: AppTheme.textSecondary,
+                Icons.keyboard_arrow_down_rounded,
+                color: AppTheme.accentCyan,
               ),
             ),
           ),
