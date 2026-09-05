@@ -35,10 +35,13 @@ class ProducerBrainTelemetry {
       return null;
     }
 
+    final polished = bestFor(ProducerVariationStyle.polished);
+    final creative = bestFor(ProducerVariationStyle.creative);
+    final hook = bestFor(ProducerVariationStyle.hook);
     final variations = <SongCandidate>[
-      if (bestFor(ProducerVariationStyle.polished) case final value?) value,
-      if (bestFor(ProducerVariationStyle.creative) case final value?) value,
-      if (bestFor(ProducerVariationStyle.hook) case final value?) value,
+      if (polished != null) polished,
+      if (creative != null) creative,
+      if (hook != null) hook,
     ];
 
     latest = ProducerDecisionSnapshot(
