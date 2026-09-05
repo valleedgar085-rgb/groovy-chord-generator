@@ -72,7 +72,8 @@ class _FullSongTransportState extends State<FullSongTransport> {
     final currentBar = timeline.totalBars <= 0
         ? 0
         : ((beat / timeline.beatsPerBar).floor() + 1)
-            .clamp(1, timeline.totalBars.ceil());
+            .clamp(1, timeline.totalBars.ceil())
+            .toInt();
     final totalBars = timeline.totalBars.ceil();
 
     return Container(
@@ -101,12 +102,12 @@ class _FullSongTransportState extends State<FullSongTransport> {
         mainAxisSize: MainAxisSize.min,
         children: [
           _nowPlayingRow(section.id, currentBar, totalBars),
-          const SizedBox(height: 5),
+          const SizedBox(height: 3),
           _seekRow(timeline, beat),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           _transportRow(timeline, section),
-          const SizedBox(height: 7),
-          _trackMixRow(),
+          const SizedBox(height: 5),
+          _tempoAndTrackRow(),
         ],
       ),
     );
@@ -135,20 +136,23 @@ class _FullSongTransportState extends State<FullSongTransport> {
           ),
         ),
         const SizedBox(width: 7),
-        Text(
-          _audio.isTimelinePlayback && _audio.isPlaying
-              ? 'PLAYING  ${_sectionLabel(sectionId)}'
-              : 'FULL SONG',
-          style: const TextStyle(
-            color: AppTheme.textPrimary,
-            fontSize: 9,
-            fontWeight: FontWeight.w900,
-            letterSpacing: 0.8,
+        Expanded(
+          child: Text(
+            _audio.isTimelinePlayback && _audio.isPlaying
+                ? 'PLAYING  ${_sectionLabel(sectionId)}'
+                : 'FULL SONG',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 9,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.8,
+            ),
           ),
         ),
-        const Spacer(),
         Text(
-          'BAR $currentBar/$totalBars  •  ${_audio.bpm} BPM',
+          'BAR $currentBar/$totalBars',
           style: const TextStyle(
             color: AppTheme.textMuted,
             fontSize: 8,
@@ -161,7 +165,7 @@ class _FullSongTransportState extends State<FullSongTransport> {
 
   Widget _seekRow(SongTimeline timeline, double beat) {
     return SizedBox(
-      height: 27,
+      height: 25,
       child: Row(
         children: [
           const Text(
@@ -217,6 +221,7 @@ class _FullSongTransportState extends State<FullSongTransport> {
   Widget _transportRow(SongTimeline timeline, TimelineSection currentSection) {
     final selected = session.selectedTimelineSection ?? currentSection;
     return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _TransportIconButton(
           key: const ValueKey<String>('song-prev-section'),
@@ -224,7 +229,7 @@ class _FullSongTransportState extends State<FullSongTransport> {
           tooltip: 'Previous section',
           onTap: () => _jumpSection(timeline, -1),
         ),
-        const SizedBox(width: 5),
+        const SizedBox(width: 6),
         _TransportIconButton(
           key: const ValueKey<String>('song-play-stop'),
           icon: _audio.isTimelinePlayback && _audio.isPlaying
@@ -247,14 +252,14 @@ class _FullSongTransportState extends State<FullSongTransport> {
             }
           },
         ),
-        const SizedBox(width: 5),
+        const SizedBox(width: 6),
         _TransportIconButton(
           key: const ValueKey<String>('song-next-section'),
           icon: Icons.skip_next_rounded,
           tooltip: 'Next section',
           onTap: () => _jumpSection(timeline, 1),
         ),
-        const SizedBox(width: 7),
+        const SizedBox(width: 12),
         _TransportIconButton(
           key: const ValueKey<String>('song-play-section'),
           icon: Icons.playlist_play_rounded,
@@ -271,7 +276,7 @@ class _FullSongTransportState extends State<FullSongTransport> {
             ),
           ),
         ),
-        const SizedBox(width: 5),
+        const SizedBox(width: 6),
         _TransportIconButton(
           key: const ValueKey<String>('song-section-loop'),
           icon: Icons.repeat_one_rounded,
@@ -289,28 +294,7 @@ class _FullSongTransportState extends State<FullSongTransport> {
             }
           },
         ),
-        const Spacer(),
-        _TempoButton(
-          icon: Icons.remove_rounded,
-          onTap: () => _audio.setBpm(_audio.bpm - 1),
-        ),
-        SizedBox(
-          width: 38,
-          child: Text(
-            '${_audio.bpm}',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: AppTheme.textPrimary,
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-        ),
-        _TempoButton(
-          icon: Icons.add_rounded,
-          onTap: () => _audio.setBpm(_audio.bpm + 1),
-        ),
-        const SizedBox(width: 5),
+        const SizedBox(width: 12),
         _TransportIconButton(
           icon: Icons.tune_rounded,
           tooltip: 'Studio Sound',
@@ -320,30 +304,54 @@ class _FullSongTransportState extends State<FullSongTransport> {
     );
   }
 
-  Widget _trackMixRow() {
+  Widget _tempoAndTrackRow() {
     return Row(
       children: [
         const Text(
-          'TRACKS',
+          'BPM',
           style: TextStyle(
             color: AppTheme.textMuted,
-            fontSize: 7.2,
+            fontSize: 6.8,
             fontWeight: FontWeight.w900,
-            letterSpacing: 0.7,
           ),
         ),
-        const SizedBox(width: 7),
+        _TempoButton(
+          icon: Icons.remove_rounded,
+          onTap: () => _audio.setBpm(_audio.bpm - 1),
+        ),
+        SizedBox(
+          width: 27,
+          child: Text(
+            '${_audio.bpm}',
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 8.5,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+        ),
+        _TempoButton(
+          icon: Icons.add_rounded,
+          onTap: () => _audio.setBpm(_audio.bpm + 1),
+        ),
+        Container(
+          width: 1,
+          height: 20,
+          margin: const EdgeInsets.symmetric(horizontal: 5),
+          color: AppTheme.borderColor,
+        ),
         Expanded(
           child: Row(
             children: [
               Expanded(
                 child: _TrackMixControl(
-                  label: 'CHORDS',
+                  label: 'CHORD',
                   track: TimelineTrackType.harmony,
                   audio: _audio,
                 ),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 4),
               Expanded(
                 child: _TrackMixControl(
                   label: 'MELODY',
@@ -351,7 +359,7 @@ class _FullSongTransportState extends State<FullSongTransport> {
                   audio: _audio,
                 ),
               ),
-              const SizedBox(width: 5),
+              const SizedBox(width: 4),
               Expanded(
                 child: _TrackMixControl(
                   label: 'BASS',
@@ -362,17 +370,17 @@ class _FullSongTransportState extends State<FullSongTransport> {
             ],
           ),
         ),
-        const SizedBox(width: 6),
+        const SizedBox(width: 4),
         InkWell(
           onTap: _audio.clearTrackMix,
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(7),
           child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+            padding: EdgeInsets.symmetric(horizontal: 4, vertical: 5),
             child: Text(
               'ALL',
               style: TextStyle(
                 color: AppTheme.textMuted,
-                fontSize: 7,
+                fontSize: 6.5,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -386,7 +394,8 @@ class _FullSongTransportState extends State<FullSongTransport> {
     final currentId = _audio.activeSectionId ?? session.selectedSectionId;
     var index = timeline.sections.indexWhere((section) => section.id == currentId);
     if (index < 0) index = 0;
-    final targetIndex = (index + delta).clamp(0, timeline.sections.length - 1);
+    final targetIndex =
+        (index + delta).clamp(0, timeline.sections.length - 1).toInt();
     final target = timeline.sections[targetIndex];
     session.selectSection(target.id);
     if (_audio.isTimelinePlayback && _audio.isPlaying) {
@@ -428,11 +437,11 @@ class _TrackMixControl extends StatelessWidget {
     final muted = audio.isTrackMuted(track);
     final soloed = audio.isTrackSoloed(track);
     return Container(
-      height: 29,
-      padding: const EdgeInsets.only(left: 6, right: 3),
+      height: 27,
+      padding: const EdgeInsets.only(left: 4, right: 2),
       decoration: BoxDecoration(
         color: AppTheme.bgTertiary,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(7),
         border: Border.all(
           color: soloed
               ? AppTheme.warning.withValues(alpha: 0.55)
@@ -450,7 +459,7 @@ class _TrackMixControl extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: muted ? AppTheme.textMuted : AppTheme.textSecondary,
-                fontSize: 6.6,
+                fontSize: 5.8,
                 fontWeight: FontWeight.w900,
               ),
             ),
@@ -490,21 +499,21 @@ class _MixButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(6),
+      borderRadius: BorderRadius.circular(5),
       child: Container(
-        width: 22,
-        height: 22,
-        margin: const EdgeInsets.only(left: 2),
+        width: 18,
+        height: 20,
+        margin: const EdgeInsets.only(left: 1),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: active ? activeColor.withValues(alpha: 0.22) : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
+          borderRadius: BorderRadius.circular(5),
         ),
         child: Text(
           label,
           style: TextStyle(
             color: active ? activeColor : AppTheme.textMuted,
-            fontSize: 7,
+            fontSize: 6.4,
             fontWeight: FontWeight.w900,
           ),
         ),
@@ -535,11 +544,11 @@ class _TransportIconButton extends StatelessWidget {
       message: tooltip,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(11),
         child: AnimatedContainer(
           duration: AppTheme.animationFast,
-          width: prominent ? 43 : 34,
-          height: prominent ? 43 : 34,
+          width: prominent ? 42 : 33,
+          height: prominent ? 42 : 33,
           decoration: BoxDecoration(
             gradient: prominent ? AppTheme.accentGradient : null,
             color: prominent
@@ -547,7 +556,7 @@ class _TransportIconButton extends StatelessWidget {
                 : active
                     ? AppTheme.accentPrimary.withValues(alpha: 0.22)
                     : AppTheme.bgTertiary,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(11),
             border: Border.all(
               color: active
                   ? AppTheme.accentSecondary.withValues(alpha: 0.7)
@@ -556,7 +565,7 @@ class _TransportIconButton extends StatelessWidget {
           ),
           child: Icon(
             icon,
-            size: prominent ? 25 : 18,
+            size: prominent ? 24 : 18,
             color: prominent || active ? Colors.white : AppTheme.textSecondary,
           ),
         ),
@@ -575,11 +584,11 @@ class _TempoButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
+      borderRadius: BorderRadius.circular(7),
       child: SizedBox(
-        width: 24,
-        height: 28,
-        child: Icon(icon, size: 15, color: AppTheme.textMuted),
+        width: 20,
+        height: 26,
+        child: Icon(icon, size: 13, color: AppTheme.textMuted),
       ),
     );
   }
