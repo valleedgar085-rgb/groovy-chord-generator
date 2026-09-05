@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../models/types.dart';
 import '../providers/app_state.dart';
 import '../providers/song_session_controller.dart';
+import '../services/audio_timeline_transport.dart';
 import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
@@ -76,11 +77,15 @@ class HomeScreen extends StatelessWidget {
                             if (!session.hasTimeline) {
                               return const SizedBox.shrink();
                             }
+                            final transport = AudioTimelineTransport.instance;
                             return Padding(
                               padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
                               child: Column(
                                 children: [
-                                  SongTimelinePreview(session: session),
+                                  SongTimelinePreview(
+                                    session: session,
+                                    transport: transport,
+                                  ),
                                   const SizedBox(height: 6),
                                   PerformanceControls(session: session),
                                 ],
@@ -110,7 +115,10 @@ class HomeScreen extends StatelessWidget {
                   Consumer<SongSessionController>(
                     builder: (context, session, _) {
                       if (session.hasTimeline) {
-                        return FullSongTransport(session: session);
+                        return FullSongTransport(
+                          session: session,
+                          transport: AudioTimelineTransport.instance,
+                        );
                       }
                       return StudioTransport(
                         progression: appState.currentProgression,
