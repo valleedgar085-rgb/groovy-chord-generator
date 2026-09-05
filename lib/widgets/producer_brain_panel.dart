@@ -129,10 +129,8 @@ class ProducerBrainPanel extends StatelessWidget {
                   weakestPhrase: weakestPhrase,
                 ),
               ],
-              if (songSession.hasSong) ...[
-                const SizedBox(width: 4),
-                _songButton(context),
-              ],
+              const SizedBox(width: 4),
+              _songButton(context),
               if (songSession.canRegenerateSelected) ...[
                 const SizedBox(width: 4),
                 _regenerateButton(
