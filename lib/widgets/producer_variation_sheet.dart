@@ -297,7 +297,7 @@ class _VariationCard extends StatelessWidget {
                 child: OutlinedButton.icon(
                   key: ValueKey('preview-${candidate.variationStyle.name}'),
                   onPressed: () {
-                    var preview = List.from(candidate.progression);
+                    var preview = candidate.progression.toList(growable: false);
                     if (appState.useVoiceLeading) {
                       preview = applyVoiceLeading(preview);
                     }
