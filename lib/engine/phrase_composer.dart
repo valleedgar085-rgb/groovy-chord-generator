@@ -324,7 +324,10 @@ class PhraseComposer {
     }
     return source.where((note) {
       final normalized = note.chordIndex / sourceChordCount.toDouble();
-      final index = (normalized * phraseCount).floor().clamp(0, phraseCount - 1);
+      final index = (normalized * phraseCount)
+          .floor()
+          .clamp(0, phraseCount - 1)
+          .toInt();
       return index == phraseIndex;
     }).toList(growable: false);
   }
@@ -374,7 +377,7 @@ class PhraseComposer {
       GenreKey.chillLofi => -1,
       _ => 0,
     };
-    return value.clamp(5, 17);
+    return value.clamp(5, 17).toInt();
   }
 
   double _climaxFor(
@@ -414,7 +417,7 @@ class PhraseComposer {
     };
     if (section.type == SongSectionType.chorus) center += 2;
     if (section.type == SongSectionType.outro) center -= 3;
-    return center.clamp(58, 78);
+    return center.clamp(58, 78).toInt();
   }
 
   int _notesForChord(
@@ -427,7 +430,7 @@ class PhraseComposer {
     if (plan.role == PhraseRole.hook && random.nextBool()) count += 1;
     if (plan.role == PhraseRole.release) count = min(count, 2);
     if (genre == GenreKey.funk && random.nextDouble() < 0.45) count += 1;
-    return count.clamp(1, 6);
+    return count.clamp(1, 6).toInt();
   }
 
   double _desiredPitch({
@@ -445,7 +448,7 @@ class PhraseComposer {
     final peakDistance = (clampedPosition - climax).abs();
     final peakShape = (1.0 - peakDistance / max(0.08, max(climax, 1.0 - climax)))
         .clamp(0.0, 1.0);
-    var directional = switch (role) {
+    final directional = switch (role) {
       PhraseRole.question => clampedPosition * 0.55,
       PhraseRole.answer => (1.0 - clampedPosition) * 0.35,
       PhraseRole.lift => clampedPosition * 0.70,
@@ -487,7 +490,9 @@ class PhraseComposer {
         if (pitch >= 52 && pitch <= 91) candidates.add(pitch);
       }
     }
-    if (candidates.isEmpty) return desired.round().clamp(52, 91);
+    if (candidates.isEmpty) {
+      return desired.round().clamp(52, 91).toInt();
+    }
 
     candidates.sort((a, b) {
       double cost(int pitch) {
@@ -624,7 +629,8 @@ class PhraseComposer {
     if (phrase.length < 3) return;
     final targetIndex = ((phrase.length - 1) * plan.climaxPosition)
         .round()
-        .clamp(1, phrase.length - 2);
+        .clamp(1, phrase.length - 2)
+        .toInt();
     final original = phrase[targetIndex];
     if (original.chordIndex < 0 || original.chordIndex >= progression.length) return;
     final chord = progression[original.chordIndex];
