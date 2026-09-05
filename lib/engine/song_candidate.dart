@@ -2,11 +2,18 @@ import '../models/types.dart';
 import 'harmony_engine.dart';
 import 'producer_analysis.dart';
 
-/// Immutable result from one producer-brain candidate pass.
-///
-/// Phase 5.1 keeps the multidimensional analysis alongside the seed and ranking
-/// metadata so candidate decisions can be inspected, compared, and evolved
-/// without recomputing the same musical judgment.
+enum ProducerVariationStyle { raw, polished, creative, hook }
+
+extension ProducerVariationStyleLabel on ProducerVariationStyle {
+  String get label => switch (this) {
+        ProducerVariationStyle.raw => 'RAW',
+        ProducerVariationStyle.polished => 'POLISHED',
+        ProducerVariationStyle.creative => 'CREATIVE',
+        ProducerVariationStyle.hook => 'HOOK',
+      };
+}
+
+/// Immutable result from one Producer Brain candidate pass.
 class SongCandidate {
   SongCandidate({
     required List<Chord> progression,
@@ -15,7 +22,11 @@ class SongCandidate {
     required this.candidateIndex,
     required this.section,
     this.producerAnalysis,
-  }) : progression = List<Chord>.unmodifiable(progression);
+    this.variationStyle = ProducerVariationStyle.raw,
+    this.beforeRefineScore,
+    List<String> repairs = const <String>[],
+  })  : progression = List<Chord>.unmodifiable(progression),
+        repairs = List<String>.unmodifiable(repairs);
 
   final List<Chord> progression;
   final double score;
@@ -23,4 +34,10 @@ class SongCandidate {
   final int candidateIndex;
   final HarmonySection section;
   final ProducerAnalysis? producerAnalysis;
+  final ProducerVariationStyle variationStyle;
+  final double? beforeRefineScore;
+  final List<String> repairs;
+
+  double get scoreDelta => score - (beforeRefineScore ?? score);
+  bool get wasRefined => variationStyle != ProducerVariationStyle.raw;
 }
