@@ -12,6 +12,7 @@ import '../engine/song_memory_extractor.dart';
 import '../engine/song_request.dart';
 import '../engine/song_timeline.dart';
 import '../engine/song_timeline_builder.dart';
+import '../engine/transition_repair_engine.dart';
 import '../models/types.dart';
 
 /// Live full-song state for the application.
@@ -22,18 +23,22 @@ class SongSessionController extends ChangeNotifier {
     SongMemoryExtractor? memoryExtractor,
     SongTimelineBuilder? timelineBuilder,
     ProducerSongVariationEngine? producerVariationEngine,
+    TransitionRepairEngine? transitionRepairEngine,
   })  : _composer = composer ?? ProducerSongComposer(),
         _developmentEngine = developmentEngine ?? SongDevelopmentEngine(),
         _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor(),
         _timelineBuilder = timelineBuilder ?? const SongTimelineBuilder(),
         _producerVariationEngine =
-            producerVariationEngine ?? ProducerSongVariationEngine();
+            producerVariationEngine ?? ProducerSongVariationEngine(),
+        _transitionRepairEngine =
+            transitionRepairEngine ?? const TransitionRepairEngine();
 
   final ProducerSongComposer _composer;
   final SongDevelopmentEngine _developmentEngine;
   final SongMemoryExtractor _memoryExtractor;
   final SongTimelineBuilder _timelineBuilder;
   final ProducerSongVariationEngine _producerVariationEngine;
+  final TransitionRepairEngine _transitionRepairEngine;
 
   SongDraft? _currentDraft;
   SongMemory? _currentMemory;
@@ -51,6 +56,8 @@ class SongSessionController extends ChangeNotifier {
   final Map<String, int> _sectionRevisions = <String, int>{};
   final List<_SectionRegenerationOp> _regenerationOps =
       <_SectionRegenerationOp>[];
+  final Map<String, TransitionRepairStyle> _activeTransitionRepairs =
+      <String, TransitionRepairStyle>{};
 
   SongDraft? get currentDraft => _currentDraft;
   SongMemory? get currentMemory => _currentMemory;
@@ -68,8 +75,16 @@ class SongSessionController extends ChangeNotifier {
 
   Map<String, int> get sectionRevisions =>
       Map<String, int>.unmodifiable(_sectionRevisions);
+  Map<String, TransitionRepairStyle> get activeTransitionRepairs =>
+      Map<String, TransitionRepairStyle>.unmodifiable(_activeTransitionRepairs);
 
   int revisionFor(String sectionId) => _sectionRevisions[sectionId] ?? 0;
+
+  TransitionRepairStyle? transitionRepairFor(
+    String fromSectionId,
+    String toSectionId,
+  ) =>
+      _activeTransitionRepairs[_transitionKey(fromSectionId, toSectionId)];
 
   GeneratedSongSection? get selectedSection {
     final draft = _currentDraft;
@@ -142,6 +157,7 @@ class SongSessionController extends ChangeNotifier {
     _activeProducerSongStyle = null;
     _sectionRevisions.clear();
     _regenerationOps.clear();
+    _activeTransitionRepairs.clear();
     notifyListeners();
   }
 
@@ -179,6 +195,7 @@ class SongSessionController extends ChangeNotifier {
     _producerVariationOriginDraft = updatedDraft;
     _sectionRevisions[targetId] = revision;
     _regenerationOps.add(_SectionRegenerationOp(targetId, revision));
+    _activeTransitionRepairs.clear();
     notifyListeners();
     return true;
   }
@@ -292,6 +309,7 @@ class SongSessionController extends ChangeNotifier {
     _activeProducerSongStyle = variation.style;
     _sectionRevisions.clear();
     _regenerationOps.clear();
+    _activeTransitionRepairs.clear();
 
     if (previouslySelected != null &&
         variation.draft.sectionById(previouslySelected) != null) {
@@ -301,6 +319,58 @@ class SongSessionController extends ChangeNotifier {
           ? null
           : variation.draft.sections.first.plan.id;
     }
+    notifyListeners();
+    return true;
+  }
+
+  /// Generates safe, non-regressing alternatives for one adjacent song handoff.
+  /// This is pure audition state; the live song is untouched until apply.
+  List<TransitionRepairVariant> buildTransitionRepairVariants(
+    String fromSectionId,
+    String toSectionId,
+  ) {
+    final draft = _currentDraft;
+    if (draft == null) return const <TransitionRepairVariant>[];
+    return _transitionRepairEngine.build(
+      draft: draft,
+      fromSectionId: fromSectionId,
+      toSectionId: toSectionId,
+    );
+  }
+
+  /// Commits exactly the already-scored transition repair shown in the UI.
+  /// The repaired draft becomes the deterministic replay/edit baseline so later
+  /// playback or additional repairs do not silently regenerate the boundary.
+  bool applyTransitionRepairVariant(TransitionRepairVariant variant) {
+    final current = _currentDraft;
+    final plan = _lastPlan;
+    if (current == null ||
+        plan == null ||
+        variant.draft.plan.seed != plan.seed ||
+        variant.draft.sections.length != current.sections.length ||
+        variant.after.score + 0.01 < variant.before.score) {
+      return false;
+    }
+    if (current.sectionById(variant.fromSectionId) == null ||
+        current.sectionById(variant.toSectionId) == null ||
+        current.plan.nextOf(variant.fromSectionId)?.id != variant.toSectionId) {
+      return false;
+    }
+
+    _currentDraft = variant.draft;
+    _refreshDerivedSongState(variant.draft);
+    _selectedSectionId = variant.toSectionId;
+
+    // An explicit transition edit establishes a new custom song baseline.
+    // Preserve exact replay while avoiding a misleading pure A/B/C style badge.
+    _producerReplayBaseDraft = variant.draft;
+    _producerVariationOriginDraft = variant.draft;
+    _activeProducerSongStyle = null;
+    _sectionRevisions.clear();
+    _regenerationOps.clear();
+    _activeTransitionRepairs[
+      _transitionKey(variant.fromSectionId, variant.toSectionId)
+    ] = variant.style;
     notifyListeners();
     return true;
   }
@@ -342,6 +412,7 @@ class SongSessionController extends ChangeNotifier {
     _activeProducerSongStyle = null;
     _sectionRevisions.clear();
     _regenerationOps.clear();
+    _activeTransitionRepairs.clear();
     notifyListeners();
   }
 
@@ -364,6 +435,9 @@ class SongSessionController extends ChangeNotifier {
       performanceProfile: _performanceProfile,
     );
   }
+
+  String _transitionKey(String fromSectionId, String toSectionId) =>
+      '$fromSectionId->$toSectionId';
 }
 
 class _SectionRegenerationOp {
