@@ -10,6 +10,7 @@ import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
+import '../widgets/full_song_transport.dart';
 import '../widgets/header.dart';
 import '../widgets/performance_controls.dart';
 import '../widgets/producer_brain_panel.dart';
@@ -89,7 +90,11 @@ class HomeScreen extends StatelessWidget {
                         ),
                       ],
                       Expanded(child: _buildCurrentTab(appState.currentTab)),
-                      const SizedBox(height: 150),
+                      Consumer<SongSessionController>(
+                        builder: (context, session, _) => SizedBox(
+                          height: isGenerator && session.hasTimeline ? 218 : 150,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -102,7 +107,16 @@ class HomeScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 if (isGenerator)
-                  StudioTransport(progression: appState.currentProgression),
+                  Consumer<SongSessionController>(
+                    builder: (context, session, _) {
+                      if (session.hasTimeline) {
+                        return FullSongTransport(session: session);
+                      }
+                      return StudioTransport(
+                        progression: appState.currentProgression,
+                      );
+                    },
+                  ),
                 const AppBottomNavigation(),
               ],
             ),
