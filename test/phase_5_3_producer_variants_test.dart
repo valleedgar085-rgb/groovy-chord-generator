@@ -163,7 +163,7 @@ Chord _chord(String root, ChordTypeName type, String degree) => Chord(
 
 List<String> _harmonySignature(List<Chord> chords) => chords
     .map((chord) =>
-        '${chord.root}:${chord.type.name}:${chord.degree}:${chord.duration}:${chord.velocity}')
+        '${chord.root}:${chord.type.name}:${chord.degree}:${chord.numeral}')
     .toList(growable: false);
 
 List<String> _melodySignature(List<MelodyNote> notes) => notes
