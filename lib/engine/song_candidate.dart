@@ -2,15 +2,15 @@ import '../models/types.dart';
 import 'harmony_engine.dart';
 import 'producer_analysis.dart';
 
-enum ProducerVariationStyle { raw, polished, creative, hook }
+enum ProducerVariationStyle {
+  raw('RAW'),
+  polished('POLISHED'),
+  creative('CREATIVE'),
+  hook('HOOK');
 
-extension ProducerVariationStyleLabel on ProducerVariationStyle {
-  String get label => switch (this) {
-        ProducerVariationStyle.raw => 'RAW',
-        ProducerVariationStyle.polished => 'POLISHED',
-        ProducerVariationStyle.creative => 'CREATIVE',
-        ProducerVariationStyle.hook => 'HOOK',
-      };
+  const ProducerVariationStyle(this.label);
+
+  final String label;
 }
 
 /// Immutable result from one Producer Brain candidate pass.
