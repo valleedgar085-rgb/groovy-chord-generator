@@ -5,38 +5,32 @@ import '../models/types.dart';
 import 'harmonic_realizer.dart';
 import 'harmony_engine.dart';
 import 'producer_analysis.dart';
+import 'producer_brain_telemetry.dart';
+import 'producer_candidate_refiner.dart';
 import 'seeded_music_generation.dart';
 import 'song_candidate.dart';
 import 'song_request.dart';
 
 /// Builds several musical candidates and lets Producer Brain keep the best.
-///
-/// Legacy APIs remain harmony-only for compatibility. The app-facing
-/// [generateBestForRequest] path performs Phase 5.1 multidimensional preflight:
-/// each repaired harmony candidate receives deterministic melody and bass
-/// previews and is judged by the same ten-dimensional [ProducerAnalyzer] used
-/// by the Producer Analysis UI.
 class HarmonyCandidatePool {
   HarmonyCandidatePool({
     HarmonyEngine? engine,
     HarmonicRealizer? realizer,
     SeededMusicGeneration? generation,
     ProducerAnalyzer? analyzer,
+    ProducerCandidateRefiner? refiner,
   })  : _engine = engine ?? HarmonyEngine(),
         _realizer = realizer ?? const HarmonicRealizer(),
         _generation = generation ?? const SeededMusicGeneration(),
-        _analyzer = analyzer ?? ProducerAnalyzer(harmonyEngine: engine);
+        _analyzer = analyzer ?? ProducerAnalyzer(harmonyEngine: engine),
+        _refiner = refiner ?? const ProducerCandidateRefiner();
 
   final HarmonyEngine _engine;
   final HarmonicRealizer _realizer;
   final SeededMusicGeneration _generation;
   final ProducerAnalyzer _analyzer;
+  final ProducerCandidateRefiner _refiner;
 
-  /// Generate [candidateCount] alternatives with [buildCandidate], then select
-  /// the strongest progression for the requested song [section].
-  ///
-  /// This legacy-compatible API remains available while generation call sites
-  /// migrate to the deterministic [SongRequest] contract.
   List<Chord> generateBest({
     required List<Chord> Function() buildCandidate,
     int candidateCount = 8,
@@ -51,7 +45,6 @@ class HarmonyCandidatePool {
     ).where((candidate) => candidate.length >= 2).toList(growable: false);
 
     if (candidates.isEmpty) return const <Chord>[];
-
     return _engine.selectBest(
       candidates,
       section: section,
@@ -59,8 +52,6 @@ class HarmonyCandidatePool {
     );
   }
 
-  /// Returns every candidate and its harmony score for diagnostics and legacy
-  /// callers that intentionally need harmony-only ranking.
   List<ScoredHarmonyCandidate> generateScored({
     required List<Chord> Function() buildCandidate,
     int candidateCount = 8,
@@ -68,7 +59,6 @@ class HarmonyCandidatePool {
   }) {
     final count = candidateCount.clamp(1, 32).toInt();
     final scored = <ScoredHarmonyCandidate>[];
-
     for (var i = 0; i < count; i++) {
       final candidate = List<Chord>.from(buildCandidate());
       if (candidate.length < 2) continue;
@@ -77,61 +67,47 @@ class HarmonyCandidatePool {
         score: _engine.score(candidate, section: section),
       ));
     }
-
     scored.sort((a, b) => b.score.compareTo(a.score));
     return List<ScoredHarmonyCandidate>.unmodifiable(scored);
   }
 
-  /// Deterministic harmony-only producer-core API retained for engine tests and
-  /// callers that do not yet have a complete performance context.
   List<SongCandidate> generateScoredDeterministic({
     required SongRequest request,
     required List<Chord> Function(int candidateSeed) buildCandidate,
   }) {
     final scored = <SongCandidate>[];
-
     for (var i = 0; i < request.candidateCount; i++) {
       final candidateSeed = request.candidateSeed(i);
       final raw = List<Chord>.from(buildCandidate(candidateSeed));
       final progression = _realizer.repairProgression(raw, request);
       if (progression.length < 2) continue;
-
       scored.add(SongCandidate(
-        progression: List<Chord>.unmodifiable(progression),
+        progression: progression,
         score: _engine.score(progression, section: request.section),
         seed: candidateSeed,
         candidateIndex: i,
         section: request.section,
       ));
     }
-
     scored.sort(_compareCandidates);
     return List<SongCandidate>.unmodifiable(scored);
   }
 
-  /// Phase 5.1 multidimensional candidate diagnostics.
-  ///
-  /// Melody uses the exact deterministic request stream that AppState will use
-  /// after the winner is committed. Bass uses a conservative genre-aware style
-  /// proxy because the current SongRequest contract predates bass-style state;
-  /// the post-generation Producer Analysis remains authoritative for the exact
-  /// user-selected bass style, swing, tempo, and groove.
+  /// Phase 5.1 raw multidimensional pass across all requested candidates.
   List<SongCandidate> generateScoredMusicalForRequest({
     required SongRequest request,
     required List<Chord> Function(int candidateSeed, int candidateIndex)
         buildCandidate,
   }) {
     final candidates = <SongCandidate>[];
-
     for (var i = 0; i < request.candidateCount; i++) {
       final candidateSeed = request.candidateSeed(i);
       final raw = List<Chord>.from(buildCandidate(candidateSeed, i));
       final progression = _realizer.repairProgression(raw, request);
       if (progression.length < 2) continue;
-
       final analysis = _analyzeCandidate(progression, request);
       candidates.add(SongCandidate(
-        progression: List<Chord>.unmodifiable(progression),
+        progression: progression,
         score: analysis.overallScore,
         seed: candidateSeed,
         candidateIndex: i,
@@ -139,13 +115,58 @@ class HarmonyCandidatePool {
         producerAnalysis: analysis,
       ));
     }
-
     candidates.sort(_compareCandidates);
     return List<SongCandidate>.unmodifiable(candidates);
   }
 
-  /// Returns the best deterministic harmony candidate and optionally applies
-  /// final voice leading after ranking, matching the legacy producer workflow.
+  /// Phase 5.2 closed-loop pass.
+  ///
+  /// The top three raw candidates are each evolved into Polished, Creative and
+  /// Hook-focused revisions. Every revision is repaired, regenerated through the
+  /// deterministic melody/bass preview, then rescored. Revisions that regress
+  /// the base candidate are discarded before final ranking.
+  List<SongCandidate> generateRefinedMusicalForRequest({
+    required SongRequest request,
+    required List<Chord> Function(int candidateSeed, int candidateIndex)
+        buildCandidate,
+  }) {
+    final raw = generateScoredMusicalForRequest(
+      request: request,
+      buildCandidate: buildCandidate,
+    );
+    if (raw.isEmpty) return raw;
+
+    final contenders = <SongCandidate>[...raw];
+    final topCount = min(3, raw.length);
+    for (var i = 0; i < topCount; i++) {
+      final base = raw[i];
+      final refinements = _refiner.evolve(base: base, request: request);
+      for (final refinement in refinements) {
+        final repaired = _realizer.repairProgression(
+          refinement.progression,
+          request,
+        );
+        if (repaired.length < 2) continue;
+        final analysis = _analyzeCandidate(repaired, request);
+        if (analysis.overallScore + 0.01 < base.score) continue;
+        contenders.add(SongCandidate(
+          progression: repaired,
+          score: analysis.overallScore,
+          seed: base.seed,
+          candidateIndex: base.candidateIndex,
+          section: base.section,
+          producerAnalysis: analysis,
+          variationStyle: refinement.style,
+          beforeRefineScore: base.score,
+          repairs: refinement.repairs,
+        ));
+      }
+    }
+
+    contenders.sort(_compareCandidates);
+    return List<SongCandidate>.unmodifiable(contenders);
+  }
+
   SongCandidate? generateBestDeterministic({
     required SongRequest request,
     required List<Chord> Function(int candidateSeed) buildCandidate,
@@ -155,7 +176,6 @@ class HarmonyCandidatePool {
       buildCandidate: buildCandidate,
     );
     if (candidates.isEmpty) return null;
-
     final best = candidates.first;
     final progression = request.useVoiceLeading
         ? _engine.selectBest(
@@ -164,9 +184,8 @@ class HarmonyCandidatePool {
             applyVoicing: true,
           )
         : List<Chord>.from(best.progression);
-
     return SongCandidate(
-      progression: List<Chord>.unmodifiable(progression),
+      progression: progression,
       score: best.score,
       seed: best.seed,
       candidateIndex: best.candidateIndex,
@@ -175,20 +194,16 @@ class HarmonyCandidatePool {
     );
   }
 
-  /// App-facing deterministic API.
-  ///
-  /// Phase 5.1 changes the actual selection criterion from harmony-only to the
-  /// full Producer Brain score. The callback still receives stable candidate
-  /// identity, so replay and future A/B/C tooling remain deterministic.
   SongCandidate generateBestForRequest({
     required SongRequest request,
     required List<Chord> Function(int candidateSeed, int candidateIndex)
         buildCandidate,
   }) {
-    final candidates = generateScoredMusicalForRequest(
+    final candidates = generateRefinedMusicalForRequest(
       request: request,
       buildCandidate: buildCandidate,
     );
+    ProducerBrainTelemetry.instance.publish(candidates);
 
     if (candidates.isNotEmpty) return candidates.first;
     return SongCandidate(
@@ -270,6 +285,8 @@ class HarmonyCandidatePool {
   static int _compareCandidates(SongCandidate a, SongCandidate b) {
     final scoreOrder = b.score.compareTo(a.score);
     if (scoreOrder != 0) return scoreOrder;
+    final deltaOrder = b.scoreDelta.compareTo(a.scoreDelta);
+    if (deltaOrder != 0) return deltaOrder;
     return a.candidateIndex.compareTo(b.candidateIndex);
   }
 }
