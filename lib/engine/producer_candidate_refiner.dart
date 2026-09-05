@@ -1,5 +1,6 @@
 import '../models/types.dart';
 import '../utils/music_theory.dart';
+import 'harmony_engine.dart';
 import 'producer_analysis.dart';
 import 'song_candidate.dart';
 import 'song_request.dart';
@@ -205,7 +206,7 @@ class ProducerCandidateRefiner {
   List<Chord> _addTastefulColor(List<Chord> progression) {
     if (progression.isEmpty) return progression;
     final result = List<Chord>.from(progression);
-    final index = (result.length ~/ 2).clamp(0, result.length - 1);
+    final index = (result.length ~/ 2).clamp(0, result.length - 1).toInt();
     final chord = result[index];
     final type = switch (chord.type) {
       ChordTypeName.major => ChordTypeName.add9,
