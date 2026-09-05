@@ -99,7 +99,8 @@ class PhraseRepairEngine {
     if (section == null || sectionMemory == null || section.melody.isEmpty) {
       return const <PhraseRepairVariant>[];
     }
-    if (target.phraseIndex < 0 || target.phraseIndex >= sectionMemory.phrases.length) {
+    if (target.phraseIndex < 0 ||
+        target.phraseIndex >= sectionMemory.phrases.length) {
       return const <PhraseRepairVariant>[];
     }
     final targetFingerprint = sectionMemory.phrase(target.phraseIndex);
@@ -146,7 +147,9 @@ class PhraseRepairEngine {
       final after = _assessment(afterAnalysis, target.phraseId);
       if (after == null) continue;
       if (after.score <= target.score + 0.05) continue;
-      if (afterAnalysis.overallScore + 0.01 < beforeAnalysis.overallScore) continue;
+      if (afterAnalysis.overallScore + 0.01 < beforeAnalysis.overallScore) {
+        continue;
+      }
       if (!_lineageNonRegressing(target.lineage, after.lineage)) continue;
 
       final changed = _changedNoteCount(section.melody, repairedSection.melody);
@@ -290,18 +293,33 @@ class PhraseRepairEngine {
     }
 
     if (value > window.maximum && phraseIndices.length > 2) {
-      for (var ordinal = 1; ordinal < phraseIndices.length - 1; ordinal += 2) {
+      // Develop the copied phrase one interior event at a time and stop as soon
+      // as the actual Song Memory similarity enters the target window. This
+      // avoids the previous all-odd-notes rewrite, which could overshoot and
+      // lose too much role/rhythm quality just to escape a 1.0 copy score.
+      final center = (phraseIndices.length - 1) / 2.0;
+      final ordinals = <int>[
+        for (var i = 1; i < phraseIndices.length - 1; i++) i,
+      ]
+        ..sort((a, b) {
+          final byCenter = (a - center).abs().compareTo((b - center).abs());
+          if (byCenter != 0) return byCenter;
+          return a.compareTo(b);
+        });
+
+      for (var step = 0; step < ordinals.length; step++) {
+        final ordinal = ordinals[step];
         final targetIndex = phraseIndices[ordinal];
         final current = melody[targetIndex];
         final currentPitch = noteToPitch(current.note, current.octave);
-        final chord = section.progression[
-          current.chordIndex.clamp(0, section.progression.length - 1).toInt()
-        ];
         final previousPitch = noteToPitch(
           melody[phraseIndices[ordinal - 1]].note,
           melody[phraseIndices[ordinal - 1]].octave,
         );
-        final direction = ordinal % 4 == 1 ? 3 : -3;
+        final chord = section.progression[
+          current.chordIndex.clamp(0, section.progression.length - 1).toInt()
+        ];
+        final direction = step.isEven ? 3 : -3;
         final pitch = _nearestPitch(
           getChordNotes(chord),
           currentPitch + direction,
@@ -309,14 +327,29 @@ class PhraseRepairEngine {
           maxLeap: 8,
           excludePitch: currentPitch,
         );
-        final duration = ordinal % 4 == 1
-            ? (current.duration * 0.75).clamp(0.25, 2.0).toDouble()
-            : (current.duration * 1.25).clamp(0.25, 2.0).toDouble();
+        final duration = step.isEven
+            ? (current.duration >= 0.9 ? 0.5 : 1.0)
+            : current.duration;
         melody[targetIndex] = _melodyAtPitch(
           current,
           pitch,
           duration: duration,
         );
+
+        final trialSection = GeneratedSongSection(
+          plan: section.plan,
+          candidate: section.candidate,
+          melody: melody,
+          bass: section.bass,
+          development: section.development,
+        );
+        final trialMemory = memoryExtractor.capture(draft.withSection(trialSection));
+        final trialLineage = trialMemory.lineageFor(target.phraseId);
+        if (trialLineage != null &&
+            trialLineage.sourcePhraseId == lineage.sourcePhraseId &&
+            trialLineage.sourceSimilarity <= window.maximum) {
+          return;
+        }
       }
     }
   }
@@ -426,8 +459,10 @@ class PhraseRepairEngine {
       PhraseRole.release => 0.22,
       PhraseRole.turnaround => 0.72,
     };
-    final targetOrdinal =
-        (desiredClimax * (phraseIndices.length - 1)).round().clamp(0, phraseIndices.length - 1);
+    final targetOrdinal = (desiredClimax * (phraseIndices.length - 1))
+        .round()
+        .clamp(0, phraseIndices.length - 1)
+        .toInt();
     final targetIndex = phraseIndices[targetOrdinal];
     final current = melody[targetIndex];
     final currentPitch = noteToPitch(current.note, current.octave);
@@ -536,7 +571,9 @@ class PhraseRepairEngine {
     PhraseLineageNode? after,
   ) {
     if (before == null) return true;
-    if (after == null || before.sourcePhraseId != after.sourcePhraseId) return false;
+    if (after == null || before.sourcePhraseId != after.sourcePhraseId) {
+      return false;
+    }
     if (before.insideGuardrail) return after.insideGuardrail;
     final beforeDistance = _guardrailDistance(before);
     final afterDistance = _guardrailDistance(after);
