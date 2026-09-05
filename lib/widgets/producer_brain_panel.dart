@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../engine/harmony_engine.dart';
+import '../engine/producer_analysis.dart';
 import '../providers/app_state.dart';
 import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
+import 'producer_analysis_sheet.dart';
 import 'song_composer_sheet.dart';
 
 class ProducerBrainPanel extends StatelessWidget {
@@ -14,6 +16,8 @@ class ProducerBrainPanel extends StatelessWidget {
   });
 
   final AppState appState;
+
+  static final ProducerAnalyzer _producerAnalyzer = ProducerAnalyzer();
 
   static const _sectionLabels = <HarmonySection, String>{
     HarmonySection.neutral: 'AUTO',
@@ -25,8 +29,22 @@ class ProducerBrainPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final score = appState.lastHarmonyScore.clamp(0.0, 100.0).toDouble();
     final hasProgression = appState.currentProgression.isNotEmpty;
+    final analysis = hasProgression
+        ? _producerAnalyzer.analyze(
+            progression: appState.currentProgression,
+            melody: appState.currentMelody,
+            bass: appState.currentBassLine,
+            genre: appState.genre,
+            rhythm: appState.rhythm,
+            section: appState.harmonySection,
+            spice: appState.spiceLevel,
+            tempo: appState.tempo,
+            swing: appState.swing,
+            grooveTemplate: appState.grooveTemplate,
+          )
+        : ProducerAnalysis.empty();
+    final score = analysis.overallScore.clamp(0.0, 100.0).toDouble();
     final scoreColor = hasProgression ? _scoreColor(score) : AppTheme.textMuted;
     final songSession = context.watch<SongSessionController>();
     final selectedSongSection = songSession.selectedSectionId;
@@ -109,32 +127,61 @@ class ProducerBrainPanel extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          SizedBox(
-            width: 48,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  hasProgression ? '${score.round()}' : '--',
-                  style: TextStyle(
-                    fontSize: 17,
-                    height: 1,
-                    fontWeight: FontWeight.w800,
-                    color: scoreColor,
+          Tooltip(
+            message: hasProgression
+                ? 'Open Producer Analysis'
+                : 'Generate music to unlock Producer Analysis',
+            child: Semantics(
+              button: hasProgression,
+              label: hasProgression
+                  ? 'Producer Analysis score ${score.round()}'
+                  : 'Producer Analysis unavailable',
+              child: InkWell(
+                key: const ValueKey('producerAnalysisButton'),
+                onTap: hasProgression
+                    ? () => ProducerAnalysisSheet.open(context, analysis)
+                    : null,
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: 50,
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text(
+                            hasProgression ? '${score.round()}' : '--',
+                            style: TextStyle(
+                              fontSize: 17,
+                              height: 1,
+                              fontWeight: FontWeight.w800,
+                              color: scoreColor,
+                            ),
+                          ),
+                          const SizedBox(width: 2),
+                          Icon(
+                            Icons.insights_rounded,
+                            size: 10,
+                            color: scoreColor,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: LinearProgressIndicator(
+                          value: hasProgression ? score / 100 : 0,
+                          minHeight: 3,
+                          backgroundColor: AppTheme.bgElevated,
+                          color: scoreColor,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 4),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: hasProgression ? score / 100 : 0,
-                    minHeight: 3,
-                    backgroundColor: AppTheme.bgElevated,
-                    color: scoreColor,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           const SizedBox(width: 7),
@@ -228,8 +275,8 @@ class ProducerBrainPanel extends StatelessWidget {
 
   Color _scoreColor(double score) {
     if (score >= 85) return AppTheme.success;
-    if (score >= 70) return AppTheme.accentSecondary;
-    if (score >= 55) return AppTheme.warning;
+    if (score >= 72) return AppTheme.accentSecondary;
+    if (score >= 58) return AppTheme.warning;
     return AppTheme.error;
   }
 }
