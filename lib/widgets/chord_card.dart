@@ -29,32 +29,51 @@ class ChordCard extends StatefulWidget {
 }
 
 class _ChordCardState extends State<ChordCard> {
-  final AudioPlaybackService _audio = AudioPlaybackService.instance;
+  AudioPlaybackService? _audio;
   bool _pressed = false;
   bool _isActive = false;
 
   @override
   void initState() {
     super.initState();
-    _isActive = _audio.isPlaying && _audio.activeChordIndex == widget.index;
-    _audio.addListener(_refresh);
+    // Custom tap handlers (including widget tests and parent-controlled
+    // audition flows) do not need to load the native audio engine merely to
+    // render a chord card. Normal production cards still attach immediately.
+    if (widget.onTap == null) {
+      _attachAudio();
+    }
+  }
+
+  void _attachAudio() {
+    if (_audio != null) return;
+    final audio = AudioPlaybackService.instance;
+    _audio = audio;
+    _isActive = audio.isPlaying && audio.activeChordIndex == widget.index;
+    audio.addListener(_refresh);
   }
 
   @override
   void didUpdateWidget(covariant ChordCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _isActive = _audio.isPlaying && _audio.activeChordIndex == widget.index;
+    if (_audio == null && widget.onTap == null) {
+      _attachAudio();
+    }
+    final audio = _audio;
+    if (audio != null) {
+      _isActive = audio.isPlaying && audio.activeChordIndex == widget.index;
+    }
   }
 
   @override
   void dispose() {
-    _audio.removeListener(_refresh);
+    _audio?.removeListener(_refresh);
     super.dispose();
   }
 
   void _refresh() {
-    final nextIsActive =
-        _audio.isPlaying && _audio.activeChordIndex == widget.index;
+    final audio = _audio;
+    if (audio == null) return;
+    final nextIsActive = audio.isPlaying && audio.activeChordIndex == widget.index;
     if (!mounted || nextIsActive == _isActive) return;
     setState(() => _isActive = nextIsActive);
   }
@@ -89,7 +108,7 @@ class _ChordCardState extends State<ChordCard> {
               if (widget.onTap != null) {
                 widget.onTap!();
               } else {
-                _audio.auditionChord(widget.chord);
+                _audio?.auditionChord(widget.chord);
               }
             },
             child: AnimatedScale(
