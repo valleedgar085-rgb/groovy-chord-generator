@@ -71,6 +71,11 @@ void main() {
       expect(session.currentDraft!.sections, hasLength(10));
       expect(find.text('SONG COMPOSER'), findsOneWidget);
 
+      // The Composer is a modal bottom sheet; dismiss it before hitting the
+      // underlying Create-mode control so the test matches real interaction.
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+
       await tester.tap(find.byKey(const Key('create-mode-progression')));
       await tester.pump();
       expect(createMode.isProgression, isTrue);
