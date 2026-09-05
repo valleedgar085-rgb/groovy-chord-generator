@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:groovy_chord_generator/engine/harmony_engine.dart';
+import 'package:groovy_chord_generator/engine/producer_song_variation_engine.dart';
 import 'package:groovy_chord_generator/engine/song_architecture.dart';
 import 'package:groovy_chord_generator/engine/song_candidate.dart';
 import 'package:groovy_chord_generator/engine/song_request.dart';
@@ -62,12 +63,14 @@ void main() {
       );
     });
 
-    test('committed direction becomes deterministic replay base', () {
+    test('committed direction becomes replay base without replacing A/B/C source', () {
       final session = _session();
       final variations = session.buildProducerSongVariations(
         tempo: 118,
         swing: 0.08,
       );
+      final originalOptions =
+          variations.map(_songSignature).toList(growable: false);
       final creative = variations.firstWhere(
         (variation) => variation.style == ProducerVariationStyle.creative,
       );
@@ -86,6 +89,13 @@ void main() {
         session.activeProducerSongStyle,
         ProducerVariationStyle.creative,
       );
+      expect(
+        session
+            .buildProducerSongVariations(tempo: 118, swing: 0.08)
+            .map(_songSignature)
+            .toList(growable: false),
+        originalOptions,
+      );
     });
 
     test('taste memory persists Producer direction choice counts', () async {
@@ -98,7 +108,10 @@ void main() {
       expect(snapshot.countFor(ProducerVariationStyle.creative), 2);
       expect(snapshot.countFor(ProducerVariationStyle.hook), 1);
       expect(snapshot.preferredStyle, ProducerVariationStyle.creative);
-      expect(snapshot.affinityFor(ProducerVariationStyle.creative), closeTo(2 / 3, 0.0001));
+      expect(
+        snapshot.affinityFor(ProducerVariationStyle.creative),
+        closeTo(2 / 3, 0.0001),
+      );
     });
 
     testWidgets('full-song chooser renders without initializing preview audio',
@@ -173,7 +186,7 @@ SongSessionController _session() {
   return session;
 }
 
-String _songSignature(dynamic variation) => variation.draft.sections
+String _songSignature(ProducerSongVariation variation) => variation.draft.sections
     .map((section) =>
         '${section.plan.id}:${section.progression.map((chord) => '${chord.root}/${chord.type.name}/${chord.degree}').join(',')}:${section.melody.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}:${section.bass.map((note) => '${note.note}${note.octave}/${note.duration}/${note.chordIndex}').join(',')}')
     .join('|');
