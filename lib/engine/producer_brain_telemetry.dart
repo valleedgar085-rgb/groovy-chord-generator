@@ -4,17 +4,47 @@ class ProducerDecisionSnapshot {
   ProducerDecisionSnapshot({
     required this.winner,
     required List<SongCandidate> variations,
-  }) : variations = List<SongCandidate>.unmodifiable(variations);
+    ProducerVariationStyle? selectedStyle,
+  })  : variations = List<SongCandidate>.unmodifiable(variations),
+        selectedStyle = selectedStyle ?? winner.variationStyle;
 
   final SongCandidate winner;
   final List<SongCandidate> variations;
+  final ProducerVariationStyle selectedStyle;
 
   double get scoreDelta => winner.scoreDelta;
   bool get improved => scoreDelta > 0.05;
+
+  SongCandidate? candidateFor(ProducerVariationStyle style) {
+    if (winner.variationStyle == style) return winner;
+    for (final candidate in variations) {
+      if (candidate.variationStyle == style) return candidate;
+    }
+    return null;
+  }
+
+  SongCandidate get activeCandidate => candidateFor(selectedStyle) ?? winner;
+
+  bool isSelected(SongCandidate candidate) =>
+      activeCandidate.variationStyle == candidate.variationStyle &&
+      activeCandidate.candidateIndex == candidate.candidateIndex;
+
+  ProducerDecisionSnapshot select(SongCandidate candidate) {
+    final available = candidateFor(candidate.variationStyle);
+    if (available == null) return this;
+    return ProducerDecisionSnapshot(
+      winner: winner,
+      variations: variations,
+      selectedStyle: available.variationStyle,
+    );
+  }
 }
 
-/// Lightweight read-only bridge from the generation engine to the scorecard UI.
-/// AppState already rebuilds after generation, so no second notifier is needed.
+/// Lightweight bridge from the generation engine to Producer Brain UI.
+///
+/// Phase 5.3 adds an explicit active selection so the ranked winner can remain
+/// visible while the musician auditions and chooses a different A/B/C producer
+/// direction by taste.
 class ProducerBrainTelemetry {
   ProducerBrainTelemetry._();
 
@@ -48,6 +78,12 @@ class ProducerBrainTelemetry {
       winner: ranked.first,
       variations: variations,
     );
+  }
+
+  void select(SongCandidate candidate) {
+    final current = latest;
+    if (current == null) return;
+    latest = current.select(candidate);
   }
 
   void clear() => latest = null;

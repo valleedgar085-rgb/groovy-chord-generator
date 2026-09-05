@@ -10,6 +10,7 @@ import '../utils/music_theory.dart';
 import '../engine/harmony_engine.dart';
 import '../engine/harmony_candidate_pool.dart';
 import '../engine/seeded_harmony_builder.dart';
+import '../engine/song_candidate.dart';
 import '../engine/song_request.dart';
 import '../engine/seeded_music_generation.dart';
 import '../services/firebase_favorites_service.dart';
@@ -394,6 +395,85 @@ class AppState extends ChangeNotifier {
   void replayLastGeneration() {
     final seed = _lastGenerationSeed;
     if (seed != null) generateProgression(seed: seed);
+  }
+
+  /// Phase 5.3: commit a Producer Brain A/B/C alternative without rebuilding
+  /// the harmony pool. Melody and bass are regenerated from the original song
+  /// request seed, so choosing the same variation is exactly replayable.
+  bool applyProducerCandidate(SongCandidate candidate) {
+    if (candidate.progression.isEmpty) return false;
+
+    if (_currentProgression.isNotEmpty) {
+      final historyEntry = HistoryEntry(
+        progression: List.from(_currentProgression),
+        key: _currentKey,
+        genre: _genre,
+        timestamp: DateTime.now().millisecondsSinceEpoch,
+      );
+      _progressionHistory.insert(0, historyEntry);
+      if (_progressionHistory.length > maxHistoryLength) {
+        _progressionHistory = _progressionHistory.sublist(0, maxHistoryLength);
+      }
+    }
+
+    final generationSeed = _lastGenerationSeed ?? candidate.seed;
+    final request = SongRequest(
+      seed: generationSeed,
+      key: _currentKey,
+      genre: _genre,
+      mood: _currentMood,
+      complexity: _complexity,
+      spice: _spiceLevel,
+      rhythm: _rhythm,
+      section: _harmonySection,
+      candidateCount: _producerCandidateCount,
+      chordVariety: _chordVariety,
+      useVoiceLeading: _useVoiceLeading,
+      useAdvancedTheory: _useAdvancedTheory,
+      useModalInterchange: _useModalInterchange,
+      useFunctionalHarmony: _useFunctionalHarmony,
+      includeMelody: _includeMelody,
+      includeBass: _includeBass,
+    );
+
+    var chords = List<Chord>.from(candidate.progression);
+    if (request.useVoiceLeading) {
+      chords = applyVoiceLeading(chords);
+    }
+    chords = applyGrooveToProgression(chords, _grooveTemplate);
+
+    _currentProgression = chords;
+    _lastHarmonyScore = candidate.score;
+    _lastGenerationSeed = generationSeed;
+    final keyInfo = parseKey(keyNameToString(request.key));
+    _isMinorKey = keyInfo['isMinor'] as bool;
+
+    if (request.includeMelody) {
+      _currentMelody = _seededGeneration.generateMelody(
+        random: Random(request.melodySeed),
+        progression: chords,
+        genre: request.genre,
+        rhythm: request.rhythm,
+        key: request.key,
+      );
+    } else {
+      _currentMelody = [];
+    }
+
+    if (request.includeBass) {
+      _currentBassLine = _seededGeneration.generateBass(
+        random: Random(request.bassSeed),
+        progression: chords,
+        style: _bassStyle,
+        variety: _bassVariety,
+        rhythm: request.rhythm,
+      );
+    } else {
+      _currentBassLine = [];
+    }
+
+    notifyListeners();
+    return true;
   }
 
   List<MelodyNote> _generateMelodyNotes(
