@@ -102,6 +102,10 @@ class PhraseRepairEngine {
     if (target.phraseIndex < 0 || target.phraseIndex >= sectionMemory.phrases.length) {
       return const <PhraseRepairVariant>[];
     }
+    final targetFingerprint = sectionMemory.phrase(target.phraseIndex);
+    if (targetFingerprint == null || targetFingerprint.isEmpty) {
+      return const <PhraseRepairVariant>[];
+    }
 
     final phraseIndices = _phraseNoteIndices(
       section,
@@ -118,6 +122,7 @@ class PhraseRepairEngine {
         memory: beforeMemory,
         section: section,
         target: target,
+        targetFingerprint: targetFingerprint,
         phraseIndices: phraseIndices,
       );
       if (_melodySignature(repairedSection.melody) ==
@@ -177,6 +182,7 @@ class PhraseRepairEngine {
     required SongMemory memory,
     required GeneratedSongSection section,
     required PhraseProducerAssessment target,
+    required PhraseFingerprint targetFingerprint,
     required List<int> phraseIndices,
   }) {
     final melody = List<MelodyNote>.from(section.melody);
@@ -191,7 +197,12 @@ class PhraseRepairEngine {
           phraseIndices: phraseIndices,
         );
       case PhraseRepairStyle.cadenceTarget:
-        _cadenceTarget(melody, section, target, phraseIndices);
+        _cadenceTarget(
+          melody,
+          section,
+          targetFingerprint,
+          phraseIndices,
+        );
       case PhraseRepairStyle.contourSmooth:
         _contourSmooth(melody, section, phraseIndices);
       case PhraseRepairStyle.arcShape:
@@ -313,7 +324,7 @@ class PhraseRepairEngine {
   void _cadenceTarget(
     List<MelodyNote> melody,
     GeneratedSongSection section,
-    PhraseProducerAssessment target,
+    PhraseFingerprint fingerprint,
     List<int> phraseIndices,
   ) {
     final index = phraseIndices.last;
@@ -324,7 +335,7 @@ class PhraseRepairEngine {
     final currentPitch = noteToPitch(current.note, current.octave);
     final tones = getChordNotes(chord);
     String targetName;
-    switch (target.beforeCadenceIntent) {
+    switch (fingerprint.cadenceIntent) {
       case PhraseCadenceIntent.resolved:
         targetName = chord.root;
       case PhraseCadenceIntent.half:
@@ -372,8 +383,9 @@ class PhraseRepairEngine {
         previousPitch = currentPitch;
         continue;
       }
-      final leap = (currentPitch - previousPitch).abs();
-      repeatedRun = currentPitch == previousPitch ? repeatedRun + 1 : 0;
+      final previousBefore = previousPitch;
+      final leap = (currentPitch - previousBefore).abs();
+      repeatedRun = currentPitch == previousBefore ? repeatedRun + 1 : 0;
       if (leap <= 8 && repeatedRun < 2) {
         previousPitch = currentPitch;
         continue;
@@ -382,18 +394,18 @@ class PhraseRepairEngine {
         current.chordIndex.clamp(0, section.progression.length - 1).toInt()
       ];
       final desired = leap > 8
-          ? previousPitch + (currentPitch > previousPitch ? 5 : -5)
-          : previousPitch + (ordinal.isEven ? 3 : -3);
+          ? previousBefore + (currentPitch > previousBefore ? 5 : -5)
+          : previousBefore + (ordinal.isEven ? 3 : -3);
       final pitch = _nearestPitch(
         getChordNotes(chord),
         desired,
-        previousPitch: previousPitch,
+        previousPitch: previousBefore,
         maxLeap: 7,
-        excludePitch: repeatedRun >= 2 ? previousPitch : null,
+        excludePitch: repeatedRun >= 2 ? previousBefore : null,
       );
       melody[index] = _melodyAtPitch(current, pitch);
+      repeatedRun = pitch == previousBefore ? repeatedRun + 1 : 0;
       previousPitch = pitch;
-      repeatedRun = pitch == previousPitch ? repeatedRun + 1 : 0;
     }
   }
 
@@ -631,21 +643,4 @@ class PhraseRepairEngine {
       .map((note) =>
           '${note.note}${note.octave}:${note.duration.toStringAsFixed(4)}:${note.velocity.toStringAsFixed(4)}:${note.chordIndex}:${note.style.name}')
       .join('|');
-}
-
-extension on PhraseProducerAssessment {
-  PhraseCadenceIntent get beforeCadenceIntent {
-    final cadenceMetric = metricFor(PhraseProducerDimension.cadence);
-    // The assessment owns the role but not a duplicate cadence field. The
-    // analyzer was built from the same phrase fingerprint, so recover the intent
-    // through the diagnosis only for repair dispatch is unnecessarily lossy.
-    // 5.8D therefore uses role defaults here that match Phrase Composer/Memory.
-    if (role == PhraseRole.lift) return PhraseCadenceIntent.half;
-    if (role == PhraseRole.hook || role == PhraseRole.release) {
-      return PhraseCadenceIntent.resolved;
-    }
-    if (role == PhraseRole.contrast) return PhraseCadenceIntent.suspended;
-    if (cadenceMetric.score < 0) return PhraseCadenceIntent.open;
-    return PhraseCadenceIntent.open;
-  }
 }
