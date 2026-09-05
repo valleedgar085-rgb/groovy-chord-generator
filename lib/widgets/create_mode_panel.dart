@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../engine/genre_song_architecture.dart';
 import '../models/constants.dart';
 import '../models/types.dart';
 import '../providers/app_state.dart';
@@ -86,6 +87,10 @@ class CreateModePanel extends StatelessWidget {
                   children: [
                     _summaryChip(keyNameToString(appState.currentKey)),
                     _summaryChip(_genreLabel(appState.genre)),
+                    if (isSong)
+                      _summaryChip(
+                        GenreSongArchitecture.labelFor(appState.genre),
+                      ),
                     _summaryChip(_enumLabel(appState.complexity.name)),
                     _summaryChip('${appState.tempo} BPM'),
                   ],
@@ -218,8 +223,13 @@ class CreateModePanel extends StatelessWidget {
     SongSessionController songSession,
   ) {
     final request = SongRequestAdapter.fromAppState(appState);
+    final plan = GenreSongArchitecture.build(
+      genre: appState.genre,
+      seed: request.seed,
+    );
     songSession.generate(
       request: request,
+      plan: plan,
       bassStyle: appState.bassStyle,
       bassVariety: appState.bassVariety,
       grooveTemplate: appState.grooveTemplate,
