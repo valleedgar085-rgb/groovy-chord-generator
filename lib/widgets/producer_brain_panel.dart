@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../engine/harmony_engine.dart';
+import '../engine/phrase_producer_brain.dart';
 import '../engine/producer_analysis.dart';
 import '../engine/producer_brain_telemetry.dart';
 import '../engine/song_director.dart';
 import '../providers/app_state.dart';
 import '../providers/song_session_controller.dart';
 import '../utils/theme.dart';
+import 'phrase_repair_sheet.dart';
 import 'producer_analysis_sheet.dart';
 import 'producer_song_variation_sheet.dart';
 import 'producer_variation_sheet.dart';
@@ -25,6 +27,8 @@ class ProducerBrainPanel extends StatelessWidget {
 
   static final ProducerAnalyzer _producerAnalyzer = ProducerAnalyzer();
   static const SongDirectorAnalyzer _songDirectorAnalyzer = SongDirectorAnalyzer();
+  static const PhraseProducerAnalyzer _phraseProducerAnalyzer =
+      PhraseProducerAnalyzer();
 
   static const _sectionLabels = <HarmonySection, String>{
     HarmonySection.neutral: 'AUTO',
@@ -70,6 +74,13 @@ class ProducerBrainPanel extends StatelessWidget {
           )
         : null;
     final weakestTransition = directorAnalysis?.weakestTransition;
+    final phraseAnalysis = songSession.hasSong
+        ? _phraseProducerAnalyzer.analyze(
+            draft: songSession.currentDraft!,
+            memory: songSession.currentMemory,
+          )
+        : null;
+    final weakestPhrase = phraseAnalysis?.weakestPhrase;
 
     return Container(
       height: 60,
@@ -430,6 +441,55 @@ class ProducerBrainPanel extends StatelessWidget {
                         SizedBox(height: 1),
                         Text(
                           'FIX',
+                          style: TextStyle(
+                            fontSize: 5.8,
+                            height: 1,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 0.45,
+                            color: AppTheme.textMuted,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+            if (weakestPhrase != null) ...[
+              const SizedBox(width: 5),
+              Tooltip(
+                message:
+                    'Repair weakest phrase: ${weakestPhrase.phraseId} (${weakestPhrase.score.round()})',
+                child: InkWell(
+                  key: const ValueKey('phraseRepairButton'),
+                  onTap: () => PhraseRepairSheet.open(
+                    context,
+                    appState: appState,
+                    songSession: songSession,
+                    phraseId: weakestPhrase.phraseId,
+                  ),
+                  borderRadius: BorderRadius.circular(11),
+                  child: Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: AppTheme.accentCyan.withValues(alpha: 0.09),
+                      borderRadius: BorderRadius.circular(11),
+                      border: Border.all(
+                        color: AppTheme.accentCyan.withValues(alpha: 0.24),
+                      ),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.auto_fix_high_rounded,
+                          size: 14,
+                          color: AppTheme.accentCyan,
+                        ),
+                        SizedBox(height: 1),
+                        Text(
+                          'PHR',
                           style: TextStyle(
                             fontSize: 5.8,
                             height: 1,
