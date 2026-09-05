@@ -56,12 +56,12 @@ jobs:
       - name: Build installable debug APK
         run: |
           flutter build apk --debug
-          cp build/app/outputs/flutter-apk/app-debug.apk ChordFlow-SongDirector-5.5.apk
+          cp build/app/outputs/flutter-apk/app-debug.apk ChordFlow-TransitionEngine-5.6.apk
 
       - name: Upload APK to GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: ChordFlow-SongDirector-5.5-APK
-          path: ChordFlow-SongDirector-5.5.apk
+          name: ChordFlow-TransitionEngine-5.6-APK
+          path: ChordFlow-TransitionEngine-5.6.apk
           if-no-files-found: error
           retention-days: 30
