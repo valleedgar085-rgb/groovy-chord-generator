@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_soloud/flutter_soloud.dart';
 
+import '../engine/song_timeline.dart';
+import '../engine/timeline_playback_plan.dart';
 import '../models/types.dart';
 import '../utils/music_theory.dart';
 
@@ -22,18 +24,28 @@ extension SynthCharacterLabel on SynthCharacter {
   }
 }
 
+/// Low-latency audition, progression and full-song timeline playback.
+///
+/// Phase 4.5 schedules SongTimeline events on SoLoud's engine clock. Canonical
+/// composition beats remain untouched; PerformanceIntent supplies the performed
+/// attack, gate and velocity values used here.
 class AudioPlaybackService extends ChangeNotifier {
   AudioPlaybackService._();
 
   static final AudioPlaybackService instance = AudioPlaybackService._();
 
   final SoLoud _engine = SoLoud.instance;
+  final TimelinePlaybackPlanner _timelinePlanner = const TimelinePlaybackPlanner();
   final Map<String, AudioSource> _noteSources = <String, AudioSource>{};
+  final Map<int, AudioSource> _melodySources = <int, AudioSource>{};
   final Map<int, AudioSource> _bassSources = <int, AudioSource>{};
   final Set<SoundHandle> _activeHandles = <SoundHandle>{};
+  final Set<TimelineTrackType> _mutedTracks = <TimelineTrackType>{};
+  final Set<TimelineTrackType> _soloTracks = <TimelineTrackType>{};
 
   bool _isReady = false;
   bool _isPlaying = false;
+  bool _isTimelinePlayback = false;
   bool _looping = false;
   bool _bassEnabled = true;
   int _playbackSession = 0;
@@ -41,43 +53,70 @@ class AudioPlaybackService extends ChangeNotifier {
   int _bpm = 96;
   double _masterVolume = 0.72;
   double _chordVolume = 0.72;
+  double _melodyVolume = 0.58;
   double _bassVolume = 0.42;
   double _stereoWidth = 0.65;
   int _strumMs = 18;
   SynthCharacter _synthCharacter = SynthCharacter.warm;
 
+  SongTimeline? _activeTimeline;
+  TimelinePlaybackPlan? _loopPlan;
+  Timer? _playheadTimer;
+  Duration _timelineEngineAnchor = Duration.zero;
+  double _songBeat = 0;
+  double _timelineInitialBeat = 0;
+  double _timelineRangeStart = 0;
+  double _timelineRangeEnd = 0;
+  String? _activeSectionId;
+  int _scheduledLoopCycles = 0;
+
   bool get isReady => _isReady;
   bool get isPlaying => _isPlaying;
+  bool get isTimelinePlayback => _isTimelinePlayback;
   bool get looping => _looping;
   bool get bassEnabled => _bassEnabled;
   int get activeChordIndex => _activeChordIndex;
   int get bpm => _bpm;
   double get masterVolume => _masterVolume;
   double get chordVolume => _chordVolume;
+  double get melodyVolume => _melodyVolume;
   double get bassVolume => _bassVolume;
   double get stereoWidth => _stereoWidth;
   int get strumMs => _strumMs;
   SynthCharacter get synthCharacter => _synthCharacter;
+  double get songBeat => _songBeat;
+  double get timelineRangeStart => _timelineRangeStart;
+  double get timelineRangeEnd => _timelineRangeEnd;
+  String? get activeSectionId => _activeSectionId;
+  Set<TimelineTrackType> get mutedTracks => Set.unmodifiable(_mutedTracks);
+  Set<TimelineTrackType> get soloTracks => Set.unmodifiable(_soloTracks);
+
+  bool isTrackMuted(TimelineTrackType track) => _mutedTracks.contains(track);
+  bool isTrackSoloed(TimelineTrackType track) => _soloTracks.contains(track);
 
   Future<void> initialize() async {
     if (_isReady) return;
     if (!_engine.isInitialized) {
       await _engine.init(sampleRate: 48000, bufferSize: 1024, lowLatency: true);
     }
-    // Chords can use 5-note extensions plus bass. A larger, explicit pool avoids
-    // voice stealing when a user taps quickly while the previous chord fades.
-    _engine.setMaxActiveVoiceCount(48);
+    _engine.setMaxActiveVoiceCount(64);
     _engine.setGlobalVolume(_masterVolume);
     _isReady = true;
     notifyListeners();
   }
 
   void setBpm(int value) {
-    _bpm = value.clamp(55, 180);
+    final next = value.clamp(55, 180);
+    if (_bpm == next) return;
+    _bpm = next;
     notifyListeners();
+    if (_isTimelinePlayback && _isPlaying && _activeTimeline != null) {
+      unawaited(_restartActiveTimeline());
+    }
   }
 
   void setLooping(bool value) {
+    if (_looping == value) return;
     _looping = value;
     notifyListeners();
   }
@@ -95,6 +134,11 @@ class AudioPlaybackService extends ChangeNotifier {
 
   void setChordVolume(double value) {
     _chordVolume = value.clamp(0.0, 1.0);
+    notifyListeners();
+  }
+
+  void setMelodyVolume(double value) {
+    _melodyVolume = value.clamp(0.0, 1.0);
     notifyListeners();
   }
 
@@ -118,9 +162,36 @@ class AudioPlaybackService extends ChangeNotifier {
     notifyListeners();
   }
 
+  void setTrackMuted(TimelineTrackType track, bool muted) {
+    final changed = muted ? _mutedTracks.add(track) : _mutedTracks.remove(track);
+    if (!changed) return;
+    notifyListeners();
+    if (_isTimelinePlayback && _isPlaying && _activeTimeline != null) {
+      unawaited(_restartActiveTimeline());
+    }
+  }
+
+  void setTrackSoloed(TimelineTrackType track, bool soloed) {
+    final changed = soloed ? _soloTracks.add(track) : _soloTracks.remove(track);
+    if (!changed) return;
+    notifyListeners();
+    if (_isTimelinePlayback && _isPlaying && _activeTimeline != null) {
+      unawaited(_restartActiveTimeline());
+    }
+  }
+
+  void clearTrackMix() {
+    if (_mutedTracks.isEmpty && _soloTracks.isEmpty) return;
+    _mutedTracks.clear();
+    _soloTracks.clear();
+    notifyListeners();
+    if (_isTimelinePlayback && _isPlaying && _activeTimeline != null) {
+      unawaited(_restartActiveTimeline());
+    }
+  }
+
   /// Tapping a chord starts a new bounded playback session. It intentionally
-  /// cancels a running progression or previous audition so no oscillator from
-  /// an older tap can keep running behind the new sound.
+  /// cancels a running song/progression or previous audition.
   Future<void> auditionChord(
     Chord chord, {
     Duration duration = const Duration(milliseconds: 1150),
@@ -137,6 +208,7 @@ class AudioPlaybackService extends ChangeNotifier {
     );
   }
 
+  /// Legacy single-progression transport retained for Progression mode.
   Future<void> playProgression(
     List<Chord> progression, {
     int beatsPerChord = 4,
@@ -147,6 +219,7 @@ class AudioPlaybackService extends ChangeNotifier {
 
     final session = ++_playbackSession;
     _isPlaying = true;
+    _isTimelinePlayback = false;
     notifyListeners();
 
     do {
@@ -183,15 +256,159 @@ class AudioPlaybackService extends ChangeNotifier {
     }
   }
 
-  /// Cancels the current Dart playback session and then stops every live handle
-  /// known both to the service and to every waveform source. The source-handle
-  /// sweep is deliberate: it catches a voice even if a race prevented it from
-  /// being retained in [_activeHandles].
-  Future<void> stop() async {
+  /// Plays the complete song from [startBeat] to the end without looping.
+  Future<void> playFullSong(
+    SongTimeline timeline, {
+    double startBeat = 0,
+  }) {
+    return playTimeline(
+      timeline,
+      startBeat: startBeat,
+      rangeStartBeat: 0,
+      endBeat: timeline.totalBeats,
+      loop: false,
+    );
+  }
+
+  /// Plays one arrangement section. With [loop] enabled the first partial
+  /// fragment (after a live restart/seek) resolves to the section end, then
+  /// subsequent cycles restart at the exact section boundary.
+  Future<void> playSection(
+    SongTimeline timeline,
+    String sectionId, {
+    bool loop = false,
+    double? startBeat,
+  }) async {
+    final section = timeline.sectionById(sectionId);
+    if (section == null) return;
+    final initial = (startBeat ?? section.startBeat)
+        .clamp(section.startBeat, section.endBeat)
+        .toDouble();
+    await playTimeline(
+      timeline,
+      startBeat: initial,
+      rangeStartBeat: section.startBeat,
+      endBeat: section.endBeat,
+      loop: loop,
+    );
+  }
+
+  /// Schedules a performed timeline range on SoLoud's absolute engine clock.
+  Future<void> playTimeline(
+    SongTimeline timeline, {
+    double startBeat = 0,
+    double? rangeStartBeat,
+    double? endBeat,
+    bool loop = false,
+  }) async {
+    if (timeline.totalBeats <= 0) return;
+    await initialize();
+
+    final initial = startBeat.clamp(0.0, timeline.totalBeats).toDouble();
+    final rangeStart = (rangeStartBeat ?? initial)
+        .clamp(0.0, initial)
+        .toDouble();
+    final rangeEnd = (endBeat ?? timeline.totalBeats)
+        .clamp(initial, timeline.totalBeats)
+        .toDouble();
+    if (rangeEnd <= initial) return;
+
+    final firstPlan = _timelinePlanner.build(
+      timeline,
+      startBeat: initial,
+      endBeat: rangeEnd,
+      mutedTracks: _mutedTracks,
+      soloTracks: _soloTracks,
+    );
+    final loopPlan = loop
+        ? _timelinePlanner.build(
+            timeline,
+            startBeat: rangeStart,
+            endBeat: rangeEnd,
+            mutedTracks: _mutedTracks,
+            soloTracks: _soloTracks,
+          )
+        : null;
+
+    await stop(resetTimelinePosition: false);
+    await _preloadTimelinePlan(firstPlan);
+    if (loopPlan != null) await _preloadTimelinePlan(loopPlan);
+
+    final session = ++_playbackSession;
+    _isPlaying = true;
+    _isTimelinePlayback = true;
+    _looping = loop;
+    _activeTimeline = timeline;
+    _timelineInitialBeat = initial;
+    _timelineRangeStart = rangeStart;
+    _timelineRangeEnd = rangeEnd;
+    _songBeat = initial;
+    _activeSectionId = timeline.sectionAtBeat(initial)?.id;
+    _loopPlan = loopPlan;
+    _scheduledLoopCycles = 0;
+    _activeChordIndex = -1;
+
+    // Leave a short scheduling runway so every source can land on the native
+    // engine clock before the first attack is due.
+    _timelineEngineAnchor =
+        _engine.getEngineTime() + const Duration(milliseconds: 120);
+    _schedulePlanAt(firstPlan, _timelineEngineAnchor);
+
+    if (loopPlan != null && loopPlan.durationBeats > 0) {
+      final firstEnd = _timelineEngineAnchor + _durationForBeats(firstPlan.durationBeats);
+      _schedulePlanAt(loopPlan, firstEnd);
+      _scheduledLoopCycles = 1;
+    }
+
+    _startTimelinePlayhead(session, firstPlan);
+    notifyListeners();
+  }
+
+  /// Moves the full-song playhead. If [resume] is true playback is rescheduled
+  /// from the requested beat; otherwise only the visible playhead moves.
+  Future<void> seekTimeline(
+    SongTimeline timeline,
+    double beat, {
+    bool resume = true,
+  }) async {
+    final target = beat.clamp(0.0, timeline.totalBeats).toDouble();
+    if (!resume) {
+      _songBeat = target;
+      _activeSectionId = timeline.sectionAtBeat(target)?.id;
+      notifyListeners();
+      return;
+    }
+    await playFullSong(timeline, startBeat: target);
+  }
+
+  Future<void> _restartActiveTimeline() async {
+    final timeline = _activeTimeline;
+    if (timeline == null || !_isTimelinePlayback || !_isPlaying) return;
+    final beat = _songBeat.clamp(_timelineRangeStart, _timelineRangeEnd).toDouble();
+    final loop = _looping;
+    final rangeStart = _timelineRangeStart;
+    final rangeEnd = _timelineRangeEnd;
+    await playTimeline(
+      timeline,
+      startBeat: beat,
+      rangeStartBeat: rangeStart,
+      endBeat: rangeEnd,
+      loop: loop,
+    );
+  }
+
+  /// Cancels current Dart/native playback and stops every live or future voice
+  /// known to all waveform sources. Scheduled voices are included in handles.
+  Future<void> stop({bool resetTimelinePosition = true}) async {
     _playbackSession++;
+    _playheadTimer?.cancel();
+    _playheadTimer = null;
 
     final handles = <SoundHandle>{..._activeHandles};
     for (final source in _noteSources.values) {
+      handles.addAll(source.handles);
+    }
+    for (final source in _melodySources.values) {
       handles.addAll(source.handles);
     }
     for (final source in _bassSources.values) {
@@ -205,10 +422,194 @@ class AudioPlaybackService extends ChangeNotifier {
       }
     }
 
-    final changed = _isPlaying || _activeChordIndex != -1;
+    final changed = _isPlaying || _activeChordIndex != -1 || _isTimelinePlayback;
     _isPlaying = false;
+    _isTimelinePlayback = false;
     _activeChordIndex = -1;
+    _activeSectionId = null;
+    _loopPlan = null;
+    _scheduledLoopCycles = 0;
+    if (resetTimelinePosition) {
+      _songBeat = 0;
+      _timelineInitialBeat = 0;
+      _timelineRangeStart = 0;
+      _timelineRangeEnd = 0;
+      _activeTimeline = null;
+    }
     if (changed) notifyListeners();
+  }
+
+  void _startTimelinePlayhead(
+    int session,
+    TimelinePlaybackPlan firstPlan,
+  ) {
+    _playheadTimer?.cancel();
+    _playheadTimer = Timer.periodic(const Duration(milliseconds: 33), (_) {
+      if (!_sessionIsActive(session) || !_isTimelinePlayback || !_isPlaying) {
+        _playheadTimer?.cancel();
+        return;
+      }
+
+      final elapsedMicros =
+          _engine.getEngineTime().inMicroseconds - _timelineEngineAnchor.inMicroseconds;
+      if (elapsedMicros <= 0) {
+        _songBeat = _timelineInitialBeat;
+        notifyListeners();
+        return;
+      }
+
+      final microsPerBeat = _microsPerBeat;
+      final firstMicros = _durationForBeats(firstPlan.durationBeats).inMicroseconds;
+
+      if (elapsedMicros < firstMicros) {
+        _songBeat = (_timelineInitialBeat + (elapsedMicros / microsPerBeat))
+            .clamp(_timelineInitialBeat, _timelineRangeEnd)
+            .toDouble();
+      } else if (_looping && _loopPlan != null && _loopPlan!.durationBeats > 0) {
+        final loopMicros = _durationForBeats(_loopPlan!.durationBeats).inMicroseconds;
+        final loopElapsed = elapsedMicros - firstMicros;
+        final withinLoop = loopElapsed % loopMicros;
+        final cycle = loopElapsed ~/ loopMicros;
+        _songBeat = (_timelineRangeStart + (withinLoop / microsPerBeat))
+            .clamp(_timelineRangeStart, _timelineRangeEnd)
+            .toDouble();
+
+        // Keep one complete loop cycle scheduled ahead to avoid Dart-timer gaps.
+        final remainingInCycle = loopMicros - withinLoop;
+        if (remainingInCycle <= 1500000 && _scheduledLoopCycles <= cycle + 1) {
+          final nextCycleStart = _timelineEngineAnchor +
+              Duration(
+                microseconds: firstMicros + (loopMicros * (cycle + 1)),
+              );
+          _schedulePlanAt(_loopPlan!, nextCycleStart);
+          _scheduledLoopCycles = cycle + 2;
+        }
+      } else {
+        _songBeat = _timelineRangeEnd;
+        _finishTimelinePlayback(session);
+        return;
+      }
+
+      _activeSectionId = _activeTimeline?.sectionAtBeat(_songBeat)?.id;
+      _pruneFinishedHandles();
+      notifyListeners();
+    });
+  }
+
+  void _finishTimelinePlayback(int session) {
+    if (!_sessionIsActive(session)) return;
+    _playheadTimer?.cancel();
+    _playheadTimer = null;
+    _isPlaying = false;
+    _isTimelinePlayback = false;
+    _activeSectionId = _activeTimeline?.sectionAtBeat(_timelineRangeEnd)?.id;
+    _pruneFinishedHandles();
+    notifyListeners();
+  }
+
+  Future<void> _preloadTimelinePlan(TimelinePlaybackPlan plan) async {
+    final futures = <Future<AudioSource>>[];
+    final seen = <String>{};
+    for (final planned in plan.events) {
+      for (final midi in planned.source.midiPitches) {
+        final key = '${planned.source.track.name}:$midi:${_synthCharacter.name}';
+        if (!seen.add(key)) continue;
+        futures.add(_timelineSourceForMidi(planned.source.track, midi));
+      }
+    }
+    if (futures.isNotEmpty) await Future.wait(futures);
+  }
+
+  void _schedulePlanAt(TimelinePlaybackPlan plan, Duration engineStart) {
+    for (final planned in plan.events) {
+      final sourceEvent = planned.source;
+      final relativeBeat = planned.startBeat - plan.startBeat;
+      final atTime = engineStart + _durationForBeats(relativeBeat);
+      final eventDuration = _durationForBeats(planned.durationBeats);
+      final safeDuration = eventDuration.inMilliseconds < 30
+          ? const Duration(milliseconds: 30)
+          : eventDuration;
+
+      for (var pitchIndex = 0;
+          pitchIndex < sourceEvent.midiPitches.length;
+          pitchIndex++) {
+        final midi = sourceEvent.midiPitches[pitchIndex];
+        final source = _cachedTimelineSource(sourceEvent.track, midi);
+        if (source == null) continue;
+        final handle = _engine.playScheduled(
+          source,
+          atTime,
+          duration: safeDuration,
+          volume: _timelineVolume(sourceEvent, pitchIndex),
+          pan: _timelinePan(sourceEvent, pitchIndex),
+        );
+        _activeHandles.add(handle);
+      }
+    }
+  }
+
+  double _timelineVolume(MusicalTimelineEvent event, int pitchIndex) {
+    final velocity = event.performedVelocity;
+    switch (event.track) {
+      case TimelineTrackType.harmony:
+        final emphasis = pitchIndex == 0 ? 1.0 : 0.84;
+        return (_chordVolume * velocity * emphasis).clamp(0.0, 1.0).toDouble();
+      case TimelineTrackType.melody:
+        return (_melodyVolume * velocity).clamp(0.0, 1.0).toDouble();
+      case TimelineTrackType.bass:
+        return (_bassVolume * velocity).clamp(0.0, 1.0).toDouble();
+    }
+  }
+
+  double _timelinePan(MusicalTimelineEvent event, int pitchIndex) {
+    switch (event.track) {
+      case TimelineTrackType.harmony:
+        final count = event.midiPitches.length;
+        if (count <= 1) return 0;
+        final maxPan = 0.28 * _stereoWidth;
+        return -maxPan + (((maxPan * 2) / (count - 1)) * pitchIndex);
+      case TimelineTrackType.melody:
+        return 0.08 * _stereoWidth;
+      case TimelineTrackType.bass:
+        return 0;
+    }
+  }
+
+  Future<AudioSource> _timelineSourceForMidi(
+    TimelineTrackType track,
+    int midi,
+  ) {
+    switch (track) {
+      case TimelineTrackType.harmony:
+        return _sourceForMidi(midi);
+      case TimelineTrackType.melody:
+        return _melodySourceForMidi(midi);
+      case TimelineTrackType.bass:
+        return _bassSourceForMidi(midi);
+    }
+  }
+
+  AudioSource? _cachedTimelineSource(TimelineTrackType track, int midi) {
+    switch (track) {
+      case TimelineTrackType.harmony:
+        return _noteSources['${_synthCharacter.name}:$midi'];
+      case TimelineTrackType.melody:
+        return _melodySources[midi];
+      case TimelineTrackType.bass:
+        return _bassSources[midi];
+    }
+  }
+
+  Duration _durationForBeats(double beats) => Duration(
+        microseconds: max(0, (beats * _microsPerBeat).round()),
+      );
+
+  double get _microsPerBeat => 60000000 / _bpm;
+
+  void _pruneFinishedHandles() {
+    _activeHandles.removeWhere(
+      (handle) => !_engine.getIsValidVoiceHandle(handle),
+    );
   }
 
   Future<void> _playLayeredChord(
@@ -291,9 +692,6 @@ class AudioPlaybackService extends ChangeNotifier {
   ) {
     localHandles.add(handle);
     _activeHandles.add(handle);
-
-    // Waveform sources are continuous oscillators. A native scheduled stop is
-    // the final safety net if Dart-side cancellation/fading is interrupted.
     final hardStop = requestedDuration + const Duration(milliseconds: 450);
     _engine.scheduleStop(handle, hardStop);
   }
@@ -312,6 +710,15 @@ class AudioPlaybackService extends ChangeNotifier {
     );
     _engine.setWaveformFreq(source, _midiFrequency(midi));
     _noteSources[key] = source;
+    return source;
+  }
+
+  Future<AudioSource> _melodySourceForMidi(int midi) async {
+    final existing = _melodySources[midi];
+    if (existing != null) return existing;
+    final source = await _engine.loadWaveform(WaveForm.triangle, false, 0.03, 0.0);
+    _engine.setWaveformFreq(source, _midiFrequency(midi));
+    _melodySources[midi] = source;
     return source;
   }
 
@@ -420,10 +827,14 @@ class AudioPlaybackService extends ChangeNotifier {
     for (final source in _noteSources.values) {
       unawaited(_engine.disposeSource(source));
     }
+    for (final source in _melodySources.values) {
+      unawaited(_engine.disposeSource(source));
+    }
     for (final source in _bassSources.values) {
       unawaited(_engine.disposeSource(source));
     }
     _noteSources.clear();
+    _melodySources.clear();
     _bassSources.clear();
     super.dispose();
   }
