@@ -11,6 +11,7 @@ import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
 import '../widgets/header.dart';
+import '../widgets/performance_controls.dart';
 import '../widgets/producer_brain_panel.dart';
 import '../widgets/song_timeline_preview.dart';
 import '../widgets/studio_transport.dart';
@@ -76,7 +77,13 @@ class HomeScreen extends StatelessWidget {
                             }
                             return Padding(
                               padding: const EdgeInsets.fromLTRB(12, 6, 12, 2),
-                              child: SongTimelinePreview(session: session),
+                              child: Column(
+                                children: [
+                                  SongTimelinePreview(session: session),
+                                  const SizedBox(height: 6),
+                                  PerformanceControls(session: session),
+                                ],
+                              ),
                             );
                           },
                         ),
@@ -89,8 +96,6 @@ class HomeScreen extends StatelessWidget {
               ],
             ),
           ),
-          // Phase 3.75 removes the floating + menu from the primary workflow.
-          // Creation now lives in the explicit Progression / Full Song controls.
           bottomNavigationBar: SafeArea(
             top: false,
             child: Column(
