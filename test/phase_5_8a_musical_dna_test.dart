@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:groovy_chord_generator/engine/genre_song_architecture.dart';
+import 'package:groovy_chord_generator/engine/harmony_engine.dart';
 import 'package:groovy_chord_generator/engine/phrase_model.dart';
 import 'package:groovy_chord_generator/engine/song_architecture.dart';
 import 'package:groovy_chord_generator/engine/song_request.dart';
