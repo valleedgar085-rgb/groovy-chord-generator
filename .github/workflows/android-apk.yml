@@ -37,8 +37,14 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Producer Brain tests
+      - name: Run full regression suite
         run: flutter test
+
+      # Explicitly repeat the adversarial quality gauntlet as the last source
+      # verification step. Android packaging is forbidden unless the God Test
+      # passes independently after every other regression test.
+      - name: GOD TEST - final musical quality gate
+        run: flutter test test/zz_god_test.dart
 
       # The repository currently contains a legacy Capacitor Android wrapper.
       # Build the Flutter app from a clean generated Android host in CI so the
@@ -56,12 +62,12 @@ jobs:
       - name: Build installable debug APK
         run: |
           flutter build apk --debug
-          cp build/app/outputs/flutter-apk/app-debug.apk ChordFlow-SoundEngine-5.9A.apk
+          cp build/app/outputs/flutter-apk/app-debug.apk ChordFlow-EmotionGodJudge-5.10.apk
 
       - name: Upload APK to GitHub Actions
         uses: actions/upload-artifact@v4
         with:
-          name: ChordFlow-SoundEngine-5.9A-APK
-          path: ChordFlow-SoundEngine-5.9A.apk
+          name: ChordFlow-EmotionGodJudge-5.10-APK
+          path: ChordFlow-EmotionGodJudge-5.10.apk
           if-no-files-found: error
           retention-days: 30
