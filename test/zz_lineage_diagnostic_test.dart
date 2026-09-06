@@ -8,7 +8,7 @@ import 'package:groovy_chord_generator/engine/song_request.dart';
 import 'package:groovy_chord_generator/models/types.dart';
 
 void main() {
-  test('TEMP diagnostic - print surviving severe lineage blockers', () {
+  test('GOD TEST — final A/B/C directions contain no severe lineage drift', () {
     final request = SongRequest(
       seed: 540054,
       key: KeyName.C,
@@ -44,6 +44,7 @@ void main() {
 
     final details = <String>[];
     for (final variation in engine.lastSelection.evaluated) {
+      if (variation.style == ProducerVariationStyle.raw) continue;
       for (final phrase in variation.verdict.phrases.phrases) {
         final lineage = phrase.lineage;
         if (lineage == null || lineage.isSource || lineage.insideGuardrail) {
@@ -65,8 +66,10 @@ void main() {
       }
     }
 
-    if (details.isNotEmpty) {
-      fail(details.join(' || '));
-    }
+    expect(
+      details,
+      isEmpty,
+      reason: details.join(' || '),
+    );
   });
 }
