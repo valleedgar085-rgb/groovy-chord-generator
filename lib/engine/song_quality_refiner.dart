@@ -11,8 +11,8 @@ import 'transition_repair_engine.dart';
 /// This is not a score inflater. Phrase candidates still obey Phase 5.8D's
 /// non-regression contract. Transition candidates still obey Phase 5.6's local
 /// handoff contract, and this coordinator adds a second whole-song check before
-/// accepting them. Strong material is therefore protected while weak identity
-/// or boundary handoffs get a final self-correction pass.
+/// accepting them. Strong material is therefore protected while weak identity,
+/// weak-but-valid phrases, or boundary handoffs get a final self-correction pass.
 class SongQualityRefiner {
   const SongQualityRefiner({
     this.memoryExtractor = const SongMemoryExtractor(),
@@ -21,8 +21,10 @@ class SongQualityRefiner {
     this.director = const SongDirectorAnalyzer(),
     this.transitionRepairEngine = const TransitionRepairEngine(),
     this.maxPhraseRepairs = 14,
+    this.maxQualityPhraseRepairs = 6,
     this.maxTransitionRepairs = 7,
     this.transitionTarget = 76.0,
+    this.phraseQualityTarget = 80.0,
   });
 
   final SongMemoryExtractor memoryExtractor;
@@ -31,20 +33,29 @@ class SongQualityRefiner {
   final SongDirectorAnalyzer director;
   final TransitionRepairEngine transitionRepairEngine;
   final int maxPhraseRepairs;
+  final int maxQualityPhraseRepairs;
   final int maxTransitionRepairs;
   final double transitionTarget;
+  final double phraseQualityTarget;
 
   SongDraft refine(SongDraft draft) {
     if (draft.sections.isEmpty) return draft;
 
     // Identity first: this gives transition repair the cleanest possible motif
     // state. Boundary repair may touch the first/last phrase of a section, so a
-    // shorter second phrase pass runs afterward as a final identity safeguard.
+    // second identity pass runs afterward. Finally, weak-but-valid phrases get
+    // the same selective repair treatment; the judge should not accept a phrase
+    // merely because it avoided violating ancestry.
     var current = _refinePhraseLineage(draft, maxPhraseRepairs);
     current = _refineTransitions(current);
     current = _refinePhraseLineage(
       current,
       (maxPhraseRepairs / 2).ceil(),
+    );
+    current = _refineWeakPhrases(current);
+    current = _refinePhraseLineage(
+      current,
+      (maxPhraseRepairs / 3).ceil(),
     );
     return current;
   }
@@ -103,6 +114,54 @@ class SongQualityRefiner {
       final afterLineage =
           chosen.after.metricFor(PhraseProducerDimension.lineage).score;
       if (afterLineage <= beforeLineage + 0.05) {
+        blocked.add(target.phraseId);
+        continue;
+      }
+      current = chosen.draft;
+    }
+
+    return current;
+  }
+
+  SongDraft _refineWeakPhrases(SongDraft draft) {
+    if (maxQualityPhraseRepairs <= 0) return draft;
+    var current = draft;
+    final blocked = <String>{};
+
+    for (var pass = 0; pass < maxQualityPhraseRepairs; pass++) {
+      final memory = memoryExtractor.capture(current);
+      final analysis = phraseAnalyzer.analyze(draft: current, memory: memory);
+      final weak = analysis.phrases
+          .where(
+            (phrase) =>
+                phrase.score + 0.01 < phraseQualityTarget &&
+                !blocked.contains(phrase.phraseId),
+          )
+          .toList()
+        ..sort((a, b) => a.score.compareTo(b.score));
+      if (weak.isEmpty) break;
+
+      final target = weak.first;
+      final variants = phraseRepairEngine.build(
+        draft: current,
+        phraseId: target.phraseId,
+      );
+      PhraseRepairVariant? chosen;
+      for (final variant in variants) {
+        if (variant.after.score <= target.score + 0.15) continue;
+        if (variant.afterOverallScore + 0.01 < analysis.overallScore) continue;
+        final afterLineage = variant.after.lineage;
+        if (afterLineage != null &&
+            !afterLineage.isSource &&
+            !variant.after.lineageInsideGuardrail &&
+            _isSevereLineage(variant.after)) {
+          continue;
+        }
+        chosen = variant;
+        break;
+      }
+
+      if (chosen == null) {
         blocked.add(target.phraseId);
         continue;
       }
@@ -190,15 +249,21 @@ class SongQualityRefiner {
   int _severeLineageCount(SongPhraseProducerAnalysis analysis) {
     var count = 0;
     for (final phrase in analysis.phrases) {
-      final lineage = phrase.lineage;
-      if (lineage == null || lineage.isSource || lineage.insideGuardrail) continue;
-      final similarity = lineage.sourceSimilarity;
-      final window = lineage.targetWindow;
-      final gap = similarity < window.minimum
-          ? window.minimum - similarity
-          : similarity - window.maximum;
-      if (similarity >= 0.985 || gap >= 0.10) count++;
+      if (_isSevereLineage(phrase)) count++;
     }
     return count;
+  }
+
+  bool _isSevereLineage(PhraseProducerAssessment phrase) {
+    final lineage = phrase.lineage;
+    if (lineage == null || lineage.isSource || lineage.insideGuardrail) {
+      return false;
+    }
+    final similarity = lineage.sourceSimilarity;
+    final window = lineage.targetWindow;
+    final gap = similarity < window.minimum
+        ? window.minimum - similarity
+        : similarity - window.maximum;
+    return similarity >= 0.985 || gap >= 0.10;
   }
 }
