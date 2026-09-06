@@ -24,7 +24,7 @@ class EmotionPerformanceShaper {
   }) {
     if (melody.isEmpty) return const <MelodyNote>[];
     final intent = director.intentFor(mood: mood, section: section);
-    final thinned = _thinForSpace(melody, intent);
+    final thinned = _thinForSpace(melody, intent, section);
     final count = thinned.length;
 
     return List<MelodyNote>.unmodifiable(
@@ -54,10 +54,11 @@ class EmotionPerformanceShaper {
         for (var i = 0; i < count; i++)
           BassNote(
             note: bass[i].note,
-            duration: _bassDuration(bass[i].duration, intent),
+            duration: _bassDuration(bass[i].duration, intent, section),
             velocity: _bassVelocity(
               bass[i].velocity,
               intent,
+              section,
               position: count <= 1 ? 0.0 : i / (count - 1),
             ),
             octave: bass[i].octave,
@@ -71,17 +72,37 @@ class EmotionPerformanceShaper {
   List<MelodyNote> _thinForSpace(
     List<MelodyNote> melody,
     EmotionIntent intent,
+    SongSectionPlan section,
   ) {
-    if (melody.length < 5 || intent.space < 0.58) {
+    if (melody.length < 5) return melody;
+
+    final id = section.id.toLowerCase();
+    final payoff = _isPayoff(section);
+    final finalPayoff = id.contains('final') || id.contains('climax');
+    if (payoff || finalPayoff) {
+      // Payoff sections keep their available phrase events. The emotional arc
+      // should arrive with more information than the setup, not by deleting the
+      // hook notes the Phrase Composer just authored.
       return melody;
     }
+
+    final roleSpace = switch (section.type) {
+      SongSectionType.intro => 0.10,
+      SongSectionType.verse => 0.08,
+      SongSectionType.preChorus => 0.035,
+      SongSectionType.chorus => 0.0,
+      SongSectionType.bridge => 0.07,
+      SongSectionType.outro => 0.14,
+    };
+    final effectiveSpace = (intent.space + roleSpace).clamp(0.0, 1.0).toDouble();
+    if (effectiveSpace < 0.54) return melody;
 
     final byChord = <int, List<MelodyNote>>{};
     for (final note in melody) {
       byChord.putIfAbsent(note.chordIndex, () => <MelodyNote>[]).add(note);
     }
     final result = <MelodyNote>[];
-    final aggressive = intent.space >= 0.72;
+    final aggressive = effectiveSpace >= 0.70;
     for (final entry in byChord.entries) {
       final notes = entry.value;
       if (notes.length <= 2) {
@@ -107,6 +128,8 @@ class EmotionPerformanceShaper {
     final position = count <= 1 ? 0.0 : index / (count - 1);
     final peak = _peakShape(position, section);
     var velocity = note.velocity + intent.velocityBias;
+    velocity += _sectionDynamicBias(section);
+    velocity += (section.targetEnergy - 0.55) * 0.12;
     velocity += peak * (intent.arousal - 0.50) * 0.10;
     velocity += peak * max(0.0, intent.contourLift) * 0.08;
     if (position > 0.82 && section.type == SongSectionType.outro) {
@@ -117,18 +140,18 @@ class EmotionPerformanceShaper {
     // Octave emphasis is deliberately sparse: changing every note's register
     // would damage motif identity. Payoff peaks may lift one recognizable note;
     // dark/low-brightness material may ground selected interior notes.
-    final payoff = section.type == SongSectionType.chorus ||
-        section.id.toLowerCase().contains('hook') ||
-        section.id.toLowerCase().contains('drop') ||
-        section.id.toLowerCase().contains('climax');
+    final payoff = _isPayoff(section);
     if (intent.registerShift >= 4 && payoff && peak > 0.82 && index % 3 == 0) {
       octave = min(6, octave + 1);
     } else if (intent.registerShift <= -4 && !payoff && peak < 0.40 && index % 4 == 1) {
       octave = max(3, octave - 1);
     }
 
-    final durationScale = (1.0 + (intent.space - 0.50) * 0.20 - intent.arousal * 0.04)
-        .clamp(0.84, 1.16)
+    final durationScale = (1.0 +
+            (intent.space - 0.50) * 0.20 -
+            intent.arousal * 0.04 -
+            (_isPayoff(section) ? 0.035 : 0.0))
+        .clamp(0.82, 1.16)
         .toDouble();
 
     return MelodyNote(
@@ -142,21 +165,57 @@ class EmotionPerformanceShaper {
 
   double _bassVelocity(
     double velocity,
-    EmotionIntent intent, {
+    EmotionIntent intent,
+    SongSectionPlan section, {
     required double position,
   }) {
     final pulse = sin(position * pi * 2).abs() * 0.018;
-    return (velocity + intent.velocityBias * 0.58 + pulse)
+    return (velocity +
+            intent.velocityBias * 0.58 +
+            _sectionDynamicBias(section) * 0.72 +
+            (section.targetEnergy - 0.55) * 0.075 +
+            pulse)
         .clamp(0.30, 0.98)
         .toDouble();
   }
 
-  double _bassDuration(double duration, EmotionIntent intent) {
-    // High-arousal moods tighten the bass; intimate/relaxed moods let it breathe.
-    final scale = (1.04 + intent.intimacy * 0.10 - intent.arousal * 0.13)
-        .clamp(0.82, 1.12)
+  double _bassDuration(
+    double duration,
+    EmotionIntent intent,
+    SongSectionPlan section,
+  ) {
+    // High-arousal/payoff sections get a tighter low end; intimate/relaxed
+    // sections are allowed more sustain.
+    final payoffTightening = _isPayoff(section) ? 0.055 : 0.0;
+    final scale = (1.04 +
+            intent.intimacy * 0.10 -
+            intent.arousal * 0.13 -
+            payoffTightening)
+        .clamp(0.78, 1.12)
         .toDouble();
     return (duration * scale).clamp(0.20, 4.5).toDouble();
+  }
+
+  double _sectionDynamicBias(SongSectionPlan section) {
+    final id = section.id.toLowerCase();
+    if (id.contains('final') || id.contains('climax')) return 0.13;
+    if (id.contains('drop') || id.contains('hook')) return 0.10;
+    return switch (section.type) {
+      SongSectionType.intro => -0.07,
+      SongSectionType.verse => -0.055,
+      SongSectionType.preChorus => -0.015,
+      SongSectionType.chorus => 0.085,
+      SongSectionType.bridge => -0.035,
+      SongSectionType.outro => -0.10,
+    };
+  }
+
+  bool _isPayoff(SongSectionPlan section) {
+    final id = section.id.toLowerCase();
+    return section.type == SongSectionType.chorus ||
+        id.contains('hook') ||
+        id.contains('drop') ||
+        id.contains('climax');
   }
 
   double _peakShape(double position, SongSectionPlan section) {
