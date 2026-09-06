@@ -149,7 +149,7 @@ class SongQualityRefiner {
       PhraseRepairVariant? chosen;
       for (final variant in variants) {
         if (variant.after.score <= target.score + 0.15) continue;
-        if (variant.afterOverallScore + 0.01 < analysis.overallScore) continue;
+        if (variant.afterSongScore + 0.01 < analysis.overallScore) continue;
         final afterLineage = variant.after.lineage;
         if (afterLineage != null &&
             !afterLineage.isSource &&
