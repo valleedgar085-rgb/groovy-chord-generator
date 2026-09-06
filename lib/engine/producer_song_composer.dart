@@ -2,6 +2,7 @@ import 'dart:math';
 
 import '../models/types.dart';
 import '../utils/music_theory.dart';
+import 'emotion_performance_shaper.dart';
 import 'phrase_composer.dart';
 import 'seeded_harmony_builder.dart';
 import 'seeded_music_generation.dart';
@@ -17,8 +18,8 @@ import 'song_section_candidate_pool.dart';
 /// This class deliberately has no Flutter/provider dependency. It composes the
 /// arrangement with [SongArchitect], builds harmony through the same
 /// [SeededHarmonyBuilder] used by single-progression generation, then attaches
-/// deterministic phrase-first melody, bass, and performance metadata per
-/// section.
+/// deterministic phrase-first melody, bass, emotional performance shaping, and
+/// performance metadata per section.
 class ProducerSongComposer {
   ProducerSongComposer({
     SongArchitect? architect,
@@ -26,17 +27,20 @@ class ProducerSongComposer {
     SeededHarmonyBuilder? harmonyBuilder,
     SeededMusicGeneration? generation,
     PhraseComposer? phraseComposer,
+    EmotionPerformanceShaper? emotionShaper,
   })  : _architect = architect ?? SongArchitect(),
         _candidatePool = candidatePool ?? SongSectionCandidatePool(),
         _harmonyBuilder = harmonyBuilder ?? const SeededHarmonyBuilder(),
         _generation = generation ?? const SeededMusicGeneration(),
-        _phraseComposer = phraseComposer ?? const PhraseComposer();
+        _phraseComposer = phraseComposer ?? const PhraseComposer(),
+        _emotionShaper = emotionShaper ?? const EmotionPerformanceShaper();
 
   final SongArchitect _architect;
   final SongSectionCandidatePool _candidatePool;
   final SeededHarmonyBuilder _harmonyBuilder;
   final SeededMusicGeneration _generation;
   final PhraseComposer _phraseComposer;
+  final EmotionPerformanceShaper _emotionShaper;
 
   SongDraft compose({
     required SongRequest request,
@@ -181,7 +185,7 @@ class ProducerSongComposer {
       section: section.candidate.section,
     );
 
-    final melody = request.includeMelody
+    final rawMelody = request.includeMelody
         ? _phraseComposer
             .compose(
               random: Random(sectionRequest.melodySeed),
@@ -196,13 +200,28 @@ class ProducerSongComposer {
             )
             .melody
         : const <MelodyNote>[];
-    final bass = request.includeBass
+    final melody = request.includeMelody
+        ? _emotionShaper.shapeMelody(
+            melody: rawMelody,
+            mood: request.mood,
+            section: section.plan,
+          )
+        : const <MelodyNote>[];
+
+    final rawBass = request.includeBass
         ? _generation.generateBass(
             random: Random(sectionRequest.bassSeed),
             progression: progression,
             style: bassStyle,
             variety: bassVariety,
             rhythm: request.rhythm,
+          )
+        : const <BassNote>[];
+    final bass = request.includeBass
+        ? _emotionShaper.shapeBass(
+            bass: rawBass,
+            mood: request.mood,
+            section: section.plan,
           )
         : const <BassNote>[];
 
