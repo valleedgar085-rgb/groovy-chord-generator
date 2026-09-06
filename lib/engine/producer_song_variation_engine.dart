@@ -13,6 +13,7 @@ import 'seeded_music_generation.dart';
 import 'song_architecture.dart';
 import 'song_candidate.dart';
 import 'song_draft.dart';
+import 'song_quality_refiner.dart';
 import 'song_request.dart';
 import 'song_timeline.dart';
 import 'song_timeline_builder.dart';
@@ -64,7 +65,8 @@ class ProducerSongSelection {
   final List<ProducerSongVariation> evaluated;
   final List<ProducerSongVariation> visible;
 
-  bool get satisfied => visible.length == 3 && visible.every((item) => item.godApproved);
+  bool get satisfied =>
+      visible.length == 3 && visible.every((item) => item.godApproved);
   int get approvedCount => evaluated.where((item) => item.godApproved).length;
   int get rejectedCount => evaluated.length - approvedCount;
 
@@ -89,9 +91,10 @@ class ProducerSongSelection {
 /// Full-song Producer renderer plus Phase 5.10 final selection gate.
 ///
 /// Four internal directions are evaluated: current/raw, Polished, Creative and
-/// Hook. Exactly the best three are exposed only when at least three pass the
-/// final God Judge. This prevents a weak direction from being shown merely to
-/// fill an A/B/C slot.
+/// Hook. Before judging, every full-song direction is allowed the same proven
+/// selective phrase-lineage cleanup. Exactly the best three are exposed only
+/// when at least three pass the final God Judge. A weak direction can never be
+/// shown merely to fill an A/B/C slot.
 class ProducerSongVariationEngine {
   ProducerSongVariationEngine({
     ProducerCandidateRefiner? refiner,
@@ -101,6 +104,7 @@ class ProducerSongVariationEngine {
     ProducerAnalyzer? analyzer,
     SongTimelineBuilder? timelineBuilder,
     EmotionPerformanceShaper? emotionShaper,
+    SongQualityRefiner? qualityRefiner,
     GodJudge? godJudge,
   })  : _refiner = refiner ?? const ProducerCandidateRefiner(),
         _realizer = realizer ?? const HarmonicRealizer(),
@@ -109,6 +113,7 @@ class ProducerSongVariationEngine {
         _analyzer = analyzer ?? ProducerAnalyzer(),
         _timelineBuilder = timelineBuilder ?? const SongTimelineBuilder(),
         _emotionShaper = emotionShaper ?? const EmotionPerformanceShaper(),
+        _qualityRefiner = qualityRefiner ?? const SongQualityRefiner(),
         _godJudge = godJudge ?? const GodJudge();
 
   final ProducerCandidateRefiner _refiner;
@@ -118,6 +123,7 @@ class ProducerSongVariationEngine {
   final ProducerAnalyzer _analyzer;
   final SongTimelineBuilder _timelineBuilder;
   final EmotionPerformanceShaper _emotionShaper;
+  final SongQualityRefiner _qualityRefiner;
   final GodJudge _godJudge;
 
   ProducerSongSelection _lastSelection = ProducerSongSelection.empty();
@@ -138,27 +144,30 @@ class ProducerSongVariationEngine {
       return const <ProducerSongVariation>[];
     }
 
+    final judgedBase = request.includeMelody
+        ? _qualityRefiner.refine(baseDraft)
+        : baseDraft;
     final baselineScore = _draftScore(
-      baseDraft,
+      judgedBase,
       request: request,
       tempo: tempo,
       swing: swing,
       grooveTemplate: grooveTemplate,
     );
     final baselineTimeline = _timelineBuilder.build(
-      baseDraft,
+      judgedBase,
       performanceProfile: performanceProfile,
     );
     final baseline = ProducerSongVariation(
       style: ProducerVariationStyle.raw,
-      draft: baseDraft,
+      draft: judgedBase,
       timeline: baselineTimeline,
       score: baselineScore,
       baselineScore: baselineScore,
       repairs: const <String>[],
-      changedSectionCount: 0,
+      changedSectionCount: _changedSectionCount(baseDraft, judgedBase),
       verdict: _godJudge.evaluate(
-        draft: baseDraft,
+        draft: judgedBase,
         request: request,
         timeline: baselineTimeline,
       ),
@@ -173,7 +182,7 @@ class ProducerSongVariationEngine {
       ])
         _buildStyle(
           style: style,
-          baseDraft: baseDraft,
+          baseDraft: judgedBase,
           request: request,
           performanceProfile: performanceProfile,
           bassStyle: bassStyle,
@@ -216,7 +225,6 @@ class ProducerSongVariationEngine {
   }) {
     var variedDraft = SongDraft(plan: baseDraft.plan);
     final allRepairs = <String>[];
-    var scoreTotal = 0.0;
     var changedSections = 0;
 
     for (final section in baseDraft.sections) {
@@ -317,7 +325,6 @@ class ProducerSongVariationEngine {
         swing: swing,
         grooveTemplate: grooveTemplate,
       );
-      scoreTotal += analysis.overallScore;
 
       final candidate = SongCandidate(
         progression: progression,
@@ -345,7 +352,19 @@ class ProducerSongVariationEngine {
       }
     }
 
-    final score = scoreTotal / max(1, variedDraft.sections.length);
+    final beforeQualityRefine = variedDraft;
+    if (request.includeMelody) {
+      variedDraft = _qualityRefiner.refine(variedDraft);
+    }
+    changedSections += _changedSectionCount(beforeQualityRefine, variedDraft);
+
+    final score = _draftScore(
+      variedDraft,
+      request: request,
+      tempo: tempo,
+      swing: swing,
+      grooveTemplate: grooveTemplate,
+    );
     final timeline = _timelineBuilder.build(
       variedDraft,
       performanceProfile: performanceProfile,
@@ -414,6 +433,26 @@ class ProducerSongVariationEngine {
     }
     return total / draft.sections.length;
   }
+
+  int _changedSectionCount(SongDraft before, SongDraft after) {
+    var changed = 0;
+    for (final section in before.sections) {
+      final other = after.sectionById(section.plan.id);
+      if (other == null ||
+          _melodySignature(section.melody) != _melodySignature(other.melody) ||
+          !_sameProgression(section.progression, other.progression)) {
+        changed++;
+      }
+    }
+    return changed;
+  }
+
+  String _melodySignature(List<MelodyNote> melody) => melody
+      .map(
+        (note) =>
+            '${note.note}${note.octave}/${note.duration.toStringAsFixed(4)}/${note.velocity.toStringAsFixed(4)}/${note.chordIndex}',
+      )
+      .join('|');
 
   bool _sameProgression(List<Chord> a, List<Chord> b) {
     if (a.length != b.length) return false;
