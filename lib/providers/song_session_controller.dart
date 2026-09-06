@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../engine/performance_profile.dart';
+import '../engine/phrase_repair_engine.dart';
 import '../engine/producer_song_composer.dart';
 import '../engine/producer_song_variation_engine.dart';
 import '../engine/song_architecture.dart';
@@ -24,6 +25,7 @@ class SongSessionController extends ChangeNotifier {
     SongTimelineBuilder? timelineBuilder,
     ProducerSongVariationEngine? producerVariationEngine,
     TransitionRepairEngine? transitionRepairEngine,
+    PhraseRepairEngine? phraseRepairEngine,
   })  : _composer = composer ?? ProducerSongComposer(),
         _developmentEngine = developmentEngine ?? SongDevelopmentEngine(),
         _memoryExtractor = memoryExtractor ?? const SongMemoryExtractor(),
@@ -31,7 +33,8 @@ class SongSessionController extends ChangeNotifier {
         _producerVariationEngine =
             producerVariationEngine ?? ProducerSongVariationEngine(),
         _transitionRepairEngine =
-            transitionRepairEngine ?? const TransitionRepairEngine();
+            transitionRepairEngine ?? const TransitionRepairEngine(),
+        _phraseRepairEngine = phraseRepairEngine ?? const PhraseRepairEngine();
 
   final ProducerSongComposer _composer;
   final SongDevelopmentEngine _developmentEngine;
@@ -39,6 +42,7 @@ class SongSessionController extends ChangeNotifier {
   final SongTimelineBuilder _timelineBuilder;
   final ProducerSongVariationEngine _producerVariationEngine;
   final TransitionRepairEngine _transitionRepairEngine;
+  final PhraseRepairEngine _phraseRepairEngine;
 
   SongDraft? _currentDraft;
   SongMemory? _currentMemory;
@@ -58,6 +62,8 @@ class SongSessionController extends ChangeNotifier {
       <_SectionRegenerationOp>[];
   final Map<String, TransitionRepairStyle> _activeTransitionRepairs =
       <String, TransitionRepairStyle>{};
+  final Map<String, PhraseRepairStyle> _activePhraseRepairs =
+      <String, PhraseRepairStyle>{};
 
   SongDraft? get currentDraft => _currentDraft;
   SongMemory? get currentMemory => _currentMemory;
@@ -77,6 +83,8 @@ class SongSessionController extends ChangeNotifier {
       Map<String, int>.unmodifiable(_sectionRevisions);
   Map<String, TransitionRepairStyle> get activeTransitionRepairs =>
       Map<String, TransitionRepairStyle>.unmodifiable(_activeTransitionRepairs);
+  Map<String, PhraseRepairStyle> get activePhraseRepairs =>
+      Map<String, PhraseRepairStyle>.unmodifiable(_activePhraseRepairs);
 
   int revisionFor(String sectionId) => _sectionRevisions[sectionId] ?? 0;
 
@@ -85,6 +93,9 @@ class SongSessionController extends ChangeNotifier {
     String toSectionId,
   ) =>
       _activeTransitionRepairs[_transitionKey(fromSectionId, toSectionId)];
+
+  PhraseRepairStyle? phraseRepairFor(String phraseId) =>
+      _activePhraseRepairs[phraseId];
 
   GeneratedSongSection? get selectedSection {
     final draft = _currentDraft;
@@ -158,6 +169,7 @@ class SongSessionController extends ChangeNotifier {
     _sectionRevisions.clear();
     _regenerationOps.clear();
     _activeTransitionRepairs.clear();
+    _activePhraseRepairs.clear();
     notifyListeners();
   }
 
@@ -196,6 +208,7 @@ class SongSessionController extends ChangeNotifier {
     _sectionRevisions[targetId] = revision;
     _regenerationOps.add(_SectionRegenerationOp(targetId, revision));
     _activeTransitionRepairs.clear();
+    _activePhraseRepairs.clear();
     notifyListeners();
     return true;
   }
@@ -310,6 +323,7 @@ class SongSessionController extends ChangeNotifier {
     _sectionRevisions.clear();
     _regenerationOps.clear();
     _activeTransitionRepairs.clear();
+    _activePhraseRepairs.clear();
 
     if (previouslySelected != null &&
         variation.draft.sectionById(previouslySelected) != null) {
@@ -368,9 +382,69 @@ class SongSessionController extends ChangeNotifier {
     _activeProducerSongStyle = null;
     _sectionRevisions.clear();
     _regenerationOps.clear();
+    _activePhraseRepairs.clear();
     _activeTransitionRepairs[
       _transitionKey(variant.fromSectionId, variant.toSectionId)
     ] = variant.style;
+    notifyListeners();
+    return true;
+  }
+
+  /// Builds safe alternatives for one phrase. If [phraseId] is omitted the
+  /// Phrase Producer Brain's weakest current phrase is targeted automatically.
+  List<PhraseRepairVariant> buildPhraseRepairVariants([String? phraseId]) {
+    final draft = _currentDraft;
+    if (draft == null) return const <PhraseRepairVariant>[];
+    return _phraseRepairEngine.build(
+      draft: draft,
+      phraseId: phraseId,
+    );
+  }
+
+  /// Commits the exact phrase repair that was scored against the current song.
+  /// The repair is recomputed first so stale UI variants cannot overwrite a song
+  /// that changed after preview. The resulting custom draft becomes the exact
+  /// deterministic replay baseline.
+  bool applyPhraseRepairVariant(PhraseRepairVariant variant) {
+    final current = _currentDraft;
+    final plan = _lastPlan;
+    if (current == null ||
+        plan == null ||
+        !variant.improved ||
+        variant.draft.plan.seed != plan.seed ||
+        variant.draft.sections.length != current.sections.length ||
+        current.sectionById(variant.sectionId) == null ||
+        _currentMemory?.phrase(variant.phraseId) == null) {
+      return false;
+    }
+
+    PhraseRepairVariant? fresh;
+    for (final candidate in _phraseRepairEngine.build(
+      draft: current,
+      phraseId: variant.phraseId,
+    )) {
+      if (candidate.style == variant.style) {
+        fresh = candidate;
+        break;
+      }
+    }
+    if (fresh == null ||
+        (fresh.before.score - variant.before.score).abs() > 0.001 ||
+        (fresh.after.score - variant.after.score).abs() > 0.001 ||
+        fresh.changedNoteCount != variant.changedNoteCount) {
+      return false;
+    }
+
+    _currentDraft = fresh.draft;
+    _refreshDerivedSongState(fresh.draft);
+    _selectedSectionId = fresh.sectionId;
+    _producerReplayBaseDraft = fresh.draft;
+    _producerVariationOriginDraft = fresh.draft;
+    _activeProducerSongStyle = null;
+    _sectionRevisions.clear();
+    _regenerationOps.clear();
+    _activeTransitionRepairs.clear();
+    _activePhraseRepairs[fresh.phraseId] = fresh.style;
     notifyListeners();
     return true;
   }
@@ -413,6 +487,7 @@ class SongSessionController extends ChangeNotifier {
     _sectionRevisions.clear();
     _regenerationOps.clear();
     _activeTransitionRepairs.clear();
+    _activePhraseRepairs.clear();
     notifyListeners();
   }
 
