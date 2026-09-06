@@ -4,6 +4,7 @@ import 'package:groovy_chord_generator/engine/performance_profile.dart';
 import 'package:groovy_chord_generator/engine/producer_song_composer.dart';
 import 'package:groovy_chord_generator/engine/producer_song_variation_engine.dart';
 import 'package:groovy_chord_generator/engine/song_architecture.dart';
+import 'package:groovy_chord_generator/engine/song_candidate.dart';
 import 'package:groovy_chord_generator/engine/song_request.dart';
 import 'package:groovy_chord_generator/models/types.dart';
 
