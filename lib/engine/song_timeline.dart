@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'performance_profile.dart';
 import 'song_architecture.dart';
 
@@ -44,9 +46,39 @@ class MusicalTimelineEvent {
 
   double get endBeat => startBeat + durationBeats;
   double get performedStartBeat => startBeat + performance.timingOffsetBeats;
-  double get performedDurationBeats => durationBeats * performance.gateRatio;
-  double get performedVelocity =>
-      (velocity * performance.velocityScale).clamp(0.0, 1.0).toDouble();
+
+  /// Playback duration is deliberately bounded separately from the canonical
+  /// note value. This lets long written notes remain intact for editing/export
+  /// while lead and bass voices release in a musically useful amount of time.
+  double get performedDurationBeats => math.min(
+        durationBeats * performance.gateRatio,
+        performance.maxDurationBeats,
+      );
+
+  /// Velocity remains deterministic but now converts performance accents into
+  /// audible dynamics and compensates dense chord stacks before they hit the
+  /// mixer. The canonical written velocity is not mutated.
+  double get performedVelocity {
+    final accentGain = 1.0 + (performance.accent * 0.12);
+    final articulationGain = switch (performance.articulation) {
+      ArticulationIntent.legato => 0.98,
+      ArticulationIntent.normal => 1.0,
+      ArticulationIntent.detached => 0.97,
+      ArticulationIntent.staccato => 0.94,
+      ArticulationIntent.accent => 1.06,
+    };
+    final polyphonyCompensation = track == TimelineTrackType.harmony &&
+            midiPitches.length > 1
+        ? 1.0 / math.sqrt(1.0 + ((midiPitches.length - 1) * 0.18))
+        : 1.0;
+    return (velocity *
+            performance.velocityScale *
+            accentGain *
+            articulationGain *
+            polyphonyCompensation)
+        .clamp(0.0, 1.0)
+        .toDouble();
+  }
 }
 
 /// Beat-range metadata for one arrangement section.
