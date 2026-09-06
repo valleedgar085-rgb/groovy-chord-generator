@@ -20,9 +20,9 @@ class SongQualityRefiner {
     this.phraseRepairEngine = const PhraseRepairEngine(),
     this.director = const SongDirectorAnalyzer(),
     this.transitionRepairEngine = const TransitionRepairEngine(),
-    this.maxPhraseRepairs = 14,
-    this.maxQualityPhraseRepairs = 6,
-    this.maxTransitionRepairs = 7,
+    this.maxPhraseRepairs = 20,
+    this.maxQualityPhraseRepairs = 8,
+    this.maxTransitionRepairs = 10,
     this.transitionTarget = 76.0,
     this.phraseQualityTarget = 80.0,
   });
@@ -55,7 +55,7 @@ class SongQualityRefiner {
     current = _refineWeakPhrases(current);
     current = _refinePhraseLineage(
       current,
-      (maxPhraseRepairs / 3).ceil(),
+      (maxPhraseRepairs / 2).ceil(),
     );
     return current;
   }
@@ -78,6 +78,8 @@ class SongQualityRefiner {
           )
           .toList()
         ..sort((a, b) {
+          final bySeverity = _lineageDistance(b).compareTo(_lineageDistance(a));
+          if (bySeverity != 0) return bySeverity;
           final byLineage = a
               .metricFor(PhraseProducerDimension.lineage)
               .score
@@ -88,6 +90,7 @@ class SongQualityRefiner {
       if (violations.isEmpty) break;
 
       final target = violations.first;
+      final beforeDistance = _lineageDistance(target);
       final variants = phraseRepairEngine.build(
         draft: current,
         phraseId: target.phraseId,
@@ -97,23 +100,26 @@ class SongQualityRefiner {
         continue;
       }
 
+      // Do not assume IDENTITY BALANCE is always the best rescue. Every repair
+      // style is re-extracted through Song Memory, so choose the candidate that
+      // gets closest to the actual A/A'/A'' similarity window while retaining
+      // the non-regression guarantees already enforced by PhraseRepairEngine.
       PhraseRepairVariant? chosen;
+      var chosenDistance = double.infinity;
       for (final variant in variants) {
-        if (variant.after.lineageInsideGuardrail) {
+        final distance = _lineageDistance(variant.after);
+        if (distance + 0.0001 >= beforeDistance) continue;
+        if (variant.afterSongScore + 0.01 < analysis.overallScore) continue;
+        if (chosen == null ||
+            distance + 0.0001 < chosenDistance ||
+            ((distance - chosenDistance).abs() <= 0.0001 &&
+                variant.after.score > chosen.after.score)) {
           chosen = variant;
-          break;
+          chosenDistance = distance;
         }
       }
-      chosen ??= variants.firstWhere(
-        (variant) => variant.style == PhraseRepairStyle.identityBalance,
-        orElse: () => variants.first,
-      );
 
-      final beforeLineage =
-          target.metricFor(PhraseProducerDimension.lineage).score;
-      final afterLineage =
-          chosen.after.metricFor(PhraseProducerDimension.lineage).score;
-      if (afterLineage <= beforeLineage + 0.05) {
+      if (chosen == null) {
         blocked.add(target.phraseId);
         continue;
       }
@@ -150,13 +156,7 @@ class SongQualityRefiner {
       for (final variant in variants) {
         if (variant.after.score <= target.score + 0.15) continue;
         if (variant.afterSongScore + 0.01 < analysis.overallScore) continue;
-        final afterLineage = variant.after.lineage;
-        if (afterLineage != null &&
-            !afterLineage.isSource &&
-            !variant.after.lineageInsideGuardrail &&
-            _isSevereLineage(variant.after)) {
-          continue;
-        }
+        if (_isSevereLineage(variant.after)) continue;
         chosen = variant;
         break;
       }
@@ -211,6 +211,7 @@ class SongQualityRefiner {
       }
 
       TransitionRepairVariant? chosen;
+      double chosenDirectorScore = -1;
       for (final variant in variants) {
         if (variant.after.score <= target.score + 0.05) continue;
         final afterMemory = memoryExtractor.capture(variant.draft);
@@ -225,15 +226,23 @@ class SongQualityRefiner {
         if (afterDirector.overallScore + 0.01 < beforeDirector.overallScore) {
           continue;
         }
-        if (afterPhrase.overallScore + 0.05 < beforePhrase.overallScore) {
+        // A microscopic whole-song phrase tradeoff is permitted only when no
+        // severe identity issue is introduced. This lets a genuinely stronger
+        // handoff win without damaging Musical DNA.
+        if (afterPhrase.overallScore + 0.20 < beforePhrase.overallScore) {
           continue;
         }
         if (_severeLineageCount(afterPhrase) >
             _severeLineageCount(beforePhrase)) {
           continue;
         }
-        chosen = variant;
-        break;
+        final composite = variant.after.score * 0.72 +
+            afterDirector.overallScore * 0.20 +
+            afterPhrase.overallScore * 0.08;
+        if (chosen == null || composite > chosenDirectorScore) {
+          chosen = variant;
+          chosenDirectorScore = composite;
+        }
       }
 
       if (chosen == null) {
@@ -254,16 +263,27 @@ class SongQualityRefiner {
     return count;
   }
 
+  double _lineageDistance(PhraseProducerAssessment phrase) {
+    final lineage = phrase.lineage;
+    if (lineage == null || lineage.isSource || lineage.insideGuardrail) {
+      return 0.0;
+    }
+    final value = lineage.sourceSimilarity;
+    final window = lineage.targetWindow;
+    return value < window.minimum
+        ? window.minimum - value
+        : value - window.maximum;
+  }
+
   bool _isSevereLineage(PhraseProducerAssessment phrase) {
     final lineage = phrase.lineage;
     if (lineage == null || lineage.isSource || lineage.insideGuardrail) {
       return false;
     }
     final similarity = lineage.sourceSimilarity;
-    final window = lineage.targetWindow;
-    final gap = similarity < window.minimum
-        ? window.minimum - similarity
-        : similarity - window.maximum;
-    return similarity >= 0.985 || gap >= 0.10;
+    final gap = _lineageDistance(phrase);
+    // Keep this definition exactly aligned with GodJudge. Pre-judge cleanup
+    // must never call a phrase safe when the final gate will still veto it.
+    return similarity >= 0.985 || gap >= 0.075;
   }
 }
