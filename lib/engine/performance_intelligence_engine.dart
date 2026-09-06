@@ -41,24 +41,6 @@ class PerformanceIntelligenceEngine {
     final metricStrength = downbeat ? 1.0 : (quarterBeat ? 0.52 : 0.18);
     final accent = (metricStrength * profile.punch).clamp(0.0, 1.0).toDouble();
 
-    final trackBaseGate = switch (track) {
-      TimelineTrackType.harmony => 0.91,
-      TimelineTrackType.melody => 0.86,
-      TimelineTrackType.bass => 0.78,
-    };
-    final gateRatio = (trackBaseGate +
-            (profile.looseness * 0.07) -
-            (profile.punch * (track == TimelineTrackType.bass ? 0.12 : 0.07)))
-        .clamp(0.48, 0.98)
-        .toDouble();
-
-    final velocityScale = (0.84 +
-            (profile.punch * 0.27) +
-            (accent * 0.09) +
-            (noise * profile.looseness * 0.04))
-        .clamp(0.68, 1.32)
-        .toDouble();
-
     final articulation = _articulationFor(
       track: track,
       durationBeats: durationBeats,
@@ -66,12 +48,46 @@ class PerformanceIntelligenceEngine {
       accent: accent,
     );
 
+    final trackBaseGate = switch (track) {
+      TimelineTrackType.harmony => 0.91,
+      TimelineTrackType.melody => 0.86,
+      TimelineTrackType.bass => 0.78,
+    };
+    final articulationGate = switch (articulation) {
+      ArticulationIntent.legato => 1.03,
+      ArticulationIntent.normal => 1.0,
+      ArticulationIntent.detached => 0.82,
+      ArticulationIntent.staccato => 0.58,
+      ArticulationIntent.accent => 0.76,
+    };
+    final gateRatio = ((trackBaseGate +
+                (profile.looseness * 0.07) -
+                (profile.punch *
+                    (track == TimelineTrackType.bass ? 0.12 : 0.07))) *
+            articulationGate)
+        .clamp(0.35, 0.98)
+        .toDouble();
+
+    final trackBalance = switch (track) {
+      TimelineTrackType.harmony => 0.94,
+      TimelineTrackType.melody => 1.03,
+      TimelineTrackType.bass => 0.96,
+    };
+    final velocityScale = ((0.80 +
+                (profile.punch * 0.24) +
+                (accent * 0.16) +
+                (noise * profile.looseness * 0.045)) *
+            trackBalance)
+        .clamp(0.68, 1.32)
+        .toDouble();
+
     return PerformanceIntent(
       timingOffsetBeats: timingOffset,
       gateRatio: gateRatio,
       velocityScale: velocityScale,
       accent: accent,
       articulation: articulation,
+      maxDurationBeats: _maxDurationFor(track, articulation),
     );
   }
 
@@ -103,6 +119,35 @@ class PerformanceIntelligenceEngine {
     }
   }
 
+  double _maxDurationFor(
+    TimelineTrackType track,
+    ArticulationIntent articulation,
+  ) {
+    return switch (track) {
+      TimelineTrackType.harmony => switch (articulation) {
+          ArticulationIntent.legato => 3.70,
+          ArticulationIntent.normal => 3.25,
+          ArticulationIntent.detached => 2.20,
+          ArticulationIntent.staccato => 1.35,
+          ArticulationIntent.accent => 2.35,
+        },
+      TimelineTrackType.melody => switch (articulation) {
+          ArticulationIntent.legato => 1.65,
+          ArticulationIntent.normal => 1.20,
+          ArticulationIntent.detached => 0.82,
+          ArticulationIntent.staccato => 0.48,
+          ArticulationIntent.accent => 0.88,
+        },
+      TimelineTrackType.bass => switch (articulation) {
+          ArticulationIntent.legato => 1.15,
+          ArticulationIntent.normal => 0.92,
+          ArticulationIntent.detached => 0.68,
+          ArticulationIntent.staccato => 0.42,
+          ArticulationIntent.accent => 0.72,
+        },
+    };
+  }
+
   double _signedNoise({
     required int seed,
     required String sectionId,
@@ -114,7 +159,10 @@ class PerformanceIntelligenceEngine {
     for (final code in sectionId.codeUnits) {
       hash = ((hash * 16777619) ^ code) & 0x7fffffff;
     }
-    hash = ((hash * 1103515245) + track.index * 7919 + chordIndex * 3571 + ordinal * 1013) &
+    hash = ((hash * 1103515245) +
+            track.index * 7919 +
+            chordIndex * 3571 +
+            ordinal * 1013) &
         0x7fffffff;
     hash ^= (hash >> 13);
     hash = (hash * 1274126177) & 0x7fffffff;
