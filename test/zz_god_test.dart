@@ -71,10 +71,7 @@ void main() {
 
       expect(_averageVelocity(energetic), greaterThan(_averageVelocity(relaxed)));
       expect(relaxed.length, lessThanOrEqualTo(energetic.length));
-      expect(
-        energetic.every((note) => note.chordIndex >= 0),
-        isTrue,
-      );
+      expect(energetic.every((note) => note.chordIndex >= 0), isTrue);
       expect(
         relaxed.every((note) => note.velocity >= 0.32 && note.velocity <= 1.0),
         isTrue,
@@ -133,10 +130,7 @@ void main() {
 
       expect(verdict.approved, isFalse);
       expect(verdict.blockers, isNotEmpty);
-      expect(
-        verdict.phrases.weakestPhrase?.score ?? 0,
-        lessThan(70),
-      );
+      expect(verdict.phrases.weakestPhrase?.score ?? 0, lessThan(70));
     });
 
     test('God Judge rejects literal repeated-hook copy/paste', () {
@@ -188,18 +182,65 @@ void main() {
       expect(verdict.approved, isFalse);
       expect(
         verdict.metrics
-            .firstWhere((metric) => metric.dimension == GodJudgeDimension.performanceSafety)
+            .firstWhere(
+              (metric) =>
+                  metric.dimension == GodJudgeDimension.performanceSafety,
+            )
             .passesFloor,
         isFalse,
       );
     });
 
+    test('known-good legacy Happy Pop batch still yields three approved choices', () {
+      final request = SongRequest(
+        seed: 540054,
+        key: KeyName.C,
+        genre: GenreKey.happyPop,
+        mood: MoodType.happy,
+        complexity: ComplexityLevel.medium,
+        spice: SpiceLevel.medium,
+        rhythm: RhythmLevel.moderate,
+        section: HarmonySection.neutral,
+        candidateCount: 8,
+        chordVariety: 58,
+        includeMelody: true,
+        includeBass: true,
+      );
+      final base = ProducerSongComposer().compose(
+        request: request,
+        plan: SongPlan.standard(seed: request.seed),
+        bassStyle: BassStyle.fifths,
+        bassVariety: 62,
+        grooveTemplate: GrooveTemplate.straight,
+      );
+      final engine = ProducerSongVariationEngine();
+      final visible = engine.build(
+        baseDraft: base,
+        request: request,
+        performanceProfile: const PerformanceProfile(),
+        bassStyle: BassStyle.fifths,
+        bassVariety: 62,
+        grooveTemplate: GrooveTemplate.straight,
+        tempo: 118,
+        swing: 0.08,
+      );
+      final selection = engine.lastSelection;
+
+      expect(
+        visible.length,
+        3,
+        reason: _selectionDiagnostic(selection),
+      );
+      expect(selection.approvedCount, greaterThanOrEqualTo(3));
+      expect(visible.every((variation) => variation.godApproved), isTrue);
+    });
+
     test('96-song genre x mood gauntlet never produces invalid judge state', () {
-      const composer = ProducerSongComposer();
       const timelineBuilder = SongTimelineBuilder();
       const judge = GodJudge();
       var evaluated = 0;
       var approved = 0;
+      final rejectedExamples = <String>[];
 
       for (final genre in GenreKey.values) {
         for (final mood in MoodType.values) {
@@ -216,32 +257,58 @@ void main() {
             timeline: timeline,
           );
           evaluated++;
-          if (verdict.approved) approved++;
+          if (verdict.approved) {
+            approved++;
+          } else if (rejectedExamples.length < 8) {
+            rejectedExamples.add(
+              '${genre.name}/${mood.name}: ${verdict.score.toStringAsFixed(1)} ${verdict.blockers.take(3).join('; ')}',
+            );
+          }
 
-          expect(draft.sections.length, draft.plan.sections.length, reason: '$genre/$mood');
-          expect(verdict.score, inInclusiveRange(0.0, 100.0), reason: '$genre/$mood');
+          expect(
+            draft.sections.length,
+            draft.plan.sections.length,
+            reason: '$genre/$mood',
+          );
+          expect(
+            verdict.score,
+            inInclusiveRange(0.0, 100.0),
+            reason: '$genre/$mood',
+          );
           expect(verdict.metrics, isNotEmpty, reason: '$genre/$mood');
           for (final metric in verdict.metrics) {
-            expect(metric.score, inInclusiveRange(0.0, 100.0), reason: '$genre/$mood:${metric.label}');
+            expect(
+              metric.score,
+              inInclusiveRange(0.0, 100.0),
+              reason: '$genre/$mood:${metric.label}',
+            );
           }
           if (verdict.approved) {
             expect(verdict.blockers, isEmpty, reason: '$genre/$mood');
-            expect(verdict.metrics.where((metric) => metric.weight > 0).every((metric) => metric.passesFloor), isTrue);
+            expect(
+              verdict.metrics
+                  .where((metric) => metric.weight > 0)
+                  .every((metric) => metric.passesFloor),
+              isTrue,
+            );
           }
         }
       }
 
       expect(evaluated, 96);
-      // This is not an acceptance-rate target. It simply proves the judge is not
-      // impossible to satisfy while still allowing it to withhold weak material.
-      expect(approved, greaterThan(0));
+      expect(
+        approved,
+        greaterThan(0),
+        reason: 'Judge approved nothing. Examples: ${rejectedExamples.join(' | ')}',
+      );
     });
 
-    test('FINAL PREVIEW LAW: rejected songs can never appear in the selected three', () {
+    test('FINAL PREVIEW LAW: rejected songs can never appear in selected three', () {
       var exposed = 0;
       var exposedRejected = 0;
       var evaluated = 0;
       var internallyApproved = 0;
+      final rejectionNotes = <String>[];
 
       for (final genre in GenreKey.values) {
         final mood = _representativeMood(genre);
@@ -272,18 +339,33 @@ void main() {
         final selection = engine.lastSelection;
         evaluated += selection.evaluated.length;
         internallyApproved += selection.approvedCount;
+        if (selection.approvedCount == 0 && rejectionNotes.length < 6) {
+          rejectionNotes.add('${genre.name}: ${_selectionDiagnostic(selection)}');
+        }
 
         expect(selection.evaluated.length, 4, reason: genre.name);
-        expect(visible.length == 0 || visible.length == 3, isTrue, reason: genre.name);
+        expect(
+          visible.length == 0 || visible.length == 3,
+          isTrue,
+          reason: genre.name,
+        );
         if (selection.approvedCount < 3) {
-          expect(visible, isEmpty, reason: '${genre.name} leaked a partial preview');
+          expect(
+            visible,
+            isEmpty,
+            reason: '${genre.name} leaked a partial preview',
+          );
         }
         if (visible.isNotEmpty) {
           expect(selection.satisfied, isTrue, reason: genre.name);
           for (final variation in visible) {
             exposed++;
             if (!variation.godApproved) exposedRejected++;
-            expect(variation.verdict.blockers, isEmpty, reason: '${genre.name}/${variation.style.name}');
+            expect(
+              variation.verdict.blockers,
+              isEmpty,
+              reason: '${genre.name}/${variation.style.name}',
+            );
             expect(variation.verdict.score, greaterThanOrEqualTo(82.0));
           }
           for (var i = 1; i < visible.length; i++) {
@@ -296,9 +378,12 @@ void main() {
       }
 
       expect(evaluated, GenreKey.values.length * 4);
-      expect(internallyApproved, greaterThan(0));
+      expect(
+        internallyApproved,
+        greaterThan(0),
+        reason: 'No internal direction passed. ${rejectionNotes.join(' | ')}',
+      );
       expect(exposedRejected, 0);
-      // If anything is shown, exposure precision is literally 100% by contract.
       if (exposed > 0) {
         expect(exposedRejected / exposed, 0.0);
       }
@@ -324,7 +409,8 @@ SongRequest _request({
       chordVariety: 64,
       useVoiceLeading: true,
       useAdvancedTheory: true,
-      useModalInterchange: mood == MoodType.dark || mood == MoodType.mysterious,
+      useModalInterchange:
+          mood == MoodType.dark || mood == MoodType.mysterious,
       useFunctionalHarmony: true,
       includeMelody: true,
       includeBass: true,
@@ -373,9 +459,10 @@ SongDraft _copyFirstChorusIntoSecond(SongDraft draft) {
         velocity: note.velocity,
         chordIndex: sourceCount <= 1 || targetCount <= 1
             ? 0
-            : ((note.chordIndex / (sourceCount - 1)) * (targetCount - 1))
-                .round()
-                .clamp(0, targetCount - 1),
+            : (((note.chordIndex / (sourceCount - 1)) * (targetCount - 1))
+                    .round()
+                    .clamp(0, targetCount - 1))
+                .toInt(),
         octave: note.octave,
       ),
   ];
@@ -392,7 +479,8 @@ SongDraft _copyFirstChorusIntoSecond(SongDraft draft) {
 
 SongTimeline _injectUnsafeMelodyGate(SongTimeline timeline) {
   final events = List<MusicalTimelineEvent>.from(timeline.events);
-  final index = events.indexWhere((event) => event.track == TimelineTrackType.melody);
+  final index =
+      events.indexWhere((event) => event.track == TimelineTrackType.melody);
   expect(index, greaterThanOrEqualTo(0));
   final original = events[index];
   events[index] = MusicalTimelineEvent(
@@ -420,12 +508,22 @@ SongTimeline _injectUnsafeMelodyGate(SongTimeline timeline) {
 
 double _averageVelocity(List<MelodyNote> notes) => notes.isEmpty
     ? 0.0
-    : notes.fold<double>(0.0, (sum, note) => sum + note.velocity) / notes.length;
+    : notes.fold<double>(0.0, (sum, note) => sum + note.velocity) /
+        notes.length;
 
 String _verdictSignature(GodJudgeVerdict verdict) =>
     '${verdict.score.toStringAsFixed(6)}:${verdict.approved}:'
     '${verdict.metrics.map((metric) => '${metric.dimension.name}=${metric.score.toStringAsFixed(5)}').join('|')}:'
     '${verdict.blockers.join('~')}';
+
+String _selectionDiagnostic(ProducerSongSelection selection) => selection.evaluated
+    .map(
+      (variation) =>
+          '${variation.style.label} ${variation.finalQualityScore.toStringAsFixed(1)} '
+          '[${variation.verdict.metrics.map((metric) => '${metric.label}:${metric.score.toStringAsFixed(0)}').join(', ')}] '
+          '${variation.verdict.blockers.take(4).join('; ')}',
+    )
+    .join(' || ');
 
 MoodType _representativeMood(GenreKey genre) => switch (genre) {
       GenreKey.happyPop => MoodType.happy,
