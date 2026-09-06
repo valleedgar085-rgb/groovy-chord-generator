@@ -1,3 +1,4 @@
+import 'phrase_lineage_rescue_engine.dart';
 import 'phrase_producer_brain.dart';
 import 'phrase_repair_engine.dart';
 import 'song_director.dart';
@@ -18,6 +19,7 @@ class SongQualityRefiner {
     this.memoryExtractor = const SongMemoryExtractor(),
     this.phraseAnalyzer = const PhraseProducerAnalyzer(),
     this.phraseRepairEngine = const PhraseRepairEngine(),
+    this.phraseLineageRescueEngine = const PhraseLineageRescueEngine(),
     this.director = const SongDirectorAnalyzer(),
     this.transitionRepairEngine = const TransitionRepairEngine(),
     this.maxPhraseRepairs = 20,
@@ -30,6 +32,7 @@ class SongQualityRefiner {
   final SongMemoryExtractor memoryExtractor;
   final PhraseProducerAnalyzer phraseAnalyzer;
   final PhraseRepairEngine phraseRepairEngine;
+  final PhraseLineageRescueEngine phraseLineageRescueEngine;
   final SongDirectorAnalyzer director;
   final TransitionRepairEngine transitionRepairEngine;
   final int maxPhraseRepairs;
@@ -42,21 +45,24 @@ class SongQualityRefiner {
     if (draft.sections.isEmpty) return draft;
 
     // Identity first: this gives transition repair the cleanest possible motif
-    // state. Boundary repair may touch the first/last phrase of a section, so a
-    // second identity pass runs afterward. Finally, weak-but-valid phrases get
-    // the same selective repair treatment; the judge should not accept a phrase
-    // merely because it avoided violating ancestry.
+    // state. The conservative 5.8D pass handles ordinary repair; the lineage
+    // rescue then handles only descendants that are still materially below
+    // their explicit Musical DNA window. Boundary repair may touch the
+    // first/last phrase of a section, so identity is rechecked afterward.
     var current = _refinePhraseLineage(draft, maxPhraseRepairs);
+    current = phraseLineageRescueEngine.rescue(current);
     current = _refineTransitions(current);
     current = _refinePhraseLineage(
       current,
       (maxPhraseRepairs / 2).ceil(),
     );
+    current = phraseLineageRescueEngine.rescue(current);
     current = _refineWeakPhrases(current);
     current = _refinePhraseLineage(
       current,
       (maxPhraseRepairs / 2).ceil(),
     );
+    current = phraseLineageRescueEngine.rescue(current);
     return current;
   }
 
