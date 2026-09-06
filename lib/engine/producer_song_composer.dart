@@ -10,6 +10,7 @@ import 'song_architect.dart';
 import 'song_architecture.dart';
 import 'song_candidate.dart';
 import 'song_draft.dart';
+import 'song_quality_refiner.dart';
 import 'song_request.dart';
 import 'song_section_candidate_pool.dart';
 
@@ -19,7 +20,9 @@ import 'song_section_candidate_pool.dart';
 /// arrangement with [SongArchitect], builds harmony through the same
 /// [SeededHarmonyBuilder] used by single-progression generation, then attaches
 /// deterministic phrase-first melody, bass, emotional performance shaping, and
-/// performance metadata per section.
+/// performance metadata per section. Once the complete song exists, the proven
+/// Phase 5.8D selective repair loop is allowed to clean phrase-lineage misses
+/// without rewriting unrelated material.
 class ProducerSongComposer {
   ProducerSongComposer({
     SongArchitect? architect,
@@ -28,12 +31,14 @@ class ProducerSongComposer {
     SeededMusicGeneration? generation,
     PhraseComposer? phraseComposer,
     EmotionPerformanceShaper? emotionShaper,
+    SongQualityRefiner? qualityRefiner,
   })  : _architect = architect ?? SongArchitect(),
         _candidatePool = candidatePool ?? SongSectionCandidatePool(),
         _harmonyBuilder = harmonyBuilder ?? const SeededHarmonyBuilder(),
         _generation = generation ?? const SeededMusicGeneration(),
         _phraseComposer = phraseComposer ?? const PhraseComposer(),
-        _emotionShaper = emotionShaper ?? const EmotionPerformanceShaper();
+        _emotionShaper = emotionShaper ?? const EmotionPerformanceShaper(),
+        _qualityRefiner = qualityRefiner ?? const SongQualityRefiner();
 
   final SongArchitect _architect;
   final SongSectionCandidatePool _candidatePool;
@@ -41,6 +46,7 @@ class ProducerSongComposer {
   final SeededMusicGeneration _generation;
   final PhraseComposer _phraseComposer;
   final EmotionPerformanceShaper _emotionShaper;
+  final SongQualityRefiner _qualityRefiner;
 
   SongDraft compose({
     required SongRequest request,
@@ -87,7 +93,7 @@ class ProducerSongComposer {
       );
     }
 
-    return completed;
+    return request.includeMelody ? _qualityRefiner.refine(completed) : completed;
   }
 
   /// Rebuilds exactly one section while preserving the rest of [draft].
@@ -96,6 +102,9 @@ class ProducerSongComposer {
   /// section id and revision always produce the same replacement. A later
   /// revision produces a new candidate family without turning regeneration
   /// into untraceable randomness.
+  ///
+  /// Deliberately does not run whole-song quality cleanup here: selective
+  /// regeneration must not silently mutate unrelated sections.
   GeneratedSongSection regenerateSection({
     required SongRequest request,
     required SongDraft draft,
@@ -114,8 +123,6 @@ class ProducerSongComposer {
       throw ArgumentError.value(sectionId, 'sectionId', 'Unknown song section');
     }
 
-    // A temporary plan gives only this regeneration request a new deterministic
-    // section seed. The arrangement intent itself remains identical.
     final regenerationPlan = SongPlan(
       seed: _regenerationPlanSeed(draft.plan.seed, sectionId, revision),
       sections: draft.plan.sections,
@@ -233,9 +240,6 @@ class ProducerSongComposer {
     );
   }
 
-  /// Repetition identity for regeneration must come from an earlier section,
-  /// never a later variation. Verse 2 may reference Verse 1; Verse 1 must not
-  /// accidentally use Verse 2 as its source just because the draft is complete.
   GeneratedSongSection? _priorRepetitionReference(
     SongDraft draft,
     SongSectionPlan target,
