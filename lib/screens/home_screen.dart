@@ -12,6 +12,7 @@ import '../services/audio_timeline_transport.dart';
 import '../utils/theme.dart';
 import '../widgets/bottom_navigation.dart';
 import '../widgets/create_mode_panel.dart';
+import '../widgets/emotion_quality_console.dart';
 import '../widgets/full_song_transport.dart';
 import '../widgets/header.dart';
 import '../widgets/performance_controls.dart';
@@ -76,6 +77,12 @@ class HomeScreen extends StatelessWidget {
                       if (isGenerator) ...[
                         CreateModePanel(transport: transport),
                         ProducerBrainPanel(appState: appState),
+                        Consumer<SongSessionController>(
+                          builder: (context, session, _) => EmotionQualityStrip(
+                            appState: appState,
+                            songSession: session,
+                          ),
+                        ),
                         if (showSongWorkspace)
                           Consumer<SongSessionController>(
                             builder: (context, session, _) {
